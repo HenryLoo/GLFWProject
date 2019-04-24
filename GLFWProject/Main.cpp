@@ -4,6 +4,7 @@
 #include <iostream>
 
 #include "shader.h"
+#include "texture.h"
 
 // Forward declarations.
 GLFWwindow* init();
@@ -24,8 +25,11 @@ int main()
 		return -1;
 
 
-	// Load the shaders.
+	// Load the shader.
 	Shader theShader("default.vs", "default.fs");
+
+	// Load the texture.
+	Texture theTexture("serah_idle.png");
 
 	// Prepare the triangle's vertices.
 	prepareSquare();
@@ -38,6 +42,9 @@ int main()
 
 		// Set the shader program.
 		theShader.use();
+
+		// Bind to the texture.
+		theTexture.bind();
 
 		// Call rendering functions.
 		render();
@@ -94,6 +101,10 @@ GLFWwindow* init()
 	// Render as wireframe.
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
+	// Enable blending for transparency in textures.
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
 	return window;
 }
 
@@ -119,12 +130,12 @@ void prepareSquare()
 	glBindVertexArray(VAO);
 
 	// Prepare the VBO.
-	// Each vertex has a position (x, y, z) and a colour (r, g, b).
+	// Each vertex has a position (x, y, z), a colour (r, g, b), and texture coords (u, v).
 	float vertices[] = {
-		0.5f, 0.5f, 0.0f, 0.0f, 0.0f, 1.0f, // top right
-		0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f, // bottom right
-		-0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f, // bottom left
-		-0.5f, 0.5f, 0.0f, 0.0f, 0.0f, 1.0f // top left
+		0.5f, 0.5f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, // top right
+		0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, // bottom right
+		-0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, // bottom left
+		-0.5f, 0.5f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f // top left
 	};
 
 	glGenBuffers(1, &VBO);
@@ -135,13 +146,18 @@ void prepareSquare()
 
 	// Set the vertex attributes, stride is 6 (3 for position, 3 for colour).
 	// Position attribute.
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
 
 	// Colour attribute, offset 3 from position.
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), 
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), 
 		(void*)(3 * sizeof(float)));
 	glEnableVertexAttribArray(1);
+
+	// Texture coordinate attribute, offset 6 from position.
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float),
+		(void *)(6 * sizeof(float)));
+	glEnableVertexAttribArray(2);
 
 	// Prepare the EBO.
 	unsigned int indices[] = {
