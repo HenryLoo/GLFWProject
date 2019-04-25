@@ -2,6 +2,10 @@
 #include "Shader.h"
 #include "Texture.h"
 
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/quaternion.hpp>
+#include <glm/gtx/quaternion.hpp>
+
 #include <sstream>
 
 Mesh::Mesh(const std::vector<Vertex> &vertices,
@@ -67,6 +71,9 @@ void Mesh::render(Shader *shader)
 	// Reset the active texture.
 	glActiveTexture(GL_TEXTURE0);
 
+	// Set uniforms for the shader.
+	shader->setMat4("transform", getTransform());
+
 	// Render the mesh.
 	glBindVertexArray(m_VAO);
 	glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(m_indices.size()), 
@@ -76,17 +83,33 @@ void Mesh::render(Shader *shader)
 	glBindVertexArray(0);
 }
 
-const std::vector<Vertex> &Mesh::getVertices() const
+void Mesh::setTranslation(glm::vec3 translation)
 {
-	return m_vertices;
+	m_translation = translation;
+}
+void Mesh::setScale(glm::vec3 scale)
+{
+	m_scale = scale;
 }
 
-const std::vector<GLuint> &Mesh::getIndices() const
+void Mesh::setRotation(glm::vec3 rotation)
 {
-	return m_indices;
+	m_rotation = rotation;
 }
 
-const std::vector<Texture *> &Mesh::getTextures() const
+glm::mat4 Mesh::getTransform() const
 {
-	return m_textures;
+	// Get the translation matrix.
+	glm::mat4 transMatrix = glm::translate(glm::mat4(1.0), m_translation);
+
+	// Get the rotation matrix.
+	glm::quat quaternion = glm::quat(glm::radians(m_rotation));
+	glm::mat4 rotMatrix = glm::toMat4(quaternion);
+
+	// Get the scale matrix.
+	glm::mat4 scaleMatrix = glm::scale(glm::mat4(1.0), m_scale);
+
+	// Apply the transformations in order: scale > rotation > translation.
+	glm::mat4 transform = transMatrix * rotMatrix * scaleMatrix * glm::mat4(1.0f);
+	return transform;
 }

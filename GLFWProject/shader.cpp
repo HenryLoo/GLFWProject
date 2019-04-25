@@ -1,5 +1,7 @@
 #include "Shader.h"
 
+#include <glm/gtc/type_ptr.hpp>
+
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -125,7 +127,7 @@ void Shader::setFloat(const std::string& name, float value) const
 
 void Shader::setVec2(const std::string& name, const glm::vec2& value) const
 {
-	glUniform2fv(glGetUniformLocation(m_id, name.c_str()), 1, &value[0]);
+	glUniform2fv(glGetUniformLocation(m_id, name.c_str()), 1, glm::value_ptr(value));
 }
 
 void Shader::setVec2(const std::string& name, float x, float y) const
@@ -135,7 +137,7 @@ void Shader::setVec2(const std::string& name, float x, float y) const
 
 void Shader::setVec3(const std::string& name, const glm::vec3& value) const
 {
-	glUniform3fv(glGetUniformLocation(m_id, name.c_str()), 1, &value[0]);
+	glUniform3fv(glGetUniformLocation(m_id, name.c_str()), 1, glm::value_ptr(value));
 }
 
 void Shader::setVec3(const std::string& name, float x, float y, float z) const
@@ -145,7 +147,7 @@ void Shader::setVec3(const std::string& name, float x, float y, float z) const
 
 void Shader::setVec4(const std::string& name, const glm::vec4& value) const
 {
-	glUniform4fv(glGetUniformLocation(m_id, name.c_str()), 1, &value[0]);
+	glUniform4fv(glGetUniformLocation(m_id, name.c_str()), 1, glm::value_ptr(value));
 }
 
 void Shader::setVec4(const std::string& name, float x, float y, float z, float w)
@@ -155,15 +157,15 @@ void Shader::setVec4(const std::string& name, float x, float y, float z, float w
 
 void Shader::setMat2(const std::string& name, const glm::mat2& mat) const
 {
-	glUniformMatrix2fv(glGetUniformLocation(m_id, name.c_str()), 1, GL_FALSE, &mat[0][0]);
+	glUniformMatrix2fv(glGetUniformLocation(m_id, name.c_str()), 1, GL_FALSE, glm::value_ptr(mat));
 }
 
 void Shader::setMat3(const std::string& name, const glm::mat3& mat) const
 {
-	glUniformMatrix3fv(glGetUniformLocation(m_id, name.c_str()), 1, GL_FALSE, &mat[0][0]);
+	glUniformMatrix3fv(glGetUniformLocation(m_id, name.c_str()), 1, GL_FALSE, glm::value_ptr(mat));
 }
 
 void Shader::setMat4(const std::string& name, const glm::mat4& mat) const
 {
-	glUniformMatrix4fv(glGetUniformLocation(m_id, name.c_str()), 1, GL_FALSE, &mat[0][0]);
+	glUniformMatrix4fv(glGetUniformLocation(m_id, name.c_str()), 1, GL_FALSE, glm::value_ptr(mat));
 }

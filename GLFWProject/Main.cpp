@@ -30,6 +30,9 @@ int main()
 	std::vector<Texture *> textures = { texture.get() };
 
 	std::unique_ptr<Mesh> mesh = std::make_unique<Mesh>(vertices, indices, textures);
+	mesh->setRotation({ 0.0f, 0.0f, 90.f });
+	mesh->setScale({ 1.f, 0.5f, 1.f });
+	mesh->setTranslation({ 0.f, 0.5f, 0.f });
 	renderer->addMesh(mesh.get());
 
 	// Exit if the game engine could not be created.
