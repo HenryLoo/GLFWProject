@@ -1,4 +1,4 @@
-#include "texture.h"
+#include "Texture.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -18,21 +18,21 @@ Texture::Texture(const std::string &filePath)
 
 	// Load the texture from the file.
 	const std::string path = TEXTURE_PATH + filePath;
-	unsigned char *data = stbi_load(path.c_str(), &width, &height, &numChannels, 0);
+	unsigned char *data = stbi_load(path.c_str(), &m_width, &m_height, &m_numChannels, 0);
 
 	if (data != nullptr)
 	{
 
 		// Generate the texture for OpenGL and store its id.
-		glGenTextures(1, &id);
-		glBindTexture(GL_TEXTURE_2D, id);
+		glGenTextures(1, &m_id);
+		glBindTexture(GL_TEXTURE_2D, m_id);
 
 		// Set texture parameters for the bound texture.
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
 		// Create the texture from the loaded file.
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA,
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_width, m_height, 0, GL_RGBA,
 			GL_UNSIGNED_BYTE, data);
 	}
 	else
@@ -47,10 +47,10 @@ Texture::Texture(const std::string &filePath)
 
 Texture::~Texture()
 {
-	glDeleteTextures(1, &id);
+	glDeleteTextures(1, &m_id);
 }
 
 void Texture::bind()
 {
-	glBindTexture(GL_TEXTURE_2D, id);
+	glBindTexture(GL_TEXTURE_2D, m_id);
 }

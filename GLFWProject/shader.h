@@ -32,7 +32,7 @@ public:
 
 private:
 	// The program's id.
-	GLuint id;
+	GLuint m_id;
 };
 
 #endif

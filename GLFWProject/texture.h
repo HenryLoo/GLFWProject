@@ -17,14 +17,14 @@ public:
 
 private:
 	// This texture's id.
-	GLuint id;
+	GLuint m_id;
 
 	// This texture's dimensions.
-	GLint width;
-	GLint height;
+	GLint m_width;
+	GLint m_height;
 
 	// This texture's number of colour channels.
-	GLint numChannels;
+	GLint m_numChannels;
 };
 
 #endif
