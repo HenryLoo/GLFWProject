@@ -11,6 +11,7 @@
 
 
 class Mesh;
+class Camera;
 
 class Renderer
 {
@@ -18,8 +19,11 @@ public:
 	Renderer();
 	~Renderer();
 
+	// Update all renderer values.
+	void update(float deltaTime);
+
 	// Render all queued meshes.
-	void render();
+	void render(Camera *camera, float aspectRatio);
 
 	// Queue an mesh to be rendered.
 	void addMesh(Mesh *mesh);

@@ -1,5 +1,8 @@
 #include "Renderer.h"
 #include "Mesh.h"
+#include "Camera.h"
+
+#include <glm/gtc/matrix_transform.hpp>
 
 #include <iostream>
 
@@ -21,7 +24,7 @@ Renderer::~Renderer()
 
 }
 
-void Renderer::render()
+void Renderer::render(Camera *camera, float aspectRatio)
 {
 	// Clear the colour buffer.
 	glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
@@ -29,6 +32,15 @@ void Renderer::render()
 
 	// Render each mesh.
 	m_defaultShader->use();
+
+	// Set the view matrix uniform.
+	m_defaultShader->setMat4("view", camera->getViewMatrix());
+
+	// Set projection matrix uniform.
+	glm::mat4 projMatrix = glm::perspective(glm::radians(45.0f),
+		aspectRatio, 0.1f, 100.0f);
+	m_defaultShader->setMat4("projection", projMatrix);
+
 	for (Mesh *mesh : m_meshes)
 	{
 		mesh->render(m_defaultShader.get());

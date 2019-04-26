@@ -72,7 +72,7 @@ void Mesh::render(Shader *shader)
 	glActiveTexture(GL_TEXTURE0);
 
 	// Set uniforms for the shader.
-	shader->setMat4("transform", getTransform());
+	shader->setMat4("model", getModelMatrix());
 
 	// Render the mesh.
 	glBindVertexArray(m_VAO);
@@ -97,12 +97,13 @@ void Mesh::setRotation(glm::vec3 rotation)
 	m_rotation = rotation;
 }
 
-glm::mat4 Mesh::getTransform() const
+glm::mat4 Mesh::getModelMatrix() const
 {
 	// Get the translation matrix.
 	glm::mat4 transMatrix = glm::translate(glm::mat4(1.0), m_translation);
 
 	// Get the rotation matrix.
+	// Use quaternions to avoid Gimbal lock.
 	glm::quat quaternion = glm::quat(glm::radians(m_rotation));
 	glm::mat4 rotMatrix = glm::toMat4(quaternion);
 
@@ -110,6 +111,6 @@ glm::mat4 Mesh::getTransform() const
 	glm::mat4 scaleMatrix = glm::scale(glm::mat4(1.0), m_scale);
 
 	// Apply the transformations in order: scale > rotation > translation.
-	glm::mat4 transform = transMatrix * rotMatrix * scaleMatrix * glm::mat4(1.0f);
-	return transform;
+	glm::mat4 modelMatrix = transMatrix * rotMatrix * scaleMatrix * glm::mat4(1.0f);
+	return modelMatrix;
 }

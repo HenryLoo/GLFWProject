@@ -2,8 +2,12 @@
 #ifndef GameEngine_H
 #define GameEngine_H
 
+#include "Camera.h"
+
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+
+#include <memory>
 
 class Renderer;
 
@@ -23,13 +27,22 @@ private:
 	void processInput();
 
 	// Update all appropriate values for the game loop's current iteration.
-	void update(float deltaTime);
+	void update();
 
 	// Render all appropriate visuals for the game loop's current iteration.
 	void render(Renderer *renderer);
 
 	// The window to render to.
 	GLFWwindow *m_window = nullptr;
+
+	// The time between the current and last frame.
+	float m_deltaTime = 0.0f;
+
+	// The time of the last frame.
+	float m_lastFrame = 0.0f;
+
+	// The camera to get the view matrix from.
+	std::unique_ptr<Camera> m_camera;
 };
 
 #endif

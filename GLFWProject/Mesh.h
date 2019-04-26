@@ -25,8 +25,8 @@ public:
 	void setRotation(glm::vec3 rotation);
 
 private:
-	// Get the transformation matrix.
-	glm::mat4 getTransform() const;
+	// Get the model matrix, with all transformations applied.
+	glm::mat4 getModelMatrix() const;
 
 	// Hold all the vertices for this mesh.
 	// These will be passed into a vertex buffer object.
