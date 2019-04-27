@@ -17,8 +17,8 @@ int main()
 	// TODO: remove this later.
 	std::vector<Vertex> vertices = {
 		{{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}}, // top right
-		{{0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}}, // bottom right
-		{{-0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}}, // bottom left
+		{{0.5f, -0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 0.0f}}, // bottom right
+		{{-0.5f, -0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f}}, // bottom left
 		{{-0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}} // top left
 	};
 
@@ -27,8 +27,9 @@ int main()
 		1, 2, 3 // second triangle
 	};
 
+	// Use the same texture for both diffuse and specular maps.
 	std::unique_ptr<Texture> texture = std::make_unique<Texture>("serah_idle.png");
-	std::vector<Texture *> textures = { texture.get() };
+	std::vector<Texture *> textures = { texture.get(), texture.get() };
 
 	std::unique_ptr<Mesh> mesh = std::make_unique<Mesh>(vertices, indices, textures);
 	mesh->setRotation({ 0.f, 0.f, 0.f });

@@ -64,6 +64,8 @@ void Mesh::render(Shader *shader)
 		glActiveTexture(GL_TEXTURE0 + i);
 
 		// TODO: Do other texture configurations here.
+		// For now, GL_TEXTURE0 is used for diffuse map and 
+		// GLTEXTURE1 is used for specular map.
 
 		m_textures[i]->bind();
 	}

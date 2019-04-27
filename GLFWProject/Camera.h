@@ -29,6 +29,9 @@ public:
 	// Get this camera's view matrix.
 	glm::mat4 getViewMatrix();
 
+	// Get this camera's position.
+	glm::vec3 getPosition() const;
+
 private:
 	// The camera's position.
 	glm::vec3 m_position{ 0.f, 0.f, 3.f };
