@@ -15,20 +15,52 @@ Renderer::Renderer()
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-	// Load the shader.
+	// Load the shaders.
 	m_defaultShader = std::make_unique<Shader>("default.vs", "default.fs");
+	m_screenShader = std::make_unique<Shader>("screen.vs", "screen.fs");
+
+	// vertex attributes for a quad that fills the entire screen in Normalized Device Coordinates.
+	float screenVertices[] = {
+		// positions   // texCoords
+		-1.0f,  1.0f,  0.0f, 1.0f,
+		-1.0f, -1.0f,  0.0f, 0.0f,
+		 1.0f, -1.0f,  1.0f, 0.0f,
+
+		-1.0f,  1.0f,  0.0f, 1.0f,
+		 1.0f, -1.0f,  1.0f, 0.0f,
+		 1.0f,  1.0f,  1.0f, 1.0f
+	};
+
+	glGenVertexArrays(1, &m_screenVAO);
+	glGenBuffers(1, &m_screenVBO);
+	glBindVertexArray(m_screenVAO);
+	glBindBuffer(GL_ARRAY_BUFFER, m_screenVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(screenVertices), &screenVertices, GL_STATIC_DRAW);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void *)0);
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void *)(2 * sizeof(float)));
 }
 
 Renderer::~Renderer()
 {
-
+	glDeleteBuffers(1, &m_screenVAO);
+	glDeleteBuffers(1, &m_screenVBO);
+	glDeleteFramebuffers(1, &m_screenFBO);
+	glDeleteTextures(1, &m_screenColourBuffer);
+	glDeleteRenderbuffers(1, &m_screenRBO);
 }
 
 void Renderer::render(Camera *camera, float aspectRatio)
 {
+	glBindFramebuffer(GL_FRAMEBUFFER, m_screenFBO);
+
 	// Clear the colour buffer.
 	glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-	glClear(GL_COLOR_BUFFER_BIT);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	// Enable depth testing.
+	glEnable(GL_DEPTH_TEST);
 
 	// Render each mesh.
 	m_defaultShader->use();
@@ -71,6 +103,17 @@ void Renderer::render(Camera *camera, float aspectRatio)
 	{
 		mesh->render(m_defaultShader.get());
 	}
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+	glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT);
+
+	m_screenShader->use();
+	glBindVertexArray(m_screenVAO);
+	glDisable(GL_DEPTH_TEST);
+	glBindTexture(GL_TEXTURE_2D, m_screenColourBuffer);
+	glDrawArrays(GL_TRIANGLES, 0, 6);
 }
 
 void Renderer::addMesh(Mesh *mesh)
@@ -82,4 +125,37 @@ void Renderer::addMesh(Mesh *mesh)
 void Renderer::clearMeshes()
 {
 	m_meshes.clear();
+}
+
+void Renderer::createFramebuffer(int screenWidth, int screenHeight)
+{
+	// Delete any existing old buffers.
+	if (m_screenFBO) glDeleteFramebuffers(1, &m_screenFBO);
+	if (m_screenColourBuffer) glDeleteTextures(1, &m_screenColourBuffer);
+	if (m_screenRBO) glDeleteRenderbuffers(1, &m_screenRBO);
+
+	// Create the frame buffer.
+	glGenFramebuffers(1, &m_screenFBO);
+	glBindFramebuffer(GL_FRAMEBUFFER, m_screenFBO);
+
+	// Create the texture buffer for rendering the scene on a quad.
+	glGenTextures(1, &m_screenColourBuffer);
+	glBindTexture(GL_TEXTURE_2D, m_screenColourBuffer);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, screenWidth, screenHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_screenColourBuffer, 0);
+
+	// Create the render buffer for depth and stencil testing.
+	glGenRenderbuffers(1, &m_screenRBO);
+	glBindRenderbuffer(GL_RENDERBUFFER, m_screenRBO);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, screenWidth, screenHeight);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, m_screenRBO);
+
+	// Check if the framebuffer is complete.
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+	{
+		std::cout << "Framebuffer not complete." << std::endl;
+	}
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }

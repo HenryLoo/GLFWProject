@@ -31,12 +31,20 @@ public:
 	// Remove all queued meshes.
 	void clearMeshes();
 
+	// Create a new framebuffer and its appropriate attachments with 
+	// a given screen size.
+	void createFramebuffer(int screenWidth, int screenHeight);
+
 private:
 	// Hold all queued meshes.
 	std::vector<Mesh *> m_meshes;
 
 	// Shaders to render with.
 	std::unique_ptr<Shader> m_defaultShader;
+	std::unique_ptr<Shader> m_screenShader;
+
+	// The framebuffer used for post-processing.
+	GLuint m_screenVAO, m_screenVBO, m_screenFBO, m_screenColourBuffer, m_screenRBO;
 };
 
 #endif

@@ -82,6 +82,9 @@ vec3 calculatePointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewD
 
 void main()
 {
+    float alpha = texture(material.diffuse, texCoord).a;
+    if (alpha < 0.1) discard;
+
     vec3 norm = normalize(normal);
     vec3 viewDir = normalize(viewPos - fragPos);
 
@@ -91,5 +94,5 @@ void main()
     // Calculate point lighting.
     result += calculatePointLight(pointLight, norm, fragPos, viewDir);
 
-    fragColour = vec4(result, texture(material.diffuse, texCoord).a);
+    fragColour = vec4(result, alpha);
 }

@@ -21,6 +21,12 @@ public:
 	// The function will only return when the game ends.
 	void start(Renderer *renderer);
 
+	// Update the camera to look at a position on the screen.
+	void updateCameraLook(glm::vec2 screenPos);
+
+	// Update the screen size for the renderer on the next iteration of the game loop.
+	void updateRendererSize();
+
 private:
 	// Constructor is private to prevent instantiating singleton.
 	// Handle all user inputs for the game loop's current iteration.
@@ -43,6 +49,9 @@ private:
 
 	// The camera to get the view matrix from.
 	std::unique_ptr<Camera> m_camera;
+
+	// Flag for if the window size was changed.
+	bool m_hasNewWindowSize{ true };
 };
 
 #endif

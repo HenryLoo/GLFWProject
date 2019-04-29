@@ -10,12 +10,15 @@ namespace
 	void framebufferSizeCallback(GLFWwindow *window, int width, int height)
 	{
 		glViewport(0, 0, width, height);
+
+		GameEngine *game = (GameEngine *)glfwGetWindowUserPointer(window);
+		game->updateRendererSize();
 	}
 
 	void mouseCallback(GLFWwindow *window, double xpos, double ypos)
 	{
-		Camera *camera = (Camera *)glfwGetWindowUserPointer(window);
-		camera->lookAt(glm::vec2(xpos, ypos));
+		GameEngine *game = (GameEngine *)glfwGetWindowUserPointer(window);
+		game->updateCameraLook(glm::vec2(xpos, ypos));
 	}
 }
 
@@ -58,7 +61,7 @@ GameEngine::GameEngine()
 	// Set the callback function for listening to mouse inputs.
 	glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 	glfwSetCursorPosCallback(m_window, mouseCallback);
-	glfwSetWindowUserPointer(m_window, m_camera.get());
+	glfwSetWindowUserPointer(m_window, this);
 }
 
 GameEngine::~GameEngine()
@@ -72,6 +75,15 @@ void GameEngine::start(Renderer *renderer)
 	// The game loop.
 	while (!glfwWindowShouldClose(m_window))
 	{
+		// If the window size was changed, update the renderer.
+		if (m_hasNewWindowSize)
+		{
+			m_hasNewWindowSize = false;
+			int width, height;
+			glfwGetWindowSize(m_window, &width, &height);
+			renderer->createFramebuffer(width, height);
+		}
+
 		float currentFrame = static_cast<float>(glfwGetTime());
 		m_deltaTime = currentFrame - m_lastFrame;
 		m_lastFrame = currentFrame;
@@ -86,6 +98,16 @@ void GameEngine::start(Renderer *renderer)
 		// Call rendering functions.
 		render(renderer);
 	}
+}
+
+void GameEngine::updateCameraLook(glm::vec2 screenPos)
+{
+	m_camera->lookAt(screenPos);
+}
+
+void GameEngine::updateRendererSize()
+{
+	m_hasNewWindowSize = true;
 }
 
 void GameEngine::processInput()

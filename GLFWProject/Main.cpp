@@ -37,6 +37,12 @@ int main()
 	mesh->setTranslation({ 0.f, 0.f, 0.f });
 	renderer->addMesh(mesh.get());
 
+	std::unique_ptr<Mesh> mesh2 = std::make_unique<Mesh>(vertices, indices, textures);
+	mesh2->setRotation({ 0.f, 0.f, 0.f });
+	mesh2->setScale({ 1.f, 1.f, 1.f });
+	mesh2->setTranslation({ 0.5f, 0.f, 0.5f });
+	renderer->addMesh(mesh2.get());
+
 	// Exit if the game engine could not be created.
 	if (game == nullptr)
 		return -1;
