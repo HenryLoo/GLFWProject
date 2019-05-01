@@ -73,16 +73,18 @@ void Mesh::render(Shader *shader)
 	// Reset the active texture.
 	glActiveTexture(GL_TEXTURE0);
 
+	// TODO: fix below for instancing.
+
 	// Set uniforms for the shader.
-	shader->setMat4("model", getModelMatrix());
+	//shader->setMat4("model", getModelMatrix());
 
 	// Render the mesh.
 	glBindVertexArray(m_VAO);
-	glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(m_indices.size()), 
-		GL_UNSIGNED_INT, 0);
+	/*glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(m_indices.size()), 
+		GL_UNSIGNED_INT, 0);*/
 
 	// Unbind the VAO.
-	glBindVertexArray(0);
+	//glBindVertexArray(0);
 }
 
 void Mesh::setTranslation(glm::vec3 translation)

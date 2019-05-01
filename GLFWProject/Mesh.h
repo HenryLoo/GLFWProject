@@ -24,9 +24,11 @@ public:
 	void setScale(glm::vec3 scale);
 	void setRotation(glm::vec3 rotation);
 
-private:
+	// TODO: this is public for instancing test. Fix later.
 	// Get the model matrix, with all transformations applied.
 	glm::mat4 getModelMatrix() const;
+
+private:
 
 	// Hold all the vertices for this mesh.
 	// These will be passed into a vertex buffer object.

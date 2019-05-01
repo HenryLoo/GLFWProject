@@ -35,9 +35,10 @@ public:
 	// a given screen size.
 	void createFramebuffer(int screenWidth, int screenHeight);
 
-private:
 	// Hold all queued meshes.
 	std::vector<Mesh *> m_meshes;
+	std::vector<glm::mat4> models;
+private:
 
 	// Shaders to render with.
 	std::unique_ptr<Shader> m_defaultShader;
@@ -45,6 +46,9 @@ private:
 
 	// The framebuffer used for post-processing.
 	GLuint m_screenVAO, m_screenVBO, m_screenFBO, m_screenColourBuffer, m_screenRBO;
+
+	// TODO: used for instancing test, fix later.
+	GLuint m_instanceVBO;
 };
 
 #endif
