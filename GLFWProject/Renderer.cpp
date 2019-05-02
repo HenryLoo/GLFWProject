@@ -102,29 +102,30 @@ void Renderer::render(Camera *camera, float aspectRatio)
 	m_defaultShader->setInt("material.specular", 1);
 	m_defaultShader->setFloat("material.shininess", 32.0f);
 
-	// TODO: clean up instancing implementation.
-	m_meshes[0]->render(m_defaultShader.get());
-	glBindBuffer(GL_ARRAY_BUFFER, m_instanceVBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(glm::mat4) * models.size(), &models[0], GL_DYNAMIC_DRAW);
+	//// TODO: clean up instancing implementation.
+	//m_meshes[0]->render(m_defaultShader.get());
+	//glBindBuffer(GL_ARRAY_BUFFER, m_instanceVBO);
+	//glBufferData(GL_ARRAY_BUFFER, sizeof(glm::mat4) * models.size(), &models[0], GL_DYNAMIC_DRAW);
 
-	glEnableVertexAttribArray(3);
-	glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void *)0);
-	glEnableVertexAttribArray(4);
-	glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void *)(sizeof(glm::vec4)));
-	glEnableVertexAttribArray(5);
-	glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void *)(2 * sizeof(glm::vec4)));
-	glEnableVertexAttribArray(6);
-	glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void *)(3 * sizeof(glm::vec4)));
+	//glEnableVertexAttribArray(3);
+	//glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void *)0);
+	//glEnableVertexAttribArray(4);
+	//glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void *)(sizeof(glm::vec4)));
+	//glEnableVertexAttribArray(5);
+	//glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void *)(2 * sizeof(glm::vec4)));
+	//glEnableVertexAttribArray(6);
+	//glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void *)(3 * sizeof(glm::vec4)));
 
-	glVertexAttribDivisor(3, 1);
-	glVertexAttribDivisor(4, 1);
-	glVertexAttribDivisor(5, 1);
-	glVertexAttribDivisor(6, 1);
+	//glVertexAttribDivisor(3, 1);
+	//glVertexAttribDivisor(4, 1);
+	//glVertexAttribDivisor(5, 1);
+	//glVertexAttribDivisor(6, 1);
 
-	glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0, m_meshes.size());
-	glBindVertexArray(0);
-	// End of instancing implementation.
+	//glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0, m_meshes.size());
+	//glBindVertexArray(0);
+	//// End of instancing implementation.
 
+	// Swap framebuffers for post-processing effects.
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 	glClearColor(1.0f, 1.0f, 1.0f, 1.0f);

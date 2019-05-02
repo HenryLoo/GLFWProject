@@ -10,6 +10,7 @@
 #include <memory>
 
 class Renderer;
+class SpriteRenderer;
 
 class GameEngine
 {
@@ -19,7 +20,7 @@ public:
 
 	// Start the game loop.
 	// The function will only return when the game ends.
-	void start(Renderer *renderer);
+	void start(SpriteRenderer *renderer);
 
 	// Update the camera to look at a position on the screen.
 	void updateCameraLook(glm::vec2 screenPos);
@@ -33,10 +34,10 @@ private:
 	void processInput();
 
 	// Update all appropriate values for the game loop's current iteration.
-	void update();
+	void update(SpriteRenderer *renderer);
 
 	// Render all appropriate visuals for the game loop's current iteration.
-	void render(Renderer *renderer);
+	void render(SpriteRenderer *renderer);
 
 	// The window to render to.
 	GLFWwindow *m_window = nullptr;

@@ -1,5 +1,5 @@
 #include "GameEngine.h"
-#include "Renderer.h"
+#include "SpriteRenderer.h"
 #include "Camera.h"
 
 #include <iostream>
@@ -29,6 +29,7 @@ GameEngine::GameEngine()
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+	glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
 
 	// Uncomment for Mac OS X.
 #ifdef __APPLE__
@@ -36,7 +37,7 @@ GameEngine::GameEngine()
 #endif
 
 	// Create the window
-	m_window = glfwCreateWindow(800, 600, "GLFWProject", NULL, NULL);
+	m_window = glfwCreateWindow(1024, 768, "GLFWProject", NULL, NULL);
 	if (m_window == nullptr)
 	{
 		std::cout << "Failed to create GLFW window" << std::endl;
@@ -70,7 +71,7 @@ GameEngine::~GameEngine()
 	glfwTerminate();
 }
 
-void GameEngine::start(Renderer *renderer)
+void GameEngine::start(SpriteRenderer *renderer)
 {
 	// The game loop.
 	while (!glfwWindowShouldClose(m_window))
@@ -81,7 +82,7 @@ void GameEngine::start(Renderer *renderer)
 			m_hasNewWindowSize = false;
 			int width, height;
 			glfwGetWindowSize(m_window, &width, &height);
-			renderer->createFramebuffer(width, height);
+			//renderer->createFramebuffer(width, height);
 		}
 
 		float currentFrame = static_cast<float>(glfwGetTime());
@@ -91,9 +92,8 @@ void GameEngine::start(Renderer *renderer)
 		// Handle user inputs.
 		processInput();
 
-		// TODO: change fixed delta.
 		// Update values.
-		update();
+		update(renderer);
 
 		// Call rendering functions.
 		render(renderer);
@@ -130,12 +130,14 @@ void GameEngine::processInput()
 
 }
 
-void GameEngine::update()
+void GameEngine::update(SpriteRenderer *renderer)
 {
 	m_camera->update(m_deltaTime);
+
+	renderer->update(m_deltaTime, m_camera.get());
 }
 
-void GameEngine::render(Renderer *renderer)
+void GameEngine::render(SpriteRenderer *renderer)
 {
 	// Call the renderer.
 	int width, height;
