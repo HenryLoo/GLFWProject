@@ -17,12 +17,11 @@ Texture::Texture(const std::string &filePath)
 	stbi_set_flip_vertically_on_load(true);
 
 	// Load the texture from the file.
-	const std::string path = TEXTURE_PATH + filePath;
-	unsigned char *data = stbi_load(path.c_str(), &m_width, &m_height, &m_numChannels, 0);
+	const std::string path{ TEXTURE_PATH + filePath };
+	unsigned char *data{ stbi_load(path.c_str(), &m_width, &m_height, &m_numChannels, 0) };
 
 	if (data != nullptr)
 	{
-
 		// Generate the texture for OpenGL and store its id.
 		glGenTextures(1, &m_id);
 		glBindTexture(GL_TEXTURE_2D, m_id);

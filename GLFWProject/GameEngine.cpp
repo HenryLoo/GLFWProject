@@ -1,7 +1,9 @@
 #include "GameEngine.h"
 #include "SpriteRenderer.h"
 #include "Camera.h"
+#include "GameSystem.h"
 
+#include <algorithm>
 #include <iostream>
 
 namespace
@@ -11,15 +13,19 @@ namespace
 	{
 		glViewport(0, 0, width, height);
 
-		GameEngine *game = (GameEngine *)glfwGetWindowUserPointer(window);
+		GameEngine *game{ (GameEngine *)glfwGetWindowUserPointer(window) };
 		game->updateRendererSize();
 	}
 
 	void mouseCallback(GLFWwindow *window, double xpos, double ypos)
 	{
-		GameEngine *game = (GameEngine *)glfwGetWindowUserPointer(window);
+		GameEngine *game{ (GameEngine *)glfwGetWindowUserPointer(window) };
 		game->updateCameraLook(glm::vec2(xpos, ypos));
 	}
+
+	// TODO: remove these later.
+	const float SECONDS_PER_FRAME{ 1 / 60.f };
+	const int NUM_ENTITIES_PER_SECOND{ 1000 };
 }
 
 GameEngine::GameEngine()
@@ -85,7 +91,7 @@ void GameEngine::start(SpriteRenderer *renderer)
 			//renderer->createFramebuffer(width, height);
 		}
 
-		float currentFrame = static_cast<float>(glfwGetTime());
+		float currentFrame{ static_cast<float>(glfwGetTime()) };
 		m_deltaTime = currentFrame - m_lastFrame;
 		m_lastFrame = currentFrame;
 
@@ -134,7 +140,32 @@ void GameEngine::update(SpriteRenderer *renderer)
 {
 	m_camera->update(m_deltaTime);
 
-	renderer->update(m_deltaTime, m_camera.get());
+	createNewEntities();
+
+	renderer->resetNumSprites();
+
+	// Update all entities.
+	glm::vec3 cameraPos{ m_camera->getPosition() };
+	for (int i = 0; i < MAX_ENTITIES; i++)
+	{
+		unsigned long &e{ m_entities[i] };
+		GameComponent::Physics &phys{ m_compPhysics[i] };
+		GameComponent::Sprite &spr{ m_compSprites[i] };
+
+		// Update relevant components for this entity.
+		bool hasPhysics{ GameComponent::hasComponent(e, GameComponent::COMPONENT_PHYSICS) };
+		bool hasSprite{ GameComponent::hasComponent(e, GameComponent::COMPONENT_SPRITE) };
+		if (hasPhysics)
+		{
+			GameSystem::updatePhysics(m_deltaTime, phys);
+		}
+		if (hasPhysics && hasSprite)
+		{
+			GameSystem::updateSprite(m_deltaTime, renderer, cameraPos, e, spr, phys);
+		}
+	}
+
+	renderer->updateData();
 }
 
 void GameEngine::render(SpriteRenderer *renderer)
@@ -146,4 +177,66 @@ void GameEngine::render(SpriteRenderer *renderer)
 
 	// Swap the buffers to show the rendered visuals.
 	glfwSwapBuffers(m_window);
+}
+
+int GameEngine::findUnusedEntity() {
+
+	for (int i = m_lastUsedEntity; i < MAX_ENTITIES; i++)
+	{
+		if (m_entities[i] == 0)
+		{
+			m_lastUsedEntity = i;
+			return i;
+		}
+	}
+
+	for (int i = 0; i < m_lastUsedEntity; i++)
+	{
+		if (m_entities[i] == 0)
+		{
+			m_lastUsedEntity = i;
+			return i;
+		}
+	}
+
+	// No available entity, so just overwrite the first one.
+	return 0;
+}
+
+void GameEngine::createNewEntities()
+{
+	// The number of new sprites to create this frame.
+	int numNewEntities{ (int)(m_deltaTime * NUM_ENTITIES_PER_SECOND) };
+	if (numNewEntities > (int)(SECONDS_PER_FRAME * NUM_ENTITIES_PER_SECOND))
+		numNewEntities = (int)(SECONDS_PER_FRAME * NUM_ENTITIES_PER_SECOND);
+
+	// Generate the new sprites with random values.
+	for (int i = 0; i < numNewEntities; i++)
+	{
+		int entityIndex{ findUnusedEntity() };
+		m_compSprites[entityIndex].duration = 5.0f;
+		m_compPhysics[entityIndex].pos = glm::vec3(0, 0, -20.0f);
+
+		float spread{ 1.5f };
+		glm::vec3 mainDir{ glm::vec3(0.0f, 10.0f, 0.0f) };
+		glm::vec3 randomDir{ glm::vec3(
+			(rand() % 2000 - 1000.0f) / 1000.0f,
+			(rand() % 2000 - 1000.0f) / 1000.0f,
+			(rand() % 2000 - 1000.0f) / 1000.0f
+		) };
+
+		m_compPhysics[entityIndex].speed = mainDir + randomDir * spread;
+
+		m_compSprites[entityIndex].r = rand() % 256;
+		m_compSprites[entityIndex].g = rand() % 256;
+		m_compSprites[entityIndex].b = rand() % 256;
+		m_compSprites[entityIndex].a = 255;
+
+		m_compPhysics[entityIndex].scale = (rand() % 1000) / 2000.0f + 0.1f;
+
+		GameComponent::addComponent(m_entities[entityIndex], 
+			GameComponent::ComponentType::COMPONENT_PHYSICS);
+		GameComponent::addComponent(m_entities[entityIndex],
+			GameComponent::ComponentType::COMPONENT_SPRITE);
+	}
 }

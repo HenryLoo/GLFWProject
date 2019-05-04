@@ -104,17 +104,17 @@ void Mesh::setRotation(glm::vec3 rotation)
 glm::mat4 Mesh::getModelMatrix() const
 {
 	// Get the translation matrix.
-	glm::mat4 transMatrix = glm::translate(glm::mat4(1.0), m_translation);
+	glm::mat4 transMatrix{ glm::translate(glm::mat4(1.0), m_translation) };
 
 	// Get the rotation matrix.
 	// Use quaternions to avoid Gimbal lock.
-	glm::quat quaternion = glm::quat(glm::radians(m_rotation));
-	glm::mat4 rotMatrix = glm::toMat4(quaternion);
+	glm::quat quaternion{ glm::quat(glm::radians(m_rotation)) };
+	glm::mat4 rotMatrix{ glm::toMat4(quaternion) };
 
 	// Get the scale matrix.
-	glm::mat4 scaleMatrix = glm::scale(glm::mat4(1.0), m_scale);
+	glm::mat4 scaleMatrix{ glm::scale(glm::mat4(1.0), m_scale) };
 
 	// Apply the transformations in order: scale > rotation > translation.
-	glm::mat4 modelMatrix = transMatrix * rotMatrix * scaleMatrix * glm::mat4(1.0f);
+	glm::mat4 modelMatrix{ transMatrix * rotMatrix * scaleMatrix * glm::mat4(1.0f) };
 	return modelMatrix;
 }

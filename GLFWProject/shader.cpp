@@ -45,8 +45,8 @@ Shader::Shader(const std::string &vertexPath, const std::string &fragmentPath)
 		std::cout << "Shader file could not be read." << std::endl;
 	}
 
-	const char* vShaderCode = vertexCode.c_str();
-	const char* fShaderCode = fragmentCode.c_str();
+	const char *vShaderCode{ vertexCode.c_str() };
+	const char *fShaderCode{ fragmentCode.c_str() };
 
 	// Compile the shaders.
 	GLuint vertexId, fragmentId;

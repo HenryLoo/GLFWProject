@@ -69,12 +69,12 @@ void Renderer::render(Camera *camera, float aspectRatio)
 	m_defaultShader->use();
 
 	// Set the view matrix uniform.
-	glm::mat4 viewMatrix = camera->getViewMatrix();
+	glm::mat4 viewMatrix{ camera->getViewMatrix() };
 	m_defaultShader->setMat4("view", viewMatrix);
 
 	// Set projection matrix uniform.
-	glm::mat4 projMatrix = glm::perspective(glm::radians(45.0f),
-		aspectRatio, 0.1f, 100.0f);
+	glm::mat4 projMatrix{ glm::perspective(glm::radians(45.0f),
+		aspectRatio, 0.1f, 100.0f) };
 	m_defaultShader->setMat4("projection", projMatrix);
 	m_defaultShader->setVec3("viewPos", camera->getPosition());
 
@@ -86,9 +86,9 @@ void Renderer::render(Camera *camera, float aspectRatio)
 	m_defaultShader->setVec3("dirLight.diffuse", 1.f, 0.2f, 0.2f);
 	m_defaultShader->setVec3("dirLight.specular", 0.5f, 0.5f, 0.5f);
 
-	glm::vec3 lightColour = glm::vec3(0.2f, 0.2f, 1.0f);
-	glm::vec3 diffuseColour = lightColour * glm::vec3(0.8f);
-	glm::vec3 ambientColour = diffuseColour * glm::vec3(0.6f);
+	glm::vec3 lightColour{ glm::vec3(0.2f, 0.2f, 1.0f) };
+	glm::vec3 diffuseColour{ lightColour * glm::vec3(0.8f) };
+	glm::vec3 ambientColour{ diffuseColour * glm::vec3(0.6f) };
 	m_defaultShader->setVec3("pointLight.position", camera->getPosition());
 	m_defaultShader->setVec3("pointLight.ambient", ambientColour);
 	m_defaultShader->setVec3("pointLight.diffuse", diffuseColour);

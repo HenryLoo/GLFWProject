@@ -18,9 +18,6 @@ namespace
 		 -0.5f,  0.5f, 0.0f,
 		  0.5f,  0.5f, 0.0f,
 	};
-
-	const float SECONDS_PER_FRAME{ 1 / 60.f };
-	const int NUM_SPRITES_PER_SECOND{ 1000 };
 }
 
 SpriteRenderer::SpriteRenderer()
@@ -36,12 +33,8 @@ SpriteRenderer::SpriteRenderer()
 	m_texture = std::make_unique<Texture>("serah_idle.png");
 
 	// Prepare the data buffers.
-	m_positionData = new GLfloat[MAX_SPRITES * 4];
-	m_colourData = new GLubyte[MAX_SPRITES * 4];
-	for (int i = 0; i < MAX_SPRITES; i++) {
-		m_sprites[i].duration = -1.0f;
-		m_sprites[i].cameraDistance = -1.0f;
-	}
+	m_positionData = new GLfloat[GameEngine::MAX_ENTITIES * 4];
+	m_colourData = new GLubyte[GameEngine::MAX_ENTITIES * 4];
 
 	// Create the vertex array object and bind to it.
 	// All subsequent VBO configurations will be saved for this VAO.
@@ -64,7 +57,7 @@ SpriteRenderer::SpriteRenderer()
 	// Initialize with an empty buffer and update its values in the game loop.
 	glGenBuffers(1, &m_positionVBO);
 	glBindBuffer(GL_ARRAY_BUFFER, m_positionVBO);
-	glBufferData(GL_ARRAY_BUFFER, MAX_SPRITES * 4 * sizeof(GLfloat), NULL, GL_STREAM_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, GameEngine::MAX_ENTITIES * 4 * sizeof(GLfloat), NULL, GL_STREAM_DRAW);
 
 	// Set attribute for instance positions.
 	glEnableVertexAttribArray(1);
@@ -76,7 +69,7 @@ SpriteRenderer::SpriteRenderer()
 	// Initialize with an empty buffer and update its values in the game loop.
 	glGenBuffers(1, &m_colourVBO);
 	glBindBuffer(GL_ARRAY_BUFFER, m_colourVBO);
-	glBufferData(GL_ARRAY_BUFFER, MAX_SPRITES * 4 * sizeof(GLubyte), NULL, GL_STREAM_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, GameEngine::MAX_ENTITIES * 4 * sizeof(GLubyte), NULL, GL_STREAM_DRAW);
 
 	// Set attribute for instance colours.
 	glEnableVertexAttribArray(2);
@@ -95,80 +88,50 @@ SpriteRenderer::~SpriteRenderer()
 	glDeleteVertexArrays(1, &m_VAO);
 }
 
-void SpriteRenderer::update(float deltaTime, Camera *camera)
+void SpriteRenderer::updateSprites(const GameComponent::Physics &physics, 
+	const GameComponent::Sprite &sprite)
 {
-	// The number of new sprites to create this frame.
-	int numNewSprites = (int)(deltaTime * NUM_SPRITES_PER_SECOND);
-	if (numNewSprites > (int)(SECONDS_PER_FRAME * NUM_SPRITES_PER_SECOND))
-		numNewSprites = (int)(SECONDS_PER_FRAME * NUM_SPRITES_PER_SECOND);
+	Sprite &spr{ m_sprites[m_numSprites] };
+	spr.pos = physics.pos;
+	spr.scale = physics.scale;
+	spr.r = sprite.r;
+	spr.g = sprite.g;
+	spr.b = sprite.b;
+	spr.a = sprite.a;
+	spr.cameraDistance = sprite.cameraDistance;
+}
 
-	// Generate the new sprites with random values.
-	for (int i = 0; i < numNewSprites; i++)
-	{
-		int spriteIndex = findUnusedSprite();
-		m_sprites[spriteIndex].duration = 5.0f;
-		m_sprites[spriteIndex].pos = glm::vec3(0, 0, -20.0f);
-
-		float spread = 1.5f;
-		glm::vec3 maindir = glm::vec3(0.0f, 10.0f, 0.0f);
-		glm::vec3 randomdir = glm::vec3(
-			(rand() % 2000 - 1000.0f) / 1000.0f,
-			(rand() % 2000 - 1000.0f) / 1000.0f,
-			(rand() % 2000 - 1000.0f) / 1000.0f
-		);
-
-		m_sprites[spriteIndex].speed = maindir + randomdir * spread;
-
-		m_sprites[spriteIndex].r = rand() % 256;
-		m_sprites[spriteIndex].g = rand() % 256;
-		m_sprites[spriteIndex].b = rand() % 256;
-		m_sprites[spriteIndex].a = 255;
-
-		m_sprites[spriteIndex].scale = (rand() % 1000) / 2000.0f + 0.1f;
-	}
-
-	// Update sprite values for this frame.
+void SpriteRenderer::resetNumSprites()
+{
 	m_numSprites = 0;
-	glm::mat4 ViewMatrix = camera->getViewMatrix();
-	glm::vec3 CameraPosition = camera->getPosition();
-	for (int i = 0; i < MAX_SPRITES; i++)
+}
+
+void SpriteRenderer::incrementNumSprites()
+{
+	m_numSprites++;
+}
+
+void SpriteRenderer::updateData()
+{
+	// Sort the sprites by camera distance to maintain proper
+	// draw order.
+	std::sort(&m_sprites[0], &m_sprites[GameEngine::MAX_ENTITIES]);
+
+	// Update the data buffers with these components' values.
+	for (int i = 0; i < m_numSprites; i++)
 	{
-		Sprite &thisSprite = m_sprites[i];
+		Sprite &spr{ m_sprites[i] };
 
-		if (thisSprite.duration > 0.0f)
-		{
-			thisSprite.duration -= deltaTime;
-			if (thisSprite.duration > 0.0f)
-			{
-				// Update this sprite's values.
-				thisSprite.speed += glm::vec3(0.0f, -9.81f, 0.0f) * (float)deltaTime * 0.5f;
-				thisSprite.pos += thisSprite.speed * (float)deltaTime;
-				thisSprite.cameraDistance = glm::length2(thisSprite.pos - CameraPosition);
+		m_positionData[4 * i + 0] = spr.pos.x;
+		m_positionData[4 * i + 1] = spr.pos.y;
+		m_positionData[4 * i + 2] = spr.pos.z;
+		m_positionData[4 * i + 3] = spr.scale;
 
-				// Update the data buffers with this sprite's values.
-				m_positionData[4 * m_numSprites + 0] = thisSprite.pos.x;
-				m_positionData[4 * m_numSprites + 1] = thisSprite.pos.y;
-				m_positionData[4 * m_numSprites + 2] = thisSprite.pos.z;
-
-				m_positionData[4 * m_numSprites + 3] = thisSprite.scale;
-
-				m_colourData[4 * m_numSprites + 0] = thisSprite.r;
-				m_colourData[4 * m_numSprites + 1] = thisSprite.g;
-				m_colourData[4 * m_numSprites + 2] = thisSprite.b;
-				m_colourData[4 * m_numSprites + 3] = thisSprite.a;
-			}
-			else
-			{
-				// Set distance to camera to be minimum value so that
-				// sortSprites() will place it at the back of the array.
-				thisSprite.cameraDistance = -1.0f;
-			}
-
-			m_numSprites++;
-		}
+		m_colourData[4 * i + 0] = spr.r;
+		m_colourData[4 * i + 1] = spr.g;
+		m_colourData[4 * i + 2] = spr.b;
+		m_colourData[4 * i + 3] = spr.a;
 	}
-
-	sortSprites();
 }
 
 void SpriteRenderer::render(Camera *camera, float aspectRatio)
@@ -178,18 +141,18 @@ void SpriteRenderer::render(Camera *camera, float aspectRatio)
 	// Clear the screen
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	glm::mat4 projectionMatrix = glm::perspective(glm::radians(45.0f),
-		1024 / 768.f, 0.1f, 100.0f);
-	glm::mat4 viewMatrix = camera->getViewMatrix();
-	glm::mat4 viewProjectionMatrix = projectionMatrix * viewMatrix;
+	glm::mat4 projectionMatrix{ glm::perspective(glm::radians(45.0f),
+		1024 / 768.f, 0.1f, 100.0f) };
+	glm::mat4 viewMatrix{ camera->getViewMatrix() };
+	glm::mat4 viewProjectionMatrix{ projectionMatrix * viewMatrix };
 
 	// Update the instance buffers.
 	glBindBuffer(GL_ARRAY_BUFFER, m_positionVBO);
-	glBufferData(GL_ARRAY_BUFFER, MAX_SPRITES * 4 * sizeof(GLfloat), NULL, GL_STREAM_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, GameEngine::MAX_ENTITIES * 4 * sizeof(GLfloat), NULL, GL_STREAM_DRAW);
 	glBufferSubData(GL_ARRAY_BUFFER, 0, m_numSprites * sizeof(GLfloat) * 4, m_positionData);
 
 	glBindBuffer(GL_ARRAY_BUFFER, m_colourVBO);
-	glBufferData(GL_ARRAY_BUFFER, MAX_SPRITES * 4 * sizeof(GLubyte), NULL, GL_STREAM_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, GameEngine::MAX_ENTITIES * 4 * sizeof(GLubyte), NULL, GL_STREAM_DRAW);
 	glBufferSubData(GL_ARRAY_BUFFER, 0, m_numSprites * sizeof(GLubyte) * 4, m_colourData);
 
 	// Use the shader.
@@ -207,33 +170,4 @@ void SpriteRenderer::render(Camera *camera, float aspectRatio)
 
 	// Draw the instances.
 	glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, m_numSprites);
-}
-
-int SpriteRenderer::findUnusedSprite() {
-
-	for (int i = m_lastUsedSprite; i < MAX_SPRITES; i++)
-	{
-		if (m_sprites[i].duration < 0)
-		{
-			m_lastUsedSprite = i;
-			return i;
-		}
-	}
-
-	for (int i = 0; i < m_lastUsedSprite; i++)
-	{
-		if (m_sprites[i].duration < 0)
-		{
-			m_lastUsedSprite = i;
-			return i;
-		}
-	}
-
-	// No available sprite, so just overwrite the first one.
-	return 0;
-}
-
-void SpriteRenderer::sortSprites()
-{
-	std::sort(&m_sprites[0], &m_sprites[MAX_SPRITES]);
 }
