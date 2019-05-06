@@ -4,7 +4,19 @@
 
 #include <glm/glm.hpp>
 
+#include <vector>
+
 class Texture;
+
+struct SpriteFrame
+{
+	// The index of the sprite on the texture atlas.
+	int spriteIndex{ 0 };
+
+	// How long this frame lasts, in seconds.
+	// Set to -1 if the frame lasts indefinitely.
+	float duration{ -1.f };
+};
 
 namespace GameComponent
 {
@@ -45,6 +57,15 @@ namespace GameComponent
 		// Determines how long this sprite has left to live, in seconds.
 		// If the value is < 0, then this sprite is dead.
 		float duration{ -1 };
+		bool hasDuration{ true };
+
+		// Hold all frames for this sprite.
+		std::vector<SpriteFrame> frames{ SpriteFrame{} };
+		int currentFrame{ 0 };
+		float currentFrameTime{ 0.f };
+
+		// Flag for if the sprite animation is looping.
+		bool isLooping{ false };
 
 		// Distance from the sprite to the camera.
 		float cameraDistance{ -1 };

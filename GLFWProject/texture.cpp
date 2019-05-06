@@ -53,3 +53,8 @@ void Texture::bind()
 {
 	glBindTexture(GL_TEXTURE_2D, m_id);
 }
+
+glm::vec2 Texture::getSize() const
+{
+	return glm::vec2(m_width, m_height);
+}

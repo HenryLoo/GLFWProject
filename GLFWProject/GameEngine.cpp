@@ -79,6 +79,8 @@ GameEngine::~GameEngine()
 
 void GameEngine::start(SpriteRenderer *renderer)
 {
+	//createPlayer();
+
 	// The game loop.
 	while (!glfwWindowShouldClose(m_window))
 	{
@@ -214,8 +216,9 @@ void GameEngine::createNewEntities()
 	for (int i = 0; i < numNewEntities; i++)
 	{
 		int entityIndex{ findUnusedEntity() };
-		m_compSprites[entityIndex].duration = 5.0f;
-		m_compPhysics[entityIndex].pos = glm::vec3(0, 0, -20.0f);
+
+		GameComponent::Physics &phys = m_compPhysics[entityIndex];
+		phys.pos = glm::vec3(0, 5, -20.0f);
 
 		float spread{ 1.5f };
 		glm::vec3 mainDir{ glm::vec3(0.0f, 10.0f, 0.0f) };
@@ -225,18 +228,70 @@ void GameEngine::createNewEntities()
 			(rand() % 2000 - 1000.0f) / 1000.0f
 		) };
 
-		m_compPhysics[entityIndex].speed = mainDir + randomDir * spread;
+		phys.speed = mainDir + randomDir * spread;
+		phys.scale = (rand() % 1000) / 2000.0f + 0.1f;
 
-		m_compSprites[entityIndex].r = rand() % 256;
-		m_compSprites[entityIndex].g = rand() % 256;
-		m_compSprites[entityIndex].b = rand() % 256;
-		m_compSprites[entityIndex].a = 255;
+		GameComponent::Sprite &spr = m_compSprites[entityIndex];
+		spr.duration = 5.0f;
+		spr.r = rand() % 256;
+		spr.g = rand() % 256;
+		spr.b = rand() % 256;
+		spr.a = 255;
 
-		m_compPhysics[entityIndex].scale = (rand() % 1000) / 2000.0f + 0.1f;
+		spr.isLooping = true;
+		spr.frames = {
+			{20, 0.07f},
+			{21, 0.07f},
+			{22, 0.07f},
+			{23, 0.07f},
+			{24, 0.07f},
+			{25, 0.07f},
+			{26, 0.07f},
+			{27, 0.07f},
+			{28, 0.07f},
+			{29, 0.07f},
+		};
 
 		GameComponent::addComponent(m_entities[entityIndex], 
 			GameComponent::ComponentType::COMPONENT_PHYSICS);
 		GameComponent::addComponent(m_entities[entityIndex],
 			GameComponent::ComponentType::COMPONENT_SPRITE);
 	}
+}
+
+void GameEngine::createPlayer()
+{
+	int entityIndex{ findUnusedEntity() };
+
+	GameComponent::Physics &phys = m_compPhysics[entityIndex];
+	phys.pos = glm::vec3(0.f, 5.f, -5.f);
+	phys.speed = glm::vec3(0.f);
+	phys.scale = 1.0f;
+
+	GameComponent::Sprite &spr = m_compSprites[entityIndex];
+	spr.r = 255;
+	spr.g = 255;
+	spr.b = 255;
+	spr.a = 255;
+	spr.hasDuration = false;
+	spr.isLooping = true;
+
+	// TODO: replace hard-coded frames.
+	spr.frames = {
+		{20, 0.07f},
+		{21, 0.07f},
+		{22, 0.07f},
+		{23, 0.07f},
+		{24, 0.07f},
+		{25, 0.07f},
+		{26, 0.07f},
+		{27, 0.07f},
+		{28, 0.07f},
+		{29, 0.07f},
+	};
+
+	GameComponent::addComponent(m_entities[entityIndex],
+		GameComponent::ComponentType::COMPONENT_PHYSICS);
+	GameComponent::addComponent(m_entities[entityIndex],
+		GameComponent::ComponentType::COMPONENT_SPRITE);
 }

@@ -3,6 +3,7 @@
 #define Texture_H
 
 #include <glad/glad.h>
+#include <glm/glm.hpp>
 
 #include <string>
 
@@ -14,6 +15,9 @@ public:
 
 	// Bind to this texture.
 	void bind();
+
+	// Get the dimensions of the texture.
+	glm::vec2 getSize() const;
 
 private:
 	// This texture's id.

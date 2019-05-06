@@ -30,11 +30,12 @@ SpriteRenderer::SpriteRenderer()
 
 	// TODO: replace these hardcoded resources.
 	m_spriteShader = std::make_unique<Shader>("sprite.vs", "sprite.fs");
-	m_texture = std::make_unique<Texture>("serah_idle.png");
+	m_texture = std::make_unique<Texture>("serah_sheet.png");
 
 	// Prepare the data buffers.
 	m_positionData = new GLfloat[GameEngine::MAX_ENTITIES * 4];
 	m_colourData = new GLubyte[GameEngine::MAX_ENTITIES * 4];
+	m_texCoordsData = new GLfloat[GameEngine::MAX_ENTITIES * 4];
 
 	// Create the vertex array object and bind to it.
 	// All subsequent VBO configurations will be saved for this VAO.
@@ -75,15 +76,30 @@ SpriteRenderer::SpriteRenderer()
 	glEnableVertexAttribArray(2);
 	glVertexAttribPointer(2, 4, GL_UNSIGNED_BYTE, GL_TRUE, 0, (void *)0);
 	glVertexAttribDivisor(2, 1);
+
+	// Create the VBO for instance texture coordinates.
+	// Each vertex holds 4 values: u, v of the top-left texture point, 
+	// and the normalized width, height of the clip size.
+	// Initialize with an empty buffer and update its values in the game loop.
+	glGenBuffers(1, &m_texCoordsVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, m_texCoordsVBO);
+	glBufferData(GL_ARRAY_BUFFER, GameEngine::MAX_ENTITIES * 4 * sizeof(GLfloat), NULL, GL_STREAM_DRAW);
+
+	// Set attribute for instance positions.
+	glEnableVertexAttribArray(3);
+	glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, 0, (void *)0);
+	glVertexAttribDivisor(3, 1);
 }
 
 SpriteRenderer::~SpriteRenderer()
 {
 	delete[] m_positionData;
 	delete[] m_colourData;
+	delete[] m_texCoordsData;
 
 	glDeleteBuffers(1, &m_colourVBO);
 	glDeleteBuffers(1, &m_positionVBO);
+	glDeleteBuffers(1, &m_texCoordsVBO);
 	glDeleteBuffers(1, &m_verticesVBO);
 	glDeleteVertexArrays(1, &m_VAO);
 }
@@ -99,6 +115,7 @@ void SpriteRenderer::updateSprites(const GameComponent::Physics &physics,
 	spr.b = sprite.b;
 	spr.a = sprite.a;
 	spr.cameraDistance = sprite.cameraDistance;
+	spr.frameIndex = sprite.frames[sprite.currentFrame].spriteIndex;
 }
 
 void SpriteRenderer::resetNumSprites()
@@ -122,15 +139,26 @@ void SpriteRenderer::updateData()
 	{
 		Sprite &spr{ m_sprites[i] };
 
-		m_positionData[4 * i + 0] = spr.pos.x;
+		m_positionData[4 * i] = spr.pos.x;
 		m_positionData[4 * i + 1] = spr.pos.y;
 		m_positionData[4 * i + 2] = spr.pos.z;
 		m_positionData[4 * i + 3] = spr.scale;
 
-		m_colourData[4 * i + 0] = spr.r;
+		m_colourData[4 * i] = spr.r;
 		m_colourData[4 * i + 1] = spr.g;
 		m_colourData[4 * i + 2] = spr.b;
 		m_colourData[4 * i + 3] = spr.a;
+
+		glm::vec2 texSize{ m_texture->getSize() };
+		glm::vec2 clipSize{ 32.f, 32.f }; // TODO: replace hard-coded clip size.
+		int spriteIndex{ spr.frameIndex };
+		int numSpritesPerRow{ static_cast<int>(glm::max(1.f, texSize.x / clipSize.x - 1)) };
+		glm::vec2 rowColIndex{ spriteIndex % numSpritesPerRow, glm::floor(spriteIndex / numSpritesPerRow) };
+
+		m_texCoordsData[4 * i] = (rowColIndex.x * clipSize.x) / texSize.x;
+		m_texCoordsData[4 * i + 1] = 1 - (clipSize.y + rowColIndex.y * clipSize.y) / texSize.y;
+		m_texCoordsData[4 * i + 2] = clipSize.x / texSize.x;
+		m_texCoordsData[4 * i + 3] = clipSize.y / texSize.y;
 	}
 }
 
@@ -154,6 +182,10 @@ void SpriteRenderer::render(Camera *camera, float aspectRatio)
 	glBindBuffer(GL_ARRAY_BUFFER, m_colourVBO);
 	glBufferData(GL_ARRAY_BUFFER, GameEngine::MAX_ENTITIES * 4 * sizeof(GLubyte), NULL, GL_STREAM_DRAW);
 	glBufferSubData(GL_ARRAY_BUFFER, 0, m_numSprites * sizeof(GLubyte) * 4, m_colourData);
+
+	glBindBuffer(GL_ARRAY_BUFFER, m_texCoordsVBO);
+	glBufferData(GL_ARRAY_BUFFER, GameEngine::MAX_ENTITIES * 4 * sizeof(GLfloat), NULL, GL_STREAM_DRAW);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, m_numSprites * sizeof(GLfloat) * 4, m_texCoordsData);
 
 	// Use the shader.
 	m_spriteShader->use();

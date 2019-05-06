@@ -49,6 +49,8 @@ private:
 	// TODO: test function for generating entities, remove this later.
 	void createNewEntities();
 
+	void createPlayer();
+
 	// The window to render to.
 	GLFWwindow *m_window{ nullptr };
 

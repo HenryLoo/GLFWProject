@@ -14,17 +14,14 @@
 // to camera distance.
 struct Sprite
 {
-	// This sprite's position.
+	// Physics components.
 	glm::vec3 pos;
-	
-	// This sprite's size.
 	float scale;
 
-	// This sprite's colour.
+	// Sprite components.
 	unsigned char r, g, b, a;
-
-	// Distance from the sprite to the camera.
-	float cameraDistance{ -1.0f };
+	int frameIndex{ 0 };
+	float cameraDistance{ -1 };
 
 	bool operator<(const Sprite &that) const
 	{
@@ -69,9 +66,10 @@ private:
 	// Data to send to the GPU.
 	GLfloat *m_positionData;
 	GLubyte *m_colourData;
+	GLfloat *m_texCoordsData;
 
 	// The vertex array object and vertex buffer object for sprite instances.
-	GLuint m_VAO, m_verticesVBO, m_positionVBO, m_colourVBO;
+	GLuint m_VAO, m_verticesVBO, m_positionVBO, m_colourVBO, m_texCoordsVBO;
 
 	// Hold all the sprites to render.
 	Sprite m_sprites[GameEngine::MAX_ENTITIES];
