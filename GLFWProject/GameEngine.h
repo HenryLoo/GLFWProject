@@ -29,6 +29,13 @@ public:
 	// Update the screen size for the renderer on the next iteration of the game loop.
 	void updateRendererSize();
 
+	// Create a new entity, given a list of component types.
+	// Return the new entity's id.
+	int createEntity(std::vector<GameComponent::ComponentType> types);
+
+	// Flag an entity for deletion.
+	void deleteEntity(int id);
+
 	// The maximum number of entities supported by the game.
 	static const int MAX_ENTITIES{ 100000 };
 
@@ -43,8 +50,8 @@ private:
 	// Render all appropriate visuals for the game loop's current iteration.
 	void render(SpriteRenderer *renderer);
 
-	// Get the index of an unused entity.
-	int findUnusedEntity();
+	// Delete all flagged entities.
+	void deleteFlaggedEntities();
 
 	// TODO: test function for generating entities, remove this later.
 	void createNewEntities();
@@ -74,8 +81,11 @@ private:
 	GameComponent::Physics m_compPhysics[MAX_ENTITIES];
 	GameComponent::Sprite m_compSprites[MAX_ENTITIES];
 
-	// Hold the index of the last used entity.
-	int m_lastUsedEntity{ 0 };
+	// Hold the number of alive entities.
+	int m_numEntities{ 0 };
+
+	// Hold the ids of all entities to delete at the end of the game loop.
+	std::vector<int> m_entitiesToDelete;
 };
 
 #endif

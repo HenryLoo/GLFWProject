@@ -81,9 +81,22 @@ void GameEngine::start(SpriteRenderer *renderer)
 {
 	//createPlayer();
 
+	double previousTime = glfwGetTime();
+	int frameCount = 0;
+
 	// The game loop.
 	while (!glfwWindowShouldClose(m_window))
 	{
+		double currentTime = glfwGetTime();
+		frameCount++;
+		if (currentTime - previousTime >= 1.0)
+		{
+			std::cout << frameCount << std::endl;
+
+			frameCount = 0;
+			previousTime = currentTime;
+		}
+
 		// If the window size was changed, update the renderer.
 		if (m_hasNewWindowSize)
 		{
@@ -148,26 +161,35 @@ void GameEngine::update(SpriteRenderer *renderer)
 
 	// Update all entities.
 	glm::vec3 cameraPos{ m_camera->getPosition() };
-	for (int i = 0; i < MAX_ENTITIES; i++)
+	for (int i = 0; i < m_numEntities; i++)
 	{
 		unsigned long &e{ m_entities[i] };
 		GameComponent::Physics &phys{ m_compPhysics[i] };
 		GameComponent::Sprite &spr{ m_compSprites[i] };
+		bool isAlive{ true };
 
 		// Update relevant components for this entity.
 		bool hasPhysics{ GameComponent::hasComponent(e, GameComponent::COMPONENT_PHYSICS) };
 		bool hasSprite{ GameComponent::hasComponent(e, GameComponent::COMPONENT_SPRITE) };
 		if (hasPhysics)
 		{
-			GameSystem::updatePhysics(m_deltaTime, phys);
+			isAlive = isAlive && GameSystem::updatePhysics(m_deltaTime, phys);
 		}
 		if (hasPhysics && hasSprite)
 		{
-			GameSystem::updateSprite(m_deltaTime, renderer, cameraPos, e, spr, phys);
+			isAlive = isAlive && GameSystem::updateSprite(m_deltaTime, renderer, cameraPos, spr, phys);
+		}
+
+		// Flag the entity for deletion if it isn't alive anymore.
+		if (!isAlive)
+		{
+			deleteEntity(i);
 		}
 	}
 
 	renderer->updateData();
+
+	deleteFlaggedEntities();
 }
 
 void GameEngine::render(SpriteRenderer *renderer)
@@ -181,29 +203,57 @@ void GameEngine::render(SpriteRenderer *renderer)
 	glfwSwapBuffers(m_window);
 }
 
-int GameEngine::findUnusedEntity() {
-
-	for (int i = m_lastUsedEntity; i < MAX_ENTITIES; i++)
+int GameEngine::createEntity(std::vector<GameComponent::ComponentType> types)
+{
+	unsigned long mask = GameComponent::COMPONENT_NONE;
+	for (auto &type : types)
 	{
-		if (m_entities[i] == 0)
-		{
-			m_lastUsedEntity = i;
-			return i;
-		}
+		GameComponent::addComponent(mask, type);
 	}
 
-	for (int i = 0; i < m_lastUsedEntity; i++)
-	{
-		if (m_entities[i] == 0)
-		{
-			m_lastUsedEntity = i;
-			return i;
-		}
-	}
+	int id = m_numEntities;
+	m_entities[id] = mask;
+	m_numEntities++;
 
-	// No available entity, so just overwrite the first one.
-	return 0;
+	return id;
 }
+
+void GameEngine::deleteEntity(int id)
+{
+	// Flag the entity to be deleted at the end of the game loop.
+	m_entitiesToDelete.push_back(id);
+}
+
+void GameEngine::deleteFlaggedEntities()
+{
+	for (int id : m_entitiesToDelete)
+	{
+		// Reset the entity and swap with the last entity to
+		// keep the entities array tightly packed.
+		int lastIndex = m_numEntities - 1;
+		unsigned long lastMask = m_entities[lastIndex];
+		m_entities[id] = lastMask;
+		m_entities[lastIndex] = GameComponent::COMPONENT_NONE;
+
+		// Swap all its components too.
+		if (GameComponent::hasComponent(lastMask, GameComponent::COMPONENT_PHYSICS))
+		{
+			m_compPhysics[id] = m_compPhysics[lastIndex];
+			m_compPhysics[lastIndex] = {};
+		}
+		if (GameComponent::hasComponent(lastMask, GameComponent::COMPONENT_SPRITE))
+		{
+			m_compSprites[id] = m_compSprites[lastIndex];
+			m_compSprites[lastIndex] = {};
+		}
+
+		m_numEntities--;
+	}
+
+	// Clear the list of flagged entities.
+	m_entitiesToDelete.clear();
+}
+
 
 void GameEngine::createNewEntities()
 {
@@ -215,7 +265,10 @@ void GameEngine::createNewEntities()
 	// Generate the new sprites with random values.
 	for (int i = 0; i < numNewEntities; i++)
 	{
-		int entityIndex{ findUnusedEntity() };
+		int entityIndex{ createEntity({ 
+			GameComponent::COMPONENT_PHYSICS,
+			GameComponent::COMPONENT_SPRITE,
+		}) };
 
 		GameComponent::Physics &phys = m_compPhysics[entityIndex];
 		phys.pos = glm::vec3(0, 5, -20.0f);
@@ -251,17 +304,15 @@ void GameEngine::createNewEntities()
 			{28, 0.07f},
 			{29, 0.07f},
 		};
-
-		GameComponent::addComponent(m_entities[entityIndex], 
-			GameComponent::ComponentType::COMPONENT_PHYSICS);
-		GameComponent::addComponent(m_entities[entityIndex],
-			GameComponent::ComponentType::COMPONENT_SPRITE);
 	}
 }
 
 void GameEngine::createPlayer()
 {
-	int entityIndex{ findUnusedEntity() };
+	int entityIndex{ createEntity({
+		GameComponent::COMPONENT_PHYSICS,
+		GameComponent::COMPONENT_SPRITE,
+	}) };
 
 	GameComponent::Physics &phys = m_compPhysics[entityIndex];
 	phys.pos = glm::vec3(0.f, 5.f, -5.f);
@@ -289,9 +340,4 @@ void GameEngine::createPlayer()
 		{28, 0.07f},
 		{29, 0.07f},
 	};
-
-	GameComponent::addComponent(m_entities[entityIndex],
-		GameComponent::ComponentType::COMPONENT_PHYSICS);
-	GameComponent::addComponent(m_entities[entityIndex],
-		GameComponent::ComponentType::COMPONENT_SPRITE);
 }

@@ -8,13 +8,15 @@ class SpriteRenderer;
 
 namespace GameSystem
 {
+	// Functions should return true if the entity is still alive.
+	// Otherwise, return false.
+
 	// Update a physics component's values
-	void updatePhysics(float deltaTime, GameComponent::Physics &physics);
+	bool updatePhysics(float deltaTime, GameComponent::Physics &physics);
 
 	// Update a sprite component's values.
-	void updateSprite(float deltaTime, SpriteRenderer *renderer, glm::vec3 cameraPos,
-		unsigned long &entityCompMask, GameComponent::Sprite &sprite, 
-		GameComponent::Physics &physics);
+	bool updateSprite(float deltaTime, SpriteRenderer *renderer, glm::vec3 cameraPos,
+		GameComponent::Sprite &sprite, GameComponent::Physics &physics);
 }
 
 #endif

@@ -1,28 +1,33 @@
 #include "GameSystem.h"
+#include "GameEngine.h"
 #include "SpriteRenderer.h"
 
 #include <glm/gtx/norm.hpp>
 
 #include <iostream>
 
-void GameSystem::updatePhysics(float deltaTime, GameComponent::Physics &physics)
+bool GameSystem::updatePhysics(float deltaTime, GameComponent::Physics &physics)
 {
 	// Update this component's values.
 	physics.speed += glm::vec3(0.0f, -3.f, 0.0f);
 	physics.speed.y = glm::max(-3.f, physics.speed.y);
 	physics.pos += physics.speed * deltaTime;
 	physics.pos.y = glm::max(0.f, physics.pos.y);
+
+	return true;
 }
 
-void GameSystem::updateSprite(float deltaTime, SpriteRenderer *renderer, 
-	glm::vec3 cameraPos, unsigned long &entityCompMask, 
-	GameComponent::Sprite &sprite, GameComponent::Physics &physics)
+bool GameSystem::updateSprite(float deltaTime, SpriteRenderer *renderer,
+	glm::vec3 cameraPos, GameComponent::Sprite &sprite, 
+	GameComponent::Physics &physics)
 {
 	// Do nothing if the sprite is time-based and the duration is over.
 	if (sprite.duration <= 0.f && sprite.hasDuration)
 	{
-		return;
+		return false;
 	}
+
+	bool isAlive{ true };
 
 	// Decrease the sprite's duration if the sprite is time-limited.
 	if (sprite.hasDuration)
@@ -68,11 +73,13 @@ void GameSystem::updateSprite(float deltaTime, SpriteRenderer *renderer,
 		// it will be placed at the back of the sprites array when sorted.
 		sprite.cameraDistance = -1.0f;
 
-		// Remove all components from the entity.
-		entityCompMask = 0;
+		// Delete the entity.
+		isAlive = false;
 	}
 
 	// Update the renderer's array of sprites.
 	renderer->updateSprites(physics, sprite);
 	renderer->incrementNumSprites();
+
+	return isAlive;
 }
