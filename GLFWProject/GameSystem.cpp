@@ -41,12 +41,12 @@ bool GameSystem::updateSprite(float deltaTime, SpriteRenderer *renderer,
 
 		// Update this sprite's animation.
 		sprite.currentFrameTime += deltaTime;
-		float frameDuration{ sprite.frames[sprite.currentFrame].duration };
+		float frameDuration{ sprite.currentAnimation.durations[sprite.currentFrame] };
 
 		// Process the next frame if the current frame is over and the 
 		// animation is not a non-looping one at its last frame.
 		if (sprite.currentFrameTime >= frameDuration &&
-			!(!sprite.isLooping && sprite.currentFrame == sprite.frames.size() - 1 ))
+			!(!sprite.isLooping && sprite.currentFrame == sprite.currentAnimation.numSprites - 1))
 		{
 			// Check if deltaTime has accumulated a value greater than the
 			// frame's duration, and then find how many frames should be
@@ -56,12 +56,12 @@ bool GameSystem::updateSprite(float deltaTime, SpriteRenderer *renderer,
 			{
 				sprite.currentFrameTime = leftoverTime;
 				sprite.currentFrame++;
-				if (sprite.currentFrame >= sprite.frames.size())
+				if (sprite.currentFrame >= sprite.currentAnimation.numSprites)
 					sprite.currentFrame = 0;
 
 				// Get how long this new frame lasts and see if there is still
 				// enough leftover time to process it.
-				frameDuration = sprite.frames[sprite.currentFrame].duration;
+				frameDuration = sprite.currentAnimation.durations[sprite.currentFrame];
 				leftoverTime -= frameDuration;
 			} while (leftoverTime >= frameDuration);
 		}

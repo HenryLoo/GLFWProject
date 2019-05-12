@@ -3,7 +3,7 @@
 #define SpriteRenderer_H
 
 #include "Shader.h"
-#include "Texture.h"
+#include "SpriteSheet.h"
 #include "GameComponent.h"
 #include "GameEngine.h"
 
@@ -20,6 +20,7 @@ struct Sprite
 
 	// Sprite components.
 	unsigned char r, g, b, a;
+	SpriteSheet *spriteSheet;
 	int frameIndex{ 0 };
 	float cameraDistance{ -1 };
 
@@ -76,9 +77,6 @@ private:
 
 	// The number of sprites to render for the current frame.
 	int m_numSprites{ 0 };
-
-	// TODO: remove this later for a more flexible implementation.
-	std::unique_ptr<Texture> m_texture;
 };
 
 #endif

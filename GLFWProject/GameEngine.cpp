@@ -69,6 +69,12 @@ GameEngine::GameEngine()
 	glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 	glfwSetCursorPosCallback(m_window, mouseCallback);
 	glfwSetWindowUserPointer(m_window, this);
+
+	// TODO: replace these hardcoded resources.
+	std::unordered_map<std::string, SpriteAnimation> anims{
+		{"run", { 20, 10, {0.07f, 0.07f, 0.07f, 0.07f, 0.07f, 0.07f, 0.07f, 0.07f, 0.07f, 0.07f} }}
+	};
+	m_texture = std::make_unique<SpriteSheet>("serah_sheet.png", anims, glm::vec2(32, 32));
 }
 
 GameEngine::~GameEngine()
@@ -79,7 +85,7 @@ GameEngine::~GameEngine()
 
 void GameEngine::start(SpriteRenderer *renderer)
 {
-	//createPlayer();
+	createPlayer();
 
 	double previousTime = glfwGetTime();
 	int frameCount = 0;
@@ -91,7 +97,7 @@ void GameEngine::start(SpriteRenderer *renderer)
 		frameCount++;
 		if (currentTime - previousTime >= 1.0)
 		{
-			std::cout << frameCount << std::endl;
+			std::cout << "FPS: " << frameCount << std::endl;
 
 			frameCount = 0;
 			previousTime = currentTime;
@@ -155,7 +161,7 @@ void GameEngine::update(SpriteRenderer *renderer)
 {
 	m_camera->update(m_deltaTime);
 
-	createNewEntities();
+	//createNewEntities();
 
 	renderer->resetNumSprites();
 
@@ -292,18 +298,20 @@ void GameEngine::createNewEntities()
 		spr.a = 255;
 
 		spr.isLooping = true;
-		spr.frames = {
-			{20, 0.07f},
-			{21, 0.07f},
-			{22, 0.07f},
-			{23, 0.07f},
-			{24, 0.07f},
-			{25, 0.07f},
-			{26, 0.07f},
-			{27, 0.07f},
-			{28, 0.07f},
-			{29, 0.07f},
-		};
+		spr.spriteSheet = m_texture.get();
+		spr.spriteSheet->getAnimation("run", spr.currentAnimation);
+		//spr.frames = {
+		//	{20, 0.07f},
+		//	{21, 0.07f},
+		//	{22, 0.07f},
+		//	{23, 0.07f},
+		//	{24, 0.07f},
+		//	{25, 0.07f},
+		//	{26, 0.07f},
+		//	{27, 0.07f},
+		//	{28, 0.07f},
+		//	{29, 0.07f},
+		//};
 	}
 }
 
@@ -328,16 +336,18 @@ void GameEngine::createPlayer()
 	spr.isLooping = true;
 
 	// TODO: replace hard-coded frames.
-	spr.frames = {
-		{20, 0.07f},
-		{21, 0.07f},
-		{22, 0.07f},
-		{23, 0.07f},
-		{24, 0.07f},
-		{25, 0.07f},
-		{26, 0.07f},
-		{27, 0.07f},
-		{28, 0.07f},
-		{29, 0.07f},
-	};
+	spr.spriteSheet = m_texture.get();
+	spr.spriteSheet->getAnimation("run", spr.currentAnimation);
+	//spr.frames = {
+	//	{20, 0.07f},
+	//	{21, 0.07f},
+	//	{22, 0.07f},
+	//	{23, 0.07f},
+	//	{24, 0.07f},
+	//	{25, 0.07f},
+	//	{26, 0.07f},
+	//	{27, 0.07f},
+	//	{28, 0.07f},
+	//	{29, 0.07f},
+	//};
 }

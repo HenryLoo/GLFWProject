@@ -30,7 +30,6 @@ SpriteRenderer::SpriteRenderer()
 
 	// TODO: replace these hardcoded resources.
 	m_spriteShader = std::make_unique<Shader>("sprite.vs", "sprite.fs");
-	m_texture = std::make_unique<Texture>("serah_sheet.png");
 
 	// Prepare the data buffers.
 	m_positionData = new GLfloat[GameEngine::MAX_ENTITIES * 4];
@@ -115,7 +114,8 @@ void SpriteRenderer::updateSprites(const GameComponent::Physics &physics,
 	spr.b = sprite.b;
 	spr.a = sprite.a;
 	spr.cameraDistance = sprite.cameraDistance;
-	spr.frameIndex = sprite.frames[sprite.currentFrame].spriteIndex;
+	spr.spriteSheet = sprite.spriteSheet;
+	spr.frameIndex = sprite.currentAnimation.sheetIndex + sprite.currentFrame;
 }
 
 void SpriteRenderer::resetNumSprites()
@@ -149,8 +149,8 @@ void SpriteRenderer::updateData()
 		m_colourData[4 * i + 2] = spr.b;
 		m_colourData[4 * i + 3] = spr.a;
 
-		glm::vec2 texSize{ m_texture->getSize() };
-		glm::vec2 clipSize{ 32.f, 32.f }; // TODO: replace hard-coded clip size.
+		glm::vec2 texSize{ spr.spriteSheet->getSize() };
+		glm::vec2 clipSize{ spr.spriteSheet->getClipSize() };
 		int spriteIndex{ spr.frameIndex };
 		int numSpritesPerRow{ static_cast<int>(glm::max(1.f, texSize.x / clipSize.x - 1)) };
 		glm::vec2 rowColIndex{ spriteIndex % numSpritesPerRow, glm::floor(spriteIndex / numSpritesPerRow) };
@@ -192,7 +192,7 @@ void SpriteRenderer::render(Camera *camera, float aspectRatio)
 
 	// Bind to the texture at texture unit 0 and set the shader's sampler to this.
 	glActiveTexture(GL_TEXTURE0);
-	m_texture->bind();
+	m_sprites[0].spriteSheet->bind(); // TODO: fix this to support multiple textures.
 	m_spriteShader->setInt("textureSampler", 0);
 
 	// Set the camera uniforms.

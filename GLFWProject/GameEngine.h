@@ -4,6 +4,7 @@
 
 #include "Camera.h"
 #include "GameComponent.h"
+#include "SpriteSheet.h"
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -86,6 +87,9 @@ private:
 
 	// Hold the ids of all entities to delete at the end of the game loop.
 	std::vector<int> m_entitiesToDelete;
+
+	// TODO: remove this later for a more flexible implementation.
+	std::unique_ptr<SpriteSheet> m_texture;
 };
 
 #endif

@@ -2,21 +2,22 @@
 #ifndef GameComponent_H
 #define GameComponent_H
 
+#include "SpriteSheet.h"
+
 #include <glm/glm.hpp>
 
+#include <string>
 #include <vector>
 
-class Texture;
-
-struct SpriteFrame
-{
-	// The index of the sprite on the texture atlas.
-	int spriteIndex{ 0 };
-
-	// How long this frame lasts, in seconds.
-	// Set to -1 if the frame lasts indefinitely.
-	float duration{ -1.f };
-};
+//struct SpriteFrame
+//{
+//	// The index of the sprite on the texture atlas.
+//	int spriteIndex{ 0 };
+//
+//	// How long this frame lasts, in seconds.
+//	// Set to -1 if the frame lasts indefinitely.
+//	float duration{ -1.f };
+//};
 
 namespace GameComponent
 {
@@ -49,7 +50,7 @@ namespace GameComponent
 	struct Sprite
 	{
 		// This sprite's texture.
-		Texture *texture;
+		SpriteSheet *spriteSheet;
 
 		// This sprite's colour.
 		unsigned char r, g, b, a;
@@ -60,7 +61,8 @@ namespace GameComponent
 		bool hasDuration{ true };
 
 		// Hold all frames for this sprite.
-		std::vector<SpriteFrame> frames{ SpriteFrame{} };
+		//std::vector<SpriteFrame> frames{ SpriteFrame{} };
+		SpriteAnimation currentAnimation;
 		int currentFrame{ 0 };
 		float currentFrameTime{ 0.f };
 
