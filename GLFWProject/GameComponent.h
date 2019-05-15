@@ -9,16 +9,6 @@
 #include <string>
 #include <vector>
 
-//struct SpriteFrame
-//{
-//	// The index of the sprite on the texture atlas.
-//	int spriteIndex{ 0 };
-//
-//	// How long this frame lasts, in seconds.
-//	// Set to -1 if the frame lasts indefinitely.
-//	float duration{ -1.f };
-//};
-
 namespace GameComponent
 {
 	// Defines the different component bitmasks, in powers of 2.
@@ -26,7 +16,8 @@ namespace GameComponent
 	{
 		COMPONENT_NONE = 0,
 		COMPONENT_PHYSICS = 1,
-		COMPONENT_SPRITE = 2
+		COMPONENT_SPRITE = 2,
+		COMPONENT_PLAYER = 4,
 	};
 
 	// Check if an entity has a component.
@@ -37,14 +28,15 @@ namespace GameComponent
 
 	struct Physics
 	{
-		// This sprite's position.
+		// This entity's position.
 		glm::vec3 pos;
 
-		// This sprite's movement speed.
+		// This entity's movement speed.
 		glm::vec3 speed;
 
-		// This sprite's physical attributes.
-		float scale, angle, weight;
+		// This entity's physical attributes.
+		float angle, weight;
+		glm::vec2 scale;
 	};
 
 	struct Sprite
@@ -77,6 +69,11 @@ namespace GameComponent
 			// Sort in reverse order : far particles drawn first.
 			return this->cameraDistance > that.cameraDistance;
 		}
+	};
+
+	struct Player
+	{
+		std::string currentState;
 	};
 }
 

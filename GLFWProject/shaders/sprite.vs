@@ -19,7 +19,7 @@ void main()
 
 	vec3 vertexPos = spritePos
         + cameraWorldRight * aVertices.x * spriteScale
-		+ cameraWorldUp * aVertices.y * spriteScale;
+		+ cameraWorldUp * aVertices.y;
 
 	// Output position of the vertex
 	gl_Position = viewProjection * vec4(vertexPos, 1.0f);

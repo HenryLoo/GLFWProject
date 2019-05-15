@@ -5,6 +5,7 @@
 #include "GameComponent.h"
 
 class SpriteRenderer;
+class InputManager;
 
 namespace GameSystem
 {
@@ -17,6 +18,10 @@ namespace GameSystem
 	// Update a sprite component's values.
 	bool updateSprite(float deltaTime, SpriteRenderer *renderer, glm::vec3 cameraPos,
 		GameComponent::Sprite &sprite, GameComponent::Physics &physics);
+
+	// Update a player component's values
+	bool updatePlayer(InputManager *input, GameComponent::Player &player, 
+		GameComponent::Physics &physics, GameComponent::Sprite &sprite);
 }
 
 #endif

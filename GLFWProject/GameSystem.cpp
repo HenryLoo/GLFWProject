@@ -1,6 +1,7 @@
 #include "GameSystem.h"
 #include "GameEngine.h"
 #include "SpriteRenderer.h"
+#include "InputManager.h"
 
 #include <glm/gtx/norm.hpp>
 
@@ -9,8 +10,8 @@
 bool GameSystem::updatePhysics(float deltaTime, GameComponent::Physics &physics)
 {
 	// Update this component's values.
-	physics.speed += glm::vec3(0.0f, -3.f, 0.0f);
-	physics.speed.y = glm::max(-3.f, physics.speed.y);
+	physics.speed += glm::vec3(0.0f, -20.f * deltaTime, 0.0f);
+	physics.speed.y = glm::max(-5.f, physics.speed.y);
 	physics.pos += physics.speed * deltaTime;
 	physics.pos.y = glm::max(0.f, physics.pos.y);
 
@@ -82,4 +83,50 @@ bool GameSystem::updateSprite(float deltaTime, SpriteRenderer *renderer,
 	renderer->incrementNumSprites();
 
 	return isAlive;
+}
+
+bool GameSystem::updatePlayer(InputManager *input, 
+	GameComponent::Player &player, GameComponent::Physics &physics, 
+	GameComponent::Sprite &sprite)
+{
+	bool isRunningLeft{ input->isKeyPressing(INPUT_LEFT) };
+	bool isRunningRight{ input->isKeyPressing(INPUT_RIGHT) };
+	bool isRunning{ isRunningLeft != isRunningRight };
+	std::string state{ "idle" };
+
+	// Only one running key is pressed.
+	float speed = 0.f;
+	float dir = physics.scale.x;
+	if (isRunning)
+	{
+		state = "run";
+		speed = 4.f;
+
+		if (isRunningLeft)
+		{
+			speed *= -1;
+			dir = -glm::abs(dir);
+		}
+		else if (isRunningRight)
+		{
+			dir = glm::abs(dir);
+		}
+	}
+	physics.speed.x = speed;
+	physics.scale.x = dir;
+
+	// Handle jumping.
+	if (input->isKeyPressed(INPUT_JUMP))
+	{
+		physics.speed.y = 10.f;
+	}
+
+	// Change the sprite's state if it is a different one.
+	if (player.currentState != state)
+	{
+		player.currentState = state;
+		sprite.spriteSheet->setAnimation(state, sprite);
+	}
+
+	return true;
 }

@@ -7,6 +7,11 @@
 #include <unordered_map>
 #include <vector>
 
+namespace GameComponent
+{
+	struct Sprite;
+}
+
 struct SpriteAnimation
 {
 	// The index of this animation's first frame on the sprite sheet.
@@ -31,8 +36,8 @@ public:
 	glm::vec2 getClipSize() const;
 
 	// Find animation corresponding to the given label and output it to the
-	// given SpriteAnimation reference.
-	void getAnimation(const std::string &label, SpriteAnimation &output) const;
+	// given SpriteComponent reference.
+	void setAnimation(const std::string &label, GameComponent::Sprite &output) const;
 
 private:
 	// The width and height of a sprite on the sheet.

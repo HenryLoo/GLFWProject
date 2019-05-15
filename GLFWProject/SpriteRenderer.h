@@ -16,7 +16,7 @@ struct Sprite
 {
 	// Physics components.
 	glm::vec3 pos;
-	float scale;
+	glm::vec2 scale;
 
 	// Sprite components.
 	unsigned char r, g, b, a;

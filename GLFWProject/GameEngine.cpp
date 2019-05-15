@@ -2,6 +2,7 @@
 #include "SpriteRenderer.h"
 #include "Camera.h"
 #include "GameSystem.h"
+#include "InputManager.h"
 
 #include <algorithm>
 #include <iostream>
@@ -17,11 +18,11 @@ namespace
 		game->updateRendererSize();
 	}
 
-	void mouseCallback(GLFWwindow *window, double xpos, double ypos)
-	{
-		GameEngine *game{ (GameEngine *)glfwGetWindowUserPointer(window) };
-		game->updateCameraLook(glm::vec2(xpos, ypos));
-	}
+	//void mouseCallback(GLFWwindow *window, double xpos, double ypos)
+	//{
+	//	GameEngine *game{ (GameEngine *)glfwGetWindowUserPointer(window) };
+	//	game->updateCameraLook(glm::vec2(xpos, ypos));
+	//}
 
 	// TODO: remove these later.
 	const float SECONDS_PER_FRAME{ 1 / 60.f };
@@ -66,13 +67,14 @@ GameEngine::GameEngine()
 	m_camera = std::make_unique<Camera>();
 
 	// Set the callback function for listening to mouse inputs.
-	glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-	glfwSetCursorPosCallback(m_window, mouseCallback);
-	glfwSetWindowUserPointer(m_window, this);
+	//glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+	//glfwSetCursorPosCallback(m_window, mouseCallback);
+	//glfwSetWindowUserPointer(m_window, this);
 
 	// TODO: replace these hardcoded resources.
 	std::unordered_map<std::string, SpriteAnimation> anims{
-		{"run", { 20, 10, {0.07f, 0.07f, 0.07f, 0.07f, 0.07f, 0.07f, 0.07f, 0.07f, 0.07f, 0.07f} }}
+		{"idle", { 0, 8, {3.f, 0.07f, 0.07f, 0.07f, 0.07f, 1.f, 0.07f, 0.07f}}},
+		{"run", { 10, 10, {0.07f, 0.07f, 0.07f, 0.07f, 0.07f, 0.07f, 0.07f, 0.07f, 0.07f, 0.07f} }}
 	};
 	m_texture = std::make_unique<SpriteSheet>("serah_sheet.png", anims, glm::vec2(32, 32));
 }
@@ -83,7 +85,7 @@ GameEngine::~GameEngine()
 	glfwTerminate();
 }
 
-void GameEngine::start(SpriteRenderer *renderer)
+void GameEngine::start(SpriteRenderer *renderer, InputManager *input)
 {
 	createPlayer();
 
@@ -117,10 +119,12 @@ void GameEngine::start(SpriteRenderer *renderer)
 		m_lastFrame = currentFrame;
 
 		// Handle user inputs.
-		processInput();
+		input->processInput(m_window);
+		if (input->isKeyPressed(INPUT_CANCEL))
+			glfwSetWindowShouldClose(m_window, true);
 
 		// Update values.
-		update(renderer);
+		update(renderer, input);
 
 		// Call rendering functions.
 		render(renderer);
@@ -137,27 +141,27 @@ void GameEngine::updateRendererSize()
 	m_hasNewWindowSize = true;
 }
 
-void GameEngine::processInput()
-{
-	// Poll IO events.
-	glfwPollEvents();
+//void GameEngine::processInput()
+//{
+//	// Poll IO events.
+//	glfwPollEvents();
+//
+//	if (glfwGetKey(m_window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+//		glfwSetWindowShouldClose(m_window, true);
+//
+//	// Move the camera.
+//	if (glfwGetKey(m_window, GLFW_KEY_W) == GLFW_PRESS)
+//		m_camera->move(Camera::Direction::Forward);
+//	if (glfwGetKey(m_window, GLFW_KEY_S) == GLFW_PRESS)
+//		m_camera->move(Camera::Direction::Backward);
+//	if (glfwGetKey(m_window, GLFW_KEY_A) == GLFW_PRESS)
+//		m_camera->move(Camera::Direction::Left);
+//	if (glfwGetKey(m_window, GLFW_KEY_D) == GLFW_PRESS)
+//		m_camera->move(Camera::Direction::Right);
+//
+//}
 
-	if (glfwGetKey(m_window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-		glfwSetWindowShouldClose(m_window, true);
-
-	// Move the camera.
-	if (glfwGetKey(m_window, GLFW_KEY_W) == GLFW_PRESS)
-		m_camera->move(Camera::Direction::Forward);
-	if (glfwGetKey(m_window, GLFW_KEY_S) == GLFW_PRESS)
-		m_camera->move(Camera::Direction::Backward);
-	if (glfwGetKey(m_window, GLFW_KEY_A) == GLFW_PRESS)
-		m_camera->move(Camera::Direction::Left);
-	if (glfwGetKey(m_window, GLFW_KEY_D) == GLFW_PRESS)
-		m_camera->move(Camera::Direction::Right);
-
-}
-
-void GameEngine::update(SpriteRenderer *renderer)
+void GameEngine::update(SpriteRenderer *renderer, InputManager *input)
 {
 	m_camera->update(m_deltaTime);
 
@@ -167,6 +171,7 @@ void GameEngine::update(SpriteRenderer *renderer)
 
 	// Update all entities.
 	glm::vec3 cameraPos{ m_camera->getPosition() };
+	GameComponent::Player &player{ m_compPlayer };
 	for (int i = 0; i < m_numEntities; i++)
 	{
 		unsigned long &e{ m_entities[i] };
@@ -177,13 +182,18 @@ void GameEngine::update(SpriteRenderer *renderer)
 		// Update relevant components for this entity.
 		bool hasPhysics{ GameComponent::hasComponent(e, GameComponent::COMPONENT_PHYSICS) };
 		bool hasSprite{ GameComponent::hasComponent(e, GameComponent::COMPONENT_SPRITE) };
-		if (hasPhysics)
+		bool hasPlayer{ GameComponent::hasComponent(e, GameComponent::COMPONENT_PLAYER) };
+		if (isAlive && hasPhysics)
 		{
 			isAlive = isAlive && GameSystem::updatePhysics(m_deltaTime, phys);
 		}
-		if (hasPhysics && hasSprite)
+		if (isAlive && hasPhysics && hasSprite)
 		{
 			isAlive = isAlive && GameSystem::updateSprite(m_deltaTime, renderer, cameraPos, spr, phys);
+		}
+		if (isAlive && hasPlayer && hasPhysics && hasSprite)
+		{
+			isAlive = isAlive && GameSystem::updatePlayer(input, player, phys, spr);
 		}
 
 		// Flag the entity for deletion if it isn't alive anymore.
@@ -252,6 +262,10 @@ void GameEngine::deleteFlaggedEntities()
 			m_compSprites[id] = m_compSprites[lastIndex];
 			m_compSprites[lastIndex] = {};
 		}
+		if (GameComponent::hasComponent(lastMask, GameComponent::COMPONENT_PLAYER))
+		{
+			m_compPlayer = {};
+		}
 
 		m_numEntities--;
 	}
@@ -288,7 +302,7 @@ void GameEngine::createNewEntities()
 		) };
 
 		phys.speed = mainDir + randomDir * spread;
-		phys.scale = (rand() % 1000) / 2000.0f + 0.1f;
+		phys.scale = glm::vec2((rand() % 1000) / 2000.0f + 0.1f);
 
 		GameComponent::Sprite &spr = m_compSprites[entityIndex];
 		spr.duration = 5.0f;
@@ -299,7 +313,7 @@ void GameEngine::createNewEntities()
 
 		spr.isLooping = true;
 		spr.spriteSheet = m_texture.get();
-		spr.spriteSheet->getAnimation("run", spr.currentAnimation);
+		spr.spriteSheet->setAnimation("run", spr);
 		//spr.frames = {
 		//	{20, 0.07f},
 		//	{21, 0.07f},
@@ -320,12 +334,13 @@ void GameEngine::createPlayer()
 	int entityIndex{ createEntity({
 		GameComponent::COMPONENT_PHYSICS,
 		GameComponent::COMPONENT_SPRITE,
+		GameComponent::COMPONENT_PLAYER,
 	}) };
 
 	GameComponent::Physics &phys = m_compPhysics[entityIndex];
 	phys.pos = glm::vec3(0.f, 5.f, -5.f);
 	phys.speed = glm::vec3(0.f);
-	phys.scale = 1.0f;
+	phys.scale = glm::vec2(1.f);
 
 	GameComponent::Sprite &spr = m_compSprites[entityIndex];
 	spr.r = 255;
@@ -337,7 +352,7 @@ void GameEngine::createPlayer()
 
 	// TODO: replace hard-coded frames.
 	spr.spriteSheet = m_texture.get();
-	spr.spriteSheet->getAnimation("run", spr.currentAnimation);
+	spr.spriteSheet->setAnimation("idle", spr);
 	//spr.frames = {
 	//	{20, 0.07f},
 	//	{21, 0.07f},

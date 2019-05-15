@@ -142,7 +142,7 @@ void SpriteRenderer::updateData()
 		m_positionData[4 * i] = spr.pos.x;
 		m_positionData[4 * i + 1] = spr.pos.y;
 		m_positionData[4 * i + 2] = spr.pos.z;
-		m_positionData[4 * i + 3] = spr.scale;
+		m_positionData[4 * i + 3] = spr.scale.x;
 
 		m_colourData[4 * i] = spr.r;
 		m_colourData[4 * i + 1] = spr.g;

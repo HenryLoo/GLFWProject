@@ -13,6 +13,7 @@
 
 class Renderer;
 class SpriteRenderer;
+class InputManager;
 
 class GameEngine
 {
@@ -22,7 +23,7 @@ public:
 
 	// Start the game loop.
 	// The function will only return when the game ends.
-	void start(SpriteRenderer *renderer);
+	void start(SpriteRenderer *renderer, InputManager *input);
 
 	// Update the camera to look at a position on the screen.
 	void updateCameraLook(glm::vec2 screenPos);
@@ -46,7 +47,7 @@ private:
 	void processInput();
 
 	// Update all appropriate values for the game loop's current iteration.
-	void update(SpriteRenderer *renderer);
+	void update(SpriteRenderer *renderer, InputManager *input);
 
 	// Render all appropriate visuals for the game loop's current iteration.
 	void render(SpriteRenderer *renderer);
@@ -81,6 +82,7 @@ private:
 	// Hold components for each entity.
 	GameComponent::Physics m_compPhysics[MAX_ENTITIES];
 	GameComponent::Sprite m_compSprites[MAX_ENTITIES];
+	GameComponent::Player m_compPlayer; // Only one player.
 
 	// Hold the number of alive entities.
 	int m_numEntities{ 0 };
