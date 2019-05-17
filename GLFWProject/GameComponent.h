@@ -35,7 +35,7 @@ namespace GameComponent
 		glm::vec3 speed;
 
 		// This entity's physical attributes.
-		float angle, weight;
+		float rotation, weight;
 		glm::vec2 scale;
 	};
 

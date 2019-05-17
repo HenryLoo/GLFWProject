@@ -17,6 +17,7 @@ struct Sprite
 	// Physics components.
 	glm::vec3 pos;
 	glm::vec2 scale;
+	float rotation;
 
 	// Sprite components.
 	unsigned char r, g, b, a;
@@ -63,14 +64,17 @@ public:
 private:
 	// Shaders to render with.
 	std::unique_ptr<Shader> m_spriteShader;
+	std::unique_ptr<Shader> m_roomShader;
 
 	// Data to send to the GPU.
 	GLfloat *m_positionData;
 	GLubyte *m_colourData;
 	GLfloat *m_texCoordsData;
+	GLfloat *m_transformData;
 
 	// The vertex array object and vertex buffer object for sprite instances.
-	GLuint m_VAO, m_verticesVBO, m_positionVBO, m_colourVBO, m_texCoordsVBO;
+	GLuint m_VAO, m_verticesVBO, m_positionVBO, m_colourVBO, 
+		m_texCoordsVBO, m_transformVBO;
 
 	// Hold all the sprites to render.
 	Sprite m_sprites[GameEngine::MAX_ENTITIES];

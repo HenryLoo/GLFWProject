@@ -30,11 +30,13 @@ SpriteRenderer::SpriteRenderer()
 
 	// TODO: replace these hardcoded resources.
 	m_spriteShader = std::make_unique<Shader>("sprite.vs", "sprite.fs");
+	m_roomShader = std::make_unique<Shader>("room.vs", "room.fs");
 
 	// Prepare the data buffers.
-	m_positionData = new GLfloat[GameEngine::MAX_ENTITIES * 4];
+	m_positionData = new GLfloat[GameEngine::MAX_ENTITIES * 3];
 	m_colourData = new GLubyte[GameEngine::MAX_ENTITIES * 4];
 	m_texCoordsData = new GLfloat[GameEngine::MAX_ENTITIES * 4];
+	m_transformData = new GLfloat[GameEngine::MAX_ENTITIES * 3];
 
 	// Create the vertex array object and bind to it.
 	// All subsequent VBO configurations will be saved for this VAO.
@@ -53,15 +55,15 @@ SpriteRenderer::SpriteRenderer()
 	glVertexAttribDivisor(0, 0);
 
 	// Create the VBO for instance positions.
-	// Each vertex holds 4 values: x, y, z, scale.
+	// Each vertex holds 3 values: x, y, z.
 	// Initialize with an empty buffer and update its values in the game loop.
 	glGenBuffers(1, &m_positionVBO);
 	glBindBuffer(GL_ARRAY_BUFFER, m_positionVBO);
-	glBufferData(GL_ARRAY_BUFFER, GameEngine::MAX_ENTITIES * 4 * sizeof(GLfloat), NULL, GL_STREAM_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, GameEngine::MAX_ENTITIES * 3 * sizeof(GLfloat), NULL, GL_STREAM_DRAW);
 
 	// Set attribute for instance positions.
 	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 0, (void *)0);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, (void *)0);
 	glVertexAttribDivisor(1, 1);
 
 	// Create the VBO for instance colours.
@@ -84,10 +86,23 @@ SpriteRenderer::SpriteRenderer()
 	glBindBuffer(GL_ARRAY_BUFFER, m_texCoordsVBO);
 	glBufferData(GL_ARRAY_BUFFER, GameEngine::MAX_ENTITIES * 4 * sizeof(GLfloat), NULL, GL_STREAM_DRAW);
 
-	// Set attribute for instance positions.
+	// Set attribute for instance texture coordinates.
 	glEnableVertexAttribArray(3);
 	glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, 0, (void *)0);
 	glVertexAttribDivisor(3, 1);
+
+	// Create the VBO for instance transforms.
+	// Each vertex holds 3 values: scaleX, scaleY, rotation.
+	// The scale values are in absolute pixels.
+	// Initialize with an empty buffer and update its values in the game loop.
+	glGenBuffers(1, &m_transformVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, m_transformVBO);
+	glBufferData(GL_ARRAY_BUFFER, GameEngine::MAX_ENTITIES * 3 * sizeof(GLfloat), NULL, GL_STREAM_DRAW);
+
+	// Set attribute for instance transforms.
+	glEnableVertexAttribArray(4);
+	glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, 0, (void *)0);
+	glVertexAttribDivisor(4, 1);
 }
 
 SpriteRenderer::~SpriteRenderer()
@@ -95,10 +110,12 @@ SpriteRenderer::~SpriteRenderer()
 	delete[] m_positionData;
 	delete[] m_colourData;
 	delete[] m_texCoordsData;
+	delete[] m_transformData;
 
 	glDeleteBuffers(1, &m_colourVBO);
 	glDeleteBuffers(1, &m_positionVBO);
 	glDeleteBuffers(1, &m_texCoordsVBO);
+	glDeleteBuffers(1, &m_transformVBO);
 	glDeleteBuffers(1, &m_verticesVBO);
 	glDeleteVertexArrays(1, &m_VAO);
 }
@@ -109,6 +126,7 @@ void SpriteRenderer::updateSprites(const GameComponent::Physics &physics,
 	Sprite &spr{ m_sprites[m_numSprites] };
 	spr.pos = physics.pos;
 	spr.scale = physics.scale;
+	spr.rotation = physics.rotation;
 	spr.r = sprite.r;
 	spr.g = sprite.g;
 	spr.b = sprite.b;
@@ -139,10 +157,9 @@ void SpriteRenderer::updateData()
 	{
 		Sprite &spr{ m_sprites[i] };
 
-		m_positionData[4 * i] = spr.pos.x;
-		m_positionData[4 * i + 1] = spr.pos.y;
-		m_positionData[4 * i + 2] = spr.pos.z;
-		m_positionData[4 * i + 3] = spr.scale.x;
+		m_positionData[3 * i] = spr.pos.x;
+		m_positionData[3 * i + 1] = spr.pos.y;
+		m_positionData[3 * i + 2] = spr.pos.z;
 
 		m_colourData[4 * i] = spr.r;
 		m_colourData[4 * i + 1] = spr.g;
@@ -159,25 +176,43 @@ void SpriteRenderer::updateData()
 		m_texCoordsData[4 * i + 1] = 1 - (clipSize.y + rowColIndex.y * clipSize.y) / texSize.y;
 		m_texCoordsData[4 * i + 2] = clipSize.x / texSize.x;
 		m_texCoordsData[4 * i + 3] = clipSize.y / texSize.y;
+
+		m_transformData[3 * i] = spr.scale.x * clipSize.x;
+		m_transformData[3 * i + 1] = spr.scale.y * clipSize.y;
+		m_transformData[3 * i + 2] = spr.rotation;
 	}
 }
 
 void SpriteRenderer::render(Camera *camera, float aspectRatio)
 {
-	glBindVertexArray(m_VAO);
-
 	// Clear the screen
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	glm::mat4 projectionMatrix{ glm::perspective(glm::radians(45.0f),
-		1024 / 768.f, 0.1f, 100.0f) };
+	//glm::mat4 projectionMatrix{ glm::perspective(glm::radians(45.0f),
+	//	1024 / 768.f, 0.1f, 100.0f) };
+
+	// Orthographic projection with origin of the coordinate space defined at
+	// the center of the screen. Negative y-axis points down.
+	glm::vec2 halfScreenSize{ 1024 / 2.f, 768 / 2.f };
+	float zoom{ 4.f };
+	glm::mat4 projectionMatrix{ glm::ortho(
+		-halfScreenSize.x / zoom, halfScreenSize.x / zoom,
+		-halfScreenSize.y / zoom, halfScreenSize.y / zoom,
+		-1000.0f, 1000.0f) };
 	glm::mat4 viewMatrix{ camera->getViewMatrix() };
 	glm::mat4 viewProjectionMatrix{ projectionMatrix * viewMatrix };
 
+	// Render the background room tiles first.
+	// This should only render the tiles that are visible in the camera.
+
+
+	// Render the entity sprites.
+	glBindVertexArray(m_VAO);
+
 	// Update the instance buffers.
 	glBindBuffer(GL_ARRAY_BUFFER, m_positionVBO);
-	glBufferData(GL_ARRAY_BUFFER, GameEngine::MAX_ENTITIES * 4 * sizeof(GLfloat), NULL, GL_STREAM_DRAW);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, m_numSprites * sizeof(GLfloat) * 4, m_positionData);
+	glBufferData(GL_ARRAY_BUFFER, GameEngine::MAX_ENTITIES * 3 * sizeof(GLfloat), NULL, GL_STREAM_DRAW);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, m_numSprites * sizeof(GLfloat) * 3, m_positionData);
 
 	glBindBuffer(GL_ARRAY_BUFFER, m_colourVBO);
 	glBufferData(GL_ARRAY_BUFFER, GameEngine::MAX_ENTITIES * 4 * sizeof(GLubyte), NULL, GL_STREAM_DRAW);
@@ -186,6 +221,10 @@ void SpriteRenderer::render(Camera *camera, float aspectRatio)
 	glBindBuffer(GL_ARRAY_BUFFER, m_texCoordsVBO);
 	glBufferData(GL_ARRAY_BUFFER, GameEngine::MAX_ENTITIES * 4 * sizeof(GLfloat), NULL, GL_STREAM_DRAW);
 	glBufferSubData(GL_ARRAY_BUFFER, 0, m_numSprites * sizeof(GLfloat) * 4, m_texCoordsData);
+
+	glBindBuffer(GL_ARRAY_BUFFER, m_transformVBO);
+	glBufferData(GL_ARRAY_BUFFER, GameEngine::MAX_ENTITIES * 3 * sizeof(GLfloat), NULL, GL_STREAM_DRAW);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, m_numSprites * sizeof(GLfloat) * 3, m_transformData);
 
 	// Use the shader.
 	m_spriteShader->use();

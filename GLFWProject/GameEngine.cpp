@@ -3,6 +3,7 @@
 #include "Camera.h"
 #include "GameSystem.h"
 #include "InputManager.h"
+#include "Room.h"
 
 #include <algorithm>
 #include <iostream>
@@ -88,6 +89,34 @@ GameEngine::~GameEngine()
 void GameEngine::start(SpriteRenderer *renderer, InputManager *input)
 {
 	createPlayer();
+
+	// TODO: replace this hard-coded room later.
+	glm::ivec2 size{ 10, 10 };
+	std::vector<TileType> tileTypes{
+		TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE,
+		TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE,
+		TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE,
+		TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE,
+		TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE,
+		TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE,
+		TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE,
+		TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE,
+		TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE,
+		TILE_WALL, TILE_WALL, TILE_WALL, TILE_WALL, TILE_WALL, TILE_WALL, TILE_WALL, TILE_WALL, TILE_WALL, TILE_WALL,
+	};
+	std::vector<unsigned int> tileSprites{
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		1, 1, 1, 1, 1, 1, 1, 1, 1, 1
+	};
+	std::unique_ptr<Room> room{ std::make_unique<Room>(size, tileTypes, tileSprites) };
 
 	double previousTime = glfwGetTime();
 	int frameCount = 0;
@@ -338,7 +367,7 @@ void GameEngine::createPlayer()
 	}) };
 
 	GameComponent::Physics &phys = m_compPhysics[entityIndex];
-	phys.pos = glm::vec3(0.f, 5.f, -5.f);
+	phys.pos = glm::vec3(0.f, 0.f, 0.f);
 	phys.speed = glm::vec3(0.f);
 	phys.scale = glm::vec2(1.f);
 
