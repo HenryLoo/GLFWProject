@@ -18,6 +18,13 @@ namespace
 		 -0.5f,  0.5f, 0.0f,
 		  0.5f,  0.5f, 0.0f,
 	};
+
+	const GLfloat ROOM_VERTICES[] = {
+		0.f, 0.f,
+		1.f, 0.f,
+		0.f, 1.f,
+		1.f, 1.f,
+	};
 }
 
 SpriteRenderer::SpriteRenderer()
@@ -103,6 +110,23 @@ SpriteRenderer::SpriteRenderer()
 	glEnableVertexAttribArray(4);
 	glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, 0, (void *)0);
 	glVertexAttribDivisor(4, 1);
+
+	// Create the vertex array object and bind to it.
+	// All subsequent VBO configurations will be saved for this VAO.
+	glGenVertexArrays(1, &m_roomVAO);
+	glBindVertexArray(m_roomVAO);
+
+	// Define the vertex data for a room quad, for the VBO.
+	glGenBuffers(1, &m_roomVertsVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, m_roomVertsVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(ROOM_VERTICES), ROOM_VERTICES, GL_STATIC_DRAW);
+
+	// Set attribute for vertices.
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, (void *)0);
+
+	// Instantiate the tileset.
+	m_tileset = std::make_unique<SpriteSheet>("tileset.png", glm::vec2(16, 16));
 }
 
 SpriteRenderer::~SpriteRenderer()
@@ -118,6 +142,9 @@ SpriteRenderer::~SpriteRenderer()
 	glDeleteBuffers(1, &m_transformVBO);
 	glDeleteBuffers(1, &m_verticesVBO);
 	glDeleteVertexArrays(1, &m_VAO);
+
+	glDeleteBuffers(1, &m_roomVertsVBO);
+	glDeleteVertexArrays(1, &m_roomVAO);
 }
 
 void SpriteRenderer::updateSprites(const GameComponent::Physics &physics, 
@@ -172,8 +199,8 @@ void SpriteRenderer::updateData()
 		int numSpritesPerRow{ static_cast<int>(glm::max(1.f, texSize.x / clipSize.x - 1)) };
 		glm::vec2 rowColIndex{ spriteIndex % numSpritesPerRow, glm::floor(spriteIndex / numSpritesPerRow) };
 
-		m_texCoordsData[4 * i] = (rowColIndex.x * clipSize.x) / texSize.x;
-		m_texCoordsData[4 * i + 1] = 1 - (clipSize.y + rowColIndex.y * clipSize.y) / texSize.y;
+		m_texCoordsData[4 * i] = rowColIndex.x * clipSize.x / texSize.x;
+		m_texCoordsData[4 * i + 1] = 1 - (rowColIndex.y + 1) * clipSize.y / texSize.y;
 		m_texCoordsData[4 * i + 2] = clipSize.x / texSize.x;
 		m_texCoordsData[4 * i + 3] = clipSize.y / texSize.y;
 
@@ -183,7 +210,7 @@ void SpriteRenderer::updateData()
 	}
 }
 
-void SpriteRenderer::render(Camera *camera, float aspectRatio)
+void SpriteRenderer::render(Camera *camera, glm::ivec2 windowSize, Room *room = nullptr)
 {
 	// Clear the screen
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -193,7 +220,7 @@ void SpriteRenderer::render(Camera *camera, float aspectRatio)
 
 	// Orthographic projection with origin of the coordinate space defined at
 	// the center of the screen. Negative y-axis points down.
-	glm::vec2 halfScreenSize{ 1024 / 2.f, 768 / 2.f };
+	glm::vec2 halfScreenSize{ windowSize.x / 2.f, windowSize.y / 2.f };
 	float zoom{ 4.f };
 	glm::mat4 projectionMatrix{ glm::ortho(
 		-halfScreenSize.x / zoom, halfScreenSize.x / zoom,
@@ -204,7 +231,33 @@ void SpriteRenderer::render(Camera *camera, float aspectRatio)
 
 	// Render the background room tiles first.
 	// This should only render the tiles that are visible in the camera.
+	if (room != nullptr)
+	{
+		glBindVertexArray(m_roomVAO);
+		m_roomShader->use();
 
+		glActiveTexture(GL_TEXTURE0);
+		m_tileset->bind();
+		glActiveTexture(GL_TEXTURE1);
+		room->getTileSprites()->bind();
+
+		// Set the room uniforms.
+		m_roomShader->setInt("tilesetTexture", 0);
+		m_roomShader->setInt("layoutTexture", 1);
+		int tileSize{ m_tileset->getClipSize().x };
+		int textureSize{ m_tileset->getSize().x };
+		int numTilesInTilesetRow{ textureSize / tileSize };
+		m_roomShader->setVec3("tileSetVals", glm::vec3(tileSize, numTilesInTilesetRow, textureSize));
+		m_roomShader->setVec2("mapSizeInTiles", room->getSize());
+
+		// Set the camera uniforms.
+		m_roomShader->setVec3("cameraWorldRight", viewMatrix[0][0], viewMatrix[1][0], viewMatrix[2][0]);
+		m_roomShader->setVec3("cameraWorldUp", viewMatrix[0][1], viewMatrix[1][1], viewMatrix[2][1]);
+		m_roomShader->setMat4("viewProjection", viewProjectionMatrix);
+
+		// Draw the room.
+		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+	}
 
 	// Render the entity sprites.
 	glBindVertexArray(m_VAO);
@@ -230,9 +283,9 @@ void SpriteRenderer::render(Camera *camera, float aspectRatio)
 	m_spriteShader->use();
 
 	// Bind to the texture at texture unit 0 and set the shader's sampler to this.
-	glActiveTexture(GL_TEXTURE0);
+	glActiveTexture(GL_TEXTURE1);
 	m_sprites[0].spriteSheet->bind(); // TODO: fix this to support multiple textures.
-	m_spriteShader->setInt("textureSampler", 0);
+	m_spriteShader->setInt("textureSampler", 1);
 
 	// Set the camera uniforms.
 	m_spriteShader->setVec3("cameraWorldRight", viewMatrix[0][0], viewMatrix[1][0], viewMatrix[2][0]);

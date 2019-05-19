@@ -9,13 +9,29 @@ Camera::Camera()
 
 }
 
-void Camera::update(float deltaTime)
+void Camera::update(float deltaTime, glm::vec3 playerPos, 
+	glm::ivec2 windowSize, glm::ivec2 roomSize)
 {
+	m_position = playerPos;
+	glm::ivec2 windowHalfSize{ windowSize / 2 };
+	glm::ivec2 roomSizePixel{ roomSize * 16 };
+
+	// Keep the camera within the room bounds.
+	if (m_position.x - windowHalfSize.x / m_zoom < 0)
+		m_position.x = windowHalfSize.x / m_zoom;
+	else if (m_position.x + windowHalfSize.x / m_zoom > roomSizePixel.x)
+		m_position.x = roomSizePixel.x - windowHalfSize.x / m_zoom;
+
+	if (m_position.y - windowHalfSize.y / m_zoom < 0)
+		m_position.y = windowHalfSize.y / m_zoom;
+	else if (m_position.y + windowHalfSize.y / m_zoom > roomSizePixel.y)
+		m_position.y = roomSizePixel.y - windowHalfSize.y / m_zoom;
+
 	// Update the camera's position by its current velocity.
-	m_position += m_velocity * deltaTime;
+	//m_position += m_velocity * deltaTime;
 
 	// Reset the velocity so that the camera only moves on input.
-	m_velocity = glm::vec3(0.f);
+	//m_velocity = glm::vec3(0.f);
 }
 
 void Camera::move(Direction direction)

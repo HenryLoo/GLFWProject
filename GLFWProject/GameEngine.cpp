@@ -45,7 +45,7 @@ GameEngine::GameEngine()
 #endif
 
 	// Create the window
-	m_window = glfwCreateWindow(1024, 768, "GLFWProject", NULL, NULL);
+	m_window = glfwCreateWindow(1280, 800, "GLFWProject", NULL, NULL);
 	if (m_window == nullptr)
 	{
 		std::cout << "Failed to create GLFW window" << std::endl;
@@ -77,21 +77,9 @@ GameEngine::GameEngine()
 		{"idle", { 0, 8, {3.f, 0.07f, 0.07f, 0.07f, 0.07f, 1.f, 0.07f, 0.07f}}},
 		{"run", { 10, 10, {0.07f, 0.07f, 0.07f, 0.07f, 0.07f, 0.07f, 0.07f, 0.07f, 0.07f, 0.07f} }}
 	};
-	m_texture = std::make_unique<SpriteSheet>("serah_sheet.png", anims, glm::vec2(32, 32));
-}
-
-GameEngine::~GameEngine()
-{
-	// Deallocate all resources and terminate GLFW.
-	glfwTerminate();
-}
-
-void GameEngine::start(SpriteRenderer *renderer, InputManager *input)
-{
+	m_texture = std::make_unique<SpriteSheet>("serah_sheet.png", anims, glm::ivec2(32, 32));
 	createPlayer();
 
-	// TODO: replace this hard-coded room later.
-	glm::ivec2 size{ 10, 10 };
 	std::vector<TileType> tileTypes{
 		TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE,
 		TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE,
@@ -104,20 +92,17 @@ void GameEngine::start(SpriteRenderer *renderer, InputManager *input)
 		TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE,
 		TILE_WALL, TILE_WALL, TILE_WALL, TILE_WALL, TILE_WALL, TILE_WALL, TILE_WALL, TILE_WALL, TILE_WALL, TILE_WALL,
 	};
-	std::vector<unsigned int> tileSprites{
-		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-		1, 1, 1, 1, 1, 1, 1, 1, 1, 1
-	};
-	std::unique_ptr<Room> room{ std::make_unique<Room>(size, tileTypes, tileSprites) };
+	m_currentRoom = std::make_unique<Room>(tileTypes, "test.png");
+}
 
+GameEngine::~GameEngine()
+{
+	// Deallocate all resources and terminate GLFW.
+	glfwTerminate();
+}
+
+void GameEngine::start(SpriteRenderer *renderer, InputManager *input)
+{
 	double previousTime = glfwGetTime();
 	int frameCount = 0;
 
@@ -138,8 +123,7 @@ void GameEngine::start(SpriteRenderer *renderer, InputManager *input)
 		if (m_hasNewWindowSize)
 		{
 			m_hasNewWindowSize = false;
-			int width, height;
-			glfwGetWindowSize(m_window, &width, &height);
+			glfwGetWindowSize(m_window, &m_windowSize.x, &m_windowSize.y);
 			//renderer->createFramebuffer(width, height);
 		}
 
@@ -192,7 +176,8 @@ void GameEngine::updateRendererSize()
 
 void GameEngine::update(SpriteRenderer *renderer, InputManager *input)
 {
-	m_camera->update(m_deltaTime);
+	m_camera->update(m_deltaTime, m_compPhysics[m_playerId].pos, m_windowSize, 
+		m_currentRoom->getSize());
 
 	//createNewEntities();
 
@@ -240,9 +225,7 @@ void GameEngine::update(SpriteRenderer *renderer, InputManager *input)
 void GameEngine::render(SpriteRenderer *renderer)
 {
 	// Call the renderer.
-	int width, height;
-	glfwGetWindowSize(m_window, &width, &height);
-	renderer->render(m_camera.get(), width / (float) height);
+	renderer->render(m_camera.get(), m_windowSize, m_currentRoom.get());
 
 	// Swap the buffers to show the rendered visuals.
 	glfwSwapBuffers(m_window);
@@ -343,35 +326,23 @@ void GameEngine::createNewEntities()
 		spr.isLooping = true;
 		spr.spriteSheet = m_texture.get();
 		spr.spriteSheet->setAnimation("run", spr);
-		//spr.frames = {
-		//	{20, 0.07f},
-		//	{21, 0.07f},
-		//	{22, 0.07f},
-		//	{23, 0.07f},
-		//	{24, 0.07f},
-		//	{25, 0.07f},
-		//	{26, 0.07f},
-		//	{27, 0.07f},
-		//	{28, 0.07f},
-		//	{29, 0.07f},
-		//};
 	}
 }
 
 void GameEngine::createPlayer()
 {
-	int entityIndex{ createEntity({
+	m_playerId = createEntity({
 		GameComponent::COMPONENT_PHYSICS,
 		GameComponent::COMPONENT_SPRITE,
 		GameComponent::COMPONENT_PLAYER,
-	}) };
+	});
 
-	GameComponent::Physics &phys = m_compPhysics[entityIndex];
-	phys.pos = glm::vec3(0.f, 0.f, 0.f);
+	GameComponent::Physics &phys = m_compPhysics[m_playerId];
+	phys.pos = glm::vec3(64.f, 256.f, 0.f);
 	phys.speed = glm::vec3(0.f);
 	phys.scale = glm::vec2(1.f);
 
-	GameComponent::Sprite &spr = m_compSprites[entityIndex];
+	GameComponent::Sprite &spr = m_compSprites[m_playerId];
 	spr.r = 255;
 	spr.g = 255;
 	spr.b = 255;
@@ -382,16 +353,4 @@ void GameEngine::createPlayer()
 	// TODO: replace hard-coded frames.
 	spr.spriteSheet = m_texture.get();
 	spr.spriteSheet->setAnimation("idle", spr);
-	//spr.frames = {
-	//	{20, 0.07f},
-	//	{21, 0.07f},
-	//	{22, 0.07f},
-	//	{23, 0.07f},
-	//	{24, 0.07f},
-	//	{25, 0.07f},
-	//	{26, 0.07f},
-	//	{27, 0.07f},
-	//	{28, 0.07f},
-	//	{29, 0.07f},
-	//};
 }

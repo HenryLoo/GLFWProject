@@ -29,11 +29,12 @@ class SpriteSheet : public Texture
 public:
 	SpriteSheet(const std::string &filePath, 
 		const std::unordered_map<std::string, SpriteAnimation> &animations,
-		glm::vec2 clipSize);
+		glm::ivec2 clipSize);
+	SpriteSheet(const std::string &filePath, glm::ivec2 clipSize);
 	~SpriteSheet();
 
 	// Get the clip size for this sprite sheet.
-	glm::vec2 getClipSize() const;
+	glm::ivec2 getClipSize() const;
 
 	// Find animation corresponding to the given label and output it to the
 	// given SpriteComponent reference.
@@ -41,7 +42,7 @@ public:
 
 private:
 	// The width and height of a sprite on the sheet.
-	glm::vec2 m_clipSize;
+	glm::ivec2 m_clipSize;
 
 	// Hold all animations on this sprite sheet.
 	// The key refers to the animation's label.

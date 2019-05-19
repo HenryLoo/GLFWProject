@@ -5,6 +5,7 @@
 #include "Camera.h"
 #include "GameComponent.h"
 #include "SpriteSheet.h"
+#include "Room.h"
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -62,6 +63,7 @@ private:
 
 	// The window to render to.
 	GLFWwindow *m_window{ nullptr };
+	glm::ivec2 m_windowSize;
 
 	// The time between the current and last frame.
 	float m_deltaTime{ 0.0f };
@@ -79,6 +81,9 @@ private:
 	// If the value is 0, then the entity is dead.
 	unsigned long m_entities[MAX_ENTITIES];
 
+	// Hold the player's entity id.
+	int m_playerId;
+
 	// Hold components for each entity.
 	GameComponent::Physics m_compPhysics[MAX_ENTITIES];
 	GameComponent::Sprite m_compSprites[MAX_ENTITIES];
@@ -92,6 +97,7 @@ private:
 
 	// TODO: remove this later for a more flexible implementation.
 	std::unique_ptr<SpriteSheet> m_texture;
+	std::unique_ptr<Room> m_currentRoom;
 };
 
 #endif

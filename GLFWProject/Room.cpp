@@ -1,30 +1,45 @@
 #include "Room.h"
+#include "Texture.h"
 
-Room::Room(glm::vec2 size, const std::vector<TileType> &tileTypes,
-	const std::vector<unsigned int> &tileSprites) :
-	m_size(size), m_tileTypes(tileTypes), m_tileSprites(tileSprites)
+Room::Room(const std::vector<TileType> &tileTypes,
+	const std::string &spritePath) :
+	m_tileTypes(tileTypes)
 {
-
+	m_tileSprites = std::make_unique<Texture>(spritePath);
 }
+
+//Room::Room(glm::vec2 size, const std::vector<TileType> &tileTypes,
+//	const std::vector<unsigned int> &tileSprites) :
+//	m_size(size), m_tileTypes(tileTypes), m_tileSprites(tileSprites)
+//{
+//
+//}
 
 Room::~Room()
 {
 
 }
 
-const glm::ivec2 &Room::getSize() const
+glm::ivec2 Room::getSize() const
 {
-	return m_size;
+	//return m_size;
+	return m_tileSprites->getSize();
 }
 
 const TileType &Room::getTileType(int x, int y) const
 {
-	int index{ x + m_size.x * y };
-	glm::clamp(index, 0, m_size.x * m_size.y);
+	glm::ivec2 size{ getSize() };
+	int index{ x + size.x * y };
+	glm::clamp(index, 0, size.x * size.y);
 	return m_tileTypes[index];
 }
 
-const std::vector<unsigned int> &Room::getTileSprites() const
+Texture *Room::getTileSprites() const
 {
-	return m_tileSprites;
+	return m_tileSprites.get();
 }
+
+//const std::vector<unsigned int> &Room::getTileSprites() const
+//{
+//	return m_tileSprites;
+//}

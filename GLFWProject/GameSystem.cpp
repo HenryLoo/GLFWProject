@@ -10,10 +10,10 @@
 bool GameSystem::updatePhysics(float deltaTime, GameComponent::Physics &physics)
 {
 	// Update this component's values.
-	physics.speed += glm::vec3(0.0f, -20.f * deltaTime, 0.0f);
-	physics.speed.y = glm::max(-5.f, physics.speed.y);
+	physics.speed += glm::vec3(0.0f, -256.f * deltaTime, 0.0f);
+	physics.speed.y = glm::max(-256.f, physics.speed.y);
 	physics.pos += physics.speed * deltaTime;
-	physics.pos.y = glm::max(0.f, physics.pos.y);
+	physics.pos.y = glm::max(48.f, physics.pos.y);
 
 	return true;
 }
@@ -100,7 +100,7 @@ bool GameSystem::updatePlayer(InputManager *input,
 	if (isRunning)
 	{
 		state = "run";
-		speed = 4.f;
+		speed = 128.f;
 
 		if (isRunningLeft)
 		{
@@ -118,7 +118,7 @@ bool GameSystem::updatePlayer(InputManager *input,
 	// Handle jumping.
 	if (input->isKeyPressed(INPUT_JUMP))
 	{
-		physics.speed.y = 10.f;
+		physics.speed.y = 256.f;
 	}
 
 	// Change the sprite's state if it is a different one.

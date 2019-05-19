@@ -3,8 +3,14 @@
 
 SpriteSheet::SpriteSheet(const std::string &filePath,
 	const std::unordered_map<std::string, SpriteAnimation> &animations,
-	glm::vec2 clipSize) :
+	glm::ivec2 clipSize) :
 	Texture(filePath), m_animations(animations), m_clipSize(clipSize)
+{
+
+}
+
+SpriteSheet::SpriteSheet(const std::string &filePath, glm::ivec2 clipSize) :
+	Texture(filePath), m_clipSize(clipSize)
 {
 
 }
@@ -14,7 +20,7 @@ SpriteSheet::~SpriteSheet()
 
 }
 
-glm::vec2 SpriteSheet::getClipSize() const
+glm::ivec2 SpriteSheet::getClipSize() const
 {
 	return m_clipSize;
 }

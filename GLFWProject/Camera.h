@@ -18,7 +18,8 @@ public:
 	Camera();
 
 	// Update the camera's values.
-	void update(float deltaTime);
+	void update(float deltaTime, glm::vec3 playerPos, 
+		glm::ivec2 windowSize, glm::ivec2 roomSize);
 
 	// Move the camera in a direction.
 	void move(Direction direction);
@@ -63,6 +64,9 @@ private:
 	// The camera's rotational values.
 	float m_yaw{ -90.0f };
 	float m_pitch{ 0.f };
+
+	// The zoom multiplier. Higher values = more zoomed in.
+	float m_zoom{ 4.f };
 };
 
 #endif

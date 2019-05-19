@@ -17,7 +17,7 @@ public:
 	void bind();
 
 	// Get the dimensions of the texture.
-	glm::vec2 getSize() const;
+	glm::ivec2 getSize() const;
 
 protected:
 	// This texture's id.

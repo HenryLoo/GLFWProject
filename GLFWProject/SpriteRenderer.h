@@ -33,6 +33,7 @@ struct Sprite
 };
 
 class Camera;
+class Room;
 
 class SpriteRenderer
 {
@@ -58,8 +59,8 @@ public:
 	// populate the data buffers with their values for the GPU.
 	void updateData();
 
-	// Render all queued meshes.
-	void render(Camera *camera, float aspectRatio);
+	// Render the current room and all queued sprites.
+	void render(Camera *camera, glm::ivec2 windowSize, Room *room);
 
 private:
 	// Shaders to render with.
@@ -81,6 +82,12 @@ private:
 
 	// The number of sprites to render for the current frame.
 	int m_numSprites{ 0 };
+
+	// The vertex array object and vertex buffer object for the room.
+	GLuint m_roomVAO, m_roomVertsVBO;
+
+	// Hold the pointer to the map tileset.
+	std::unique_ptr<SpriteSheet> m_tileset;
 };
 
 #endif
