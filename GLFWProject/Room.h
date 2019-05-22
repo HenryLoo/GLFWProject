@@ -23,35 +23,33 @@ enum TileType
 class Room
 {
 public:
-	Room(const std::vector<TileType> &tileTypes, 
-		const std::string &spritePath);
-	//Room(glm::vec2 size, const std::vector<TileType> &tileTypes,
-	//	const std::vector<unsigned int> &tileSprites);
+	Room(const std::string &roomName);
 	~Room();
 
 	// Get the size of the room.
 	glm::ivec2 getSize() const;
 
 	// Get the tile at a given x, y, in tile coordinates.
-	const TileType &getTileType(int x, int y) const;
+	const TileType &getTileType(glm::ivec2 tileCoord) const;
+
+	// Get the tile coordinates corresponding to given world coordinates.
+	const glm::ivec2 getTileCoord(glm::vec2 pos) const;
+
+	// Get the tile's world position, given its tile coordinates.
+	const glm::vec2 getTilePos(glm::ivec2 tileCoord) const;
 
 	// Get this room's tile sprites.
-	//const std::vector<unsigned int> &getTileSprites() const;
 	Texture *getTileSprites() const;
 
 	// The size of each tile, in pixels.
-	//const static int TILE_SIZE{ 32 };
+	const static int TILE_SIZE{ 16 };
 
 private:
-	// The width and height of the room, in tiles.
-	//glm::ivec2 m_size;
-
 	// Hold all the tiles in this room.
 	// Tiles are stored in row-major order, bottom-up.
 	std::vector<TileType> m_tileTypes;
 
 	// Hold each tile's index on the sprite sheet.
-	//std::vector<unsigned int> m_tileSprites;
 	std::unique_ptr<Texture> m_tileSprites;
 };
 

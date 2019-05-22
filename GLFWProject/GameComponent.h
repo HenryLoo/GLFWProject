@@ -18,6 +18,7 @@ namespace GameComponent
 		COMPONENT_PHYSICS = 1,
 		COMPONENT_SPRITE = 2,
 		COMPONENT_PLAYER = 4,
+		COMPONENT_AABB = 8,
 	};
 
 	// Check if an entity has a component.
@@ -74,6 +75,15 @@ namespace GameComponent
 	struct Player
 	{
 		std::string currentState;
+	};
+
+	struct AABB
+	{
+		// The half value of width and height.
+		glm::vec2 halfSize;
+
+		// The pixel offset from the box's origin position.
+		glm::vec2 offset;
 	};
 }
 

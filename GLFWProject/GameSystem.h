@@ -6,6 +6,7 @@
 
 class SpriteRenderer;
 class InputManager;
+class Room;
 
 namespace GameSystem
 {
@@ -22,6 +23,10 @@ namespace GameSystem
 	// Update a player component's values
 	bool updatePlayer(InputManager *input, GameComponent::Player &player, 
 		GameComponent::Physics &physics, GameComponent::Sprite &sprite);
+
+	// Update collisions using axis-aligned bounding boxes.
+	bool updateRoomCollision(float deltaTime, GameComponent::Physics &physics,
+		GameComponent::AABB &aabb, Room *room);
 }
 
 #endif

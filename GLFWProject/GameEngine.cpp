@@ -80,19 +80,7 @@ GameEngine::GameEngine()
 	m_texture = std::make_unique<SpriteSheet>("serah_sheet.png", anims, glm::ivec2(32, 32));
 	createPlayer();
 
-	std::vector<TileType> tileTypes{
-		TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE,
-		TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE,
-		TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE,
-		TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE,
-		TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE,
-		TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE,
-		TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE,
-		TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE,
-		TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE, TILE_SPACE,
-		TILE_WALL, TILE_WALL, TILE_WALL, TILE_WALL, TILE_WALL, TILE_WALL, TILE_WALL, TILE_WALL, TILE_WALL, TILE_WALL,
-	};
-	m_currentRoom = std::make_unique<Room>(tileTypes, "test.png");
+	m_currentRoom = std::make_unique<Room>("test");
 }
 
 GameEngine::~GameEngine()
@@ -191,15 +179,22 @@ void GameEngine::update(SpriteRenderer *renderer, InputManager *input)
 		unsigned long &e{ m_entities[i] };
 		GameComponent::Physics &phys{ m_compPhysics[i] };
 		GameComponent::Sprite &spr{ m_compSprites[i] };
+		GameComponent::AABB &aabb{ m_compAABBs[i] };
 		bool isAlive{ true };
 
 		// Update relevant components for this entity.
 		bool hasPhysics{ GameComponent::hasComponent(e, GameComponent::COMPONENT_PHYSICS) };
 		bool hasSprite{ GameComponent::hasComponent(e, GameComponent::COMPONENT_SPRITE) };
 		bool hasPlayer{ GameComponent::hasComponent(e, GameComponent::COMPONENT_PLAYER) };
+		bool hasAABB{ GameComponent::hasComponent(e, GameComponent::COMPONENT_AABB) };
 		if (isAlive && hasPhysics)
 		{
 			isAlive = isAlive && GameSystem::updatePhysics(m_deltaTime, phys);
+		}
+		if (isAlive && hasPhysics && hasAABB)
+		{
+			isAlive = isAlive && GameSystem::updateRoomCollision(m_deltaTime, 
+				phys, aabb, m_currentRoom.get());
 		}
 		if (isAlive && hasPhysics && hasSprite)
 		{
@@ -278,6 +273,11 @@ void GameEngine::deleteFlaggedEntities()
 		{
 			m_compPlayer = {};
 		}
+		if (GameComponent::hasComponent(lastMask, GameComponent::COMPONENT_AABB))
+		{
+			m_compAABBs[id] = m_compAABBs[lastIndex];
+			m_compAABBs[lastIndex] = {};
+		}
 
 		m_numEntities--;
 	}
@@ -335,10 +335,11 @@ void GameEngine::createPlayer()
 		GameComponent::COMPONENT_PHYSICS,
 		GameComponent::COMPONENT_SPRITE,
 		GameComponent::COMPONENT_PLAYER,
+		GameComponent::COMPONENT_AABB,
 	});
 
 	GameComponent::Physics &phys = m_compPhysics[m_playerId];
-	phys.pos = glm::vec3(64.f, 256.f, 0.f);
+	phys.pos = glm::vec3(64.f, 800.f, 0.f);
 	phys.speed = glm::vec3(0.f);
 	phys.scale = glm::vec2(1.f);
 
@@ -353,4 +354,7 @@ void GameEngine::createPlayer()
 	// TODO: replace hard-coded frames.
 	spr.spriteSheet = m_texture.get();
 	spr.spriteSheet->setAnimation("idle", spr);
+
+	GameComponent::AABB &aabb = m_compAABBs[m_playerId];
+	aabb.halfSize = glm::vec2(16, 16);
 }

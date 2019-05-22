@@ -88,6 +88,7 @@ private:
 	GameComponent::Physics m_compPhysics[MAX_ENTITIES];
 	GameComponent::Sprite m_compSprites[MAX_ENTITIES];
 	GameComponent::Player m_compPlayer; // Only one player.
+	GameComponent::AABB m_compAABBs[MAX_ENTITIES];
 
 	// Hold the number of alive entities.
 	int m_numEntities{ 0 };

@@ -1,19 +1,30 @@
 #include "Room.h"
 #include "Texture.h"
 
-Room::Room(const std::vector<TileType> &tileTypes,
-	const std::string &spritePath) :
-	m_tileTypes(tileTypes)
+#include <glm/glm.hpp>
+
+namespace
 {
-	m_tileSprites = std::make_unique<Texture>(spritePath);
+	const std::string TILES_EXT{ "_tiles.png" };
+	const std::string LAYOUT_EXT{ "_layout.png" };
 }
 
-//Room::Room(glm::vec2 size, const std::vector<TileType> &tileTypes,
-//	const std::vector<unsigned int> &tileSprites) :
-//	m_size(size), m_tileTypes(tileTypes), m_tileSprites(tileSprites)
-//{
-//
-//}
+Room::Room(const std::string &roomName)
+{
+	m_tileSprites = std::make_unique<Texture>(roomName + TILES_EXT);
+
+	// TODO: replace hard-coded walls.
+	for (int i = 0; i < 26 * 16; ++i)
+	{
+		if (i < 26 * 2)
+		{
+			m_tileTypes.push_back(TILE_WALL);
+			continue;
+		}
+
+		m_tileTypes.push_back(TILE_SPACE);
+	}
+}
 
 Room::~Room()
 {
@@ -22,24 +33,29 @@ Room::~Room()
 
 glm::ivec2 Room::getSize() const
 {
-	//return m_size;
 	return m_tileSprites->getSize();
 }
 
-const TileType &Room::getTileType(int x, int y) const
+const TileType &Room::getTileType(glm::ivec2 tileCoord) const
 {
 	glm::ivec2 size{ getSize() };
-	int index{ x + size.x * y };
-	glm::clamp(index, 0, size.x * size.y);
+	int index{ tileCoord.x + size.x * tileCoord.y };
+	index = glm::clamp(index, 0, size.x * size.y - 1);
 	return m_tileTypes[index];
+}
+
+const glm::ivec2 Room::getTileCoord(glm::vec2 pos) const
+{
+	return { floor(pos.x / TILE_SIZE), floor(pos.y / TILE_SIZE) };
+}
+
+const glm::vec2 Room::getTilePos(glm::ivec2 tileCoord) const
+{
+	return { tileCoord.x * TILE_SIZE + TILE_SIZE / 2.f, 
+		tileCoord.y * TILE_SIZE + TILE_SIZE / 2.f };
 }
 
 Texture *Room::getTileSprites() const
 {
 	return m_tileSprites.get();
 }
-
-//const std::vector<unsigned int> &Room::getTileSprites() const
-//{
-//	return m_tileSprites;
-//}

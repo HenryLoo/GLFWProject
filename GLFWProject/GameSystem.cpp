@@ -11,9 +11,8 @@ bool GameSystem::updatePhysics(float deltaTime, GameComponent::Physics &physics)
 {
 	// Update this component's values.
 	physics.speed += glm::vec3(0.0f, -256.f * deltaTime, 0.0f);
-	physics.speed.y = glm::max(-256.f, physics.speed.y);
-	physics.pos += physics.speed * deltaTime;
-	physics.pos.y = glm::max(48.f, physics.pos.y);
+	physics.speed.y = glm::max(-128.f, physics.speed.y);
+	//physics.pos += physics.speed * deltaTime;
 
 	return true;
 }
@@ -127,6 +126,75 @@ bool GameSystem::updatePlayer(InputManager *input,
 		player.currentState = state;
 		sprite.spriteSheet->setAnimation(state, sprite);
 	}
+
+	return true;
+}
+
+bool GameSystem::updateRoomCollision(float deltaTime,
+	GameComponent::Physics &physics, GameComponent::AABB &aabb, Room *room)
+{
+	glm::vec2 speed{ physics.speed.y };
+
+	// Check for vertical collisions.
+	if (speed.y != 0)
+	{
+		// Extend the halfsize of the entity to see how much distance it will
+		// cover this frame.
+		float halfSize{ aabb.halfSize.y };
+		float distY = halfSize + abs(speed.y) * deltaTime;
+		glm::ivec2 currentTile{ room->getTileCoord(physics.pos) };
+
+		// Moving down.
+		if (speed.y < 0)
+		{
+			distY *= -1;
+		}
+
+		glm::vec2 maxDistPos{ physics.pos.x, physics.pos.y + distY };
+		glm::ivec2 maxDistTile{ room->getTileCoord(maxDistPos) };
+
+		// Set up bounds for the loop.
+		glm::ivec2 tileRangeToCheck{ currentTile.y, maxDistTile.y };
+		int incrAmount{ speed.y < 0 ? -1 : 1 };
+		if (speed.y < 0)
+		{
+			tileRangeToCheck.y--;
+		}
+		else
+		{
+			halfSize *= -1;
+			tileRangeToCheck.y++;
+		}
+
+		// Check all potential collisions before applying velocity.
+		// We check in order of closest to furthest tiles.
+		bool isColliding{ false };
+		int currentTileY{ tileRangeToCheck.x };
+		while (currentTileY != tileRangeToCheck.y)
+		{
+			glm::ivec2 thisTileCoord{ currentTile.x, currentTileY };
+			TileType type{ room->getTileType(thisTileCoord) };
+			if (type == TILE_WALL)
+			{
+				float tileEdgePos{ room->getTilePos(thisTileCoord).y + Room::TILE_SIZE / 2.f };
+				physics.pos.y = tileEdgePos + halfSize;
+				isColliding = true;
+
+				// Collision was found, so there is no need to keep checking.
+				break;
+			}
+
+			currentTileY += incrAmount;
+		}
+
+		// If not colliding, then just apply velocity as usual.
+		if (!isColliding)
+		{
+			physics.pos.y += physics.speed.y * deltaTime;
+		}
+	}
+
+	physics.pos.x += physics.speed.x * deltaTime;
 
 	return true;
 }

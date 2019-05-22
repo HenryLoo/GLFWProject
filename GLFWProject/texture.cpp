@@ -18,7 +18,18 @@ Texture::Texture(const std::string &filePath)
 
 	// Load the texture from the file.
 	const std::string path{ TEXTURE_PATH + filePath };
-	unsigned char *data{ stbi_load(path.c_str(), &m_width, &m_height, &m_numChannels, 0) };
+	stbi_uc *data{ stbi_load(path.c_str(), &m_width, &m_height, &m_numChannels, 0) };
+
+	// TODO: Demonstrating getting rgba values from pixels. 
+	// Can use this to define room layouts from images. Remove later.
+	int x = 0;
+	int y = 2;
+	const stbi_uc *p{ data + (4 * (y * m_width + x)) };
+	stbi_uc r{ p[0] };
+	stbi_uc g{ p[1] };
+	stbi_uc b{ p[2] };
+	stbi_uc a{ p[3] };
+	std::cout << filePath << " " << +r << ", " << +g << ", " << +b << ", " << +a << std::endl;
 
 	if (data != nullptr)
 	{
