@@ -4,6 +4,7 @@
 #include "GameSystem.h"
 #include "InputManager.h"
 #include "Room.h"
+#include "UIRenderer.h"
 
 #include <algorithm>
 #include <iostream>
@@ -89,7 +90,7 @@ GameEngine::~GameEngine()
 	glfwTerminate();
 }
 
-void GameEngine::start(SpriteRenderer *renderer, InputManager *input)
+void GameEngine::start(SpriteRenderer *sRenderer, InputManager *input, UIRenderer *uRenderer)
 {
 	double previousTime = glfwGetTime();
 	int frameCount = 0;
@@ -120,15 +121,13 @@ void GameEngine::start(SpriteRenderer *renderer, InputManager *input)
 		m_lastFrame = currentFrame;
 
 		// Handle user inputs.
-		input->processInput(m_window);
-		if (input->isKeyPressed(INPUT_CANCEL))
-			glfwSetWindowShouldClose(m_window, true);
+		processInput(input);
 
 		// Update values.
-		update(renderer, input);
+		update(sRenderer, input, uRenderer);
 
 		// Call rendering functions.
-		render(renderer);
+		render(sRenderer, uRenderer);
 	}
 }
 
@@ -142,34 +141,28 @@ void GameEngine::updateRendererSize()
 	m_hasNewWindowSize = true;
 }
 
-//void GameEngine::processInput()
-//{
-//	// Poll IO events.
-//	glfwPollEvents();
-//
-//	if (glfwGetKey(m_window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-//		glfwSetWindowShouldClose(m_window, true);
-//
-//	// Move the camera.
-//	if (glfwGetKey(m_window, GLFW_KEY_W) == GLFW_PRESS)
-//		m_camera->move(Camera::Direction::Forward);
-//	if (glfwGetKey(m_window, GLFW_KEY_S) == GLFW_PRESS)
-//		m_camera->move(Camera::Direction::Backward);
-//	if (glfwGetKey(m_window, GLFW_KEY_A) == GLFW_PRESS)
-//		m_camera->move(Camera::Direction::Left);
-//	if (glfwGetKey(m_window, GLFW_KEY_D) == GLFW_PRESS)
-//		m_camera->move(Camera::Direction::Right);
-//
-//}
+void GameEngine::processInput(InputManager *input)
+{
+	input->processInput(m_window);
 
-void GameEngine::update(SpriteRenderer *renderer, InputManager *input)
+	// Exit game.
+	if (input->isKeyPressed(INPUT_CANCEL))
+		glfwSetWindowShouldClose(m_window, true);
+
+	// Toggle debug mode.
+	if (input->isKeyPressed(INPUT_DEBUG))
+		m_isDebugMode = !m_isDebugMode;
+}
+
+void GameEngine::update(SpriteRenderer *sRenderer, InputManager *input, UIRenderer *uRenderer)
 {
 	m_camera->update(m_deltaTime, m_compPhysics[m_playerId].pos, m_windowSize, 
 		m_currentRoom->getSize());
 
 	//createNewEntities();
 
-	renderer->resetNumSprites();
+	sRenderer->resetNumSprites();
+	uRenderer->resetNumBoxes();
 
 	// Update all entities.
 	glm::vec3 cameraPos{ m_camera->getPosition() };
@@ -195,10 +188,14 @@ void GameEngine::update(SpriteRenderer *renderer, InputManager *input)
 		{
 			isAlive = isAlive && GameSystem::updateRoomCollision(m_deltaTime, 
 				phys, aabb, m_currentRoom.get());
+
+			// Draw hit boxes if debug modes is on.
+			if (m_isDebugMode)
+				uRenderer->addBox(phys, aabb, 0, 255, 0, 100);
 		}
 		if (isAlive && hasPhysics && hasSprite)
 		{
-			isAlive = isAlive && GameSystem::updateSprite(m_deltaTime, renderer, cameraPos, spr, phys);
+			isAlive = isAlive && GameSystem::updateSprite(m_deltaTime, sRenderer, cameraPos, spr, phys);
 		}
 		if (isAlive && hasPlayer && hasPhysics && hasSprite)
 		{
@@ -212,15 +209,19 @@ void GameEngine::update(SpriteRenderer *renderer, InputManager *input)
 		}
 	}
 
-	renderer->updateData();
+	//sRenderer->updateData();
 
 	deleteFlaggedEntities();
 }
 
-void GameEngine::render(SpriteRenderer *renderer)
+void GameEngine::render(SpriteRenderer *sRenderer, UIRenderer *uRenderer)
 {
 	// Call the renderer.
-	renderer->render(m_camera.get(), m_windowSize, m_currentRoom.get());
+	sRenderer->render(m_camera.get(), m_windowSize, m_currentRoom.get());
+
+	// Draw hit boxes if debug modes is on.
+	if (m_isDebugMode)
+		uRenderer->render(m_camera.get(), m_windowSize);
 
 	// Swap the buffers to show the rendered visuals.
 	glfwSwapBuffers(m_window);

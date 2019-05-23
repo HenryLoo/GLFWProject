@@ -147,20 +147,48 @@ SpriteRenderer::~SpriteRenderer()
 	glDeleteVertexArrays(1, &m_roomVAO);
 }
 
-void SpriteRenderer::updateSprites(const GameComponent::Physics &physics, 
+void SpriteRenderer::addSprite(const GameComponent::Physics &physics, 
 	const GameComponent::Sprite &sprite)
 {
-	Sprite &spr{ m_sprites[m_numSprites] };
-	spr.pos = physics.pos;
-	spr.scale = physics.scale;
-	spr.rotation = physics.rotation;
-	spr.r = sprite.r;
-	spr.g = sprite.g;
-	spr.b = sprite.b;
-	spr.a = sprite.a;
-	spr.cameraDistance = sprite.cameraDistance;
-	spr.spriteSheet = sprite.spriteSheet;
-	spr.frameIndex = sprite.currentAnimation.sheetIndex + sprite.currentFrame;
+	//Sprite &spr{ m_sprites[m_numSprites] };
+	//spr.pos = physics.pos;
+	//spr.scale = physics.scale;
+	//spr.rotation = physics.rotation;
+	//spr.r = sprite.r;
+	//spr.g = sprite.g;
+	//spr.b = sprite.b;
+	//spr.a = sprite.a;
+	//spr.cameraDistance = sprite.cameraDistance;
+	//spr.spriteSheet = sprite.spriteSheet;
+	//spr.frameIndex = sprite.currentAnimation.sheetIndex + sprite.currentFrame;
+	
+	m_positionData[3 * m_numSprites] = physics.pos.x;
+	m_positionData[3 * m_numSprites + 1] = physics.pos.y;
+	m_positionData[3 * m_numSprites + 2] = physics.pos.z;
+
+	m_colourData[4 * m_numSprites] = sprite.r;
+	m_colourData[4 * m_numSprites + 1] = sprite.g;
+	m_colourData[4 * m_numSprites + 2] = sprite.b;
+	m_colourData[4 * m_numSprites + 3] = sprite.a;
+
+	glm::vec2 texSize{ sprite.spriteSheet->getSize() };
+	glm::vec2 clipSize{ sprite.spriteSheet->getClipSize() };
+	int spriteIndex{ sprite.currentAnimation.sheetIndex + sprite.currentFrame };
+	int numSpritesPerRow{ static_cast<int>(glm::max(1.f, texSize.x / clipSize.x - 1)) };
+	glm::vec2 rowColIndex{ spriteIndex % numSpritesPerRow, glm::floor(spriteIndex / numSpritesPerRow) };
+
+	m_texCoordsData[4 * m_numSprites] = rowColIndex.x * clipSize.x / texSize.x;
+	m_texCoordsData[4 * m_numSprites + 1] = 1 - (rowColIndex.y + 1) * clipSize.y / texSize.y;
+	m_texCoordsData[4 * m_numSprites + 2] = clipSize.x / texSize.x;
+	m_texCoordsData[4 * m_numSprites + 3] = clipSize.y / texSize.y;
+
+	m_transformData[3 * m_numSprites] = physics.scale.x * clipSize.x;
+	m_transformData[3 * m_numSprites + 1] = physics.scale.y * clipSize.y;
+	m_transformData[3 * m_numSprites + 2] = physics.rotation;
+
+	m_playerSheet = sprite.spriteSheet;
+
+	m_numSprites++;
 }
 
 void SpriteRenderer::resetNumSprites()
@@ -168,47 +196,42 @@ void SpriteRenderer::resetNumSprites()
 	m_numSprites = 0;
 }
 
-void SpriteRenderer::incrementNumSprites()
-{
-	m_numSprites++;
-}
-
-void SpriteRenderer::updateData()
-{
-	// Sort the sprites by camera distance to maintain proper
-	// draw order.
-	std::sort(&m_sprites[0], &m_sprites[GameEngine::MAX_ENTITIES]);
-
-	// Update the data buffers with these components' values.
-	for (int i = 0; i < m_numSprites; i++)
-	{
-		Sprite &spr{ m_sprites[i] };
-
-		m_positionData[3 * i] = spr.pos.x;
-		m_positionData[3 * i + 1] = spr.pos.y;
-		m_positionData[3 * i + 2] = spr.pos.z;
-
-		m_colourData[4 * i] = spr.r;
-		m_colourData[4 * i + 1] = spr.g;
-		m_colourData[4 * i + 2] = spr.b;
-		m_colourData[4 * i + 3] = spr.a;
-
-		glm::vec2 texSize{ spr.spriteSheet->getSize() };
-		glm::vec2 clipSize{ spr.spriteSheet->getClipSize() };
-		int spriteIndex{ spr.frameIndex };
-		int numSpritesPerRow{ static_cast<int>(glm::max(1.f, texSize.x / clipSize.x - 1)) };
-		glm::vec2 rowColIndex{ spriteIndex % numSpritesPerRow, glm::floor(spriteIndex / numSpritesPerRow) };
-
-		m_texCoordsData[4 * i] = rowColIndex.x * clipSize.x / texSize.x;
-		m_texCoordsData[4 * i + 1] = 1 - (rowColIndex.y + 1) * clipSize.y / texSize.y;
-		m_texCoordsData[4 * i + 2] = clipSize.x / texSize.x;
-		m_texCoordsData[4 * i + 3] = clipSize.y / texSize.y;
-
-		m_transformData[3 * i] = spr.scale.x * clipSize.x;
-		m_transformData[3 * i + 1] = spr.scale.y * clipSize.y;
-		m_transformData[3 * i + 2] = spr.rotation;
-	}
-}
+//void SpriteRenderer::updateData()
+//{
+//	// Sort the sprites by camera distance to maintain proper
+//	// draw order.
+//	//std::sort(&m_sprites[0], &m_sprites[GameEngine::MAX_ENTITIES]);
+//
+//	// Update the data buffers with these components' values.
+//	for (int i = 0; i < m_numSprites; i++)
+//	{
+//		Sprite &spr{ m_sprites[i] };
+//
+//		m_positionData[3 * i] = spr.pos.x;
+//		m_positionData[3 * i + 1] = spr.pos.y;
+//		m_positionData[3 * i + 2] = spr.pos.z;
+//
+//		m_colourData[4 * i] = spr.r;
+//		m_colourData[4 * i + 1] = spr.g;
+//		m_colourData[4 * i + 2] = spr.b;
+//		m_colourData[4 * i + 3] = spr.a;
+//
+//		glm::vec2 texSize{ spr.spriteSheet->getSize() };
+//		glm::vec2 clipSize{ spr.spriteSheet->getClipSize() };
+//		int spriteIndex{ spr.frameIndex };
+//		int numSpritesPerRow{ static_cast<int>(glm::max(1.f, texSize.x / clipSize.x - 1)) };
+//		glm::vec2 rowColIndex{ spriteIndex % numSpritesPerRow, glm::floor(spriteIndex / numSpritesPerRow) };
+//
+//		m_texCoordsData[4 * i] = rowColIndex.x * clipSize.x / texSize.x;
+//		m_texCoordsData[4 * i + 1] = 1 - (rowColIndex.y + 1) * clipSize.y / texSize.y;
+//		m_texCoordsData[4 * i + 2] = clipSize.x / texSize.x;
+//		m_texCoordsData[4 * i + 3] = clipSize.y / texSize.y;
+//
+//		m_transformData[3 * i] = spr.scale.x * clipSize.x;
+//		m_transformData[3 * i + 1] = spr.scale.y * clipSize.y;
+//		m_transformData[3 * i + 2] = spr.rotation;
+//	}
+//}
 
 void SpriteRenderer::render(Camera *camera, glm::ivec2 windowSize, Room *room = nullptr)
 {
@@ -284,7 +307,8 @@ void SpriteRenderer::render(Camera *camera, glm::ivec2 windowSize, Room *room = 
 
 	// Bind to the texture at texture unit 0 and set the shader's sampler to this.
 	glActiveTexture(GL_TEXTURE1);
-	m_sprites[0].spriteSheet->bind(); // TODO: fix this to support multiple textures.
+	//m_sprites[0].spriteSheet->bind(); // TODO: fix this to support multiple textures.
+	m_playerSheet->bind();
 	m_spriteShader->setInt("textureSampler", 1);
 
 	// Set the camera uniforms.

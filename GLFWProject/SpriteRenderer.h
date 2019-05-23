@@ -41,10 +41,10 @@ public:
 	SpriteRenderer();
 	~SpriteRenderer();
 
-	// Update the array of sprites to prepare for rendering.
+	// Add sprite data to the array of sprites to prepare for rendering.
 	// The resulting array has not yet been ordered with respect to
 	// camera distance.
-	void updateSprites(const GameComponent::Physics &physics, 
+	void addSprite(const GameComponent::Physics &physics, 
 		const GameComponent::Sprite &sprite);
 
 	// Set the number of sprites to render to 0.
@@ -52,12 +52,9 @@ public:
 	// the proper number of sprites can be recalculated.
 	void resetNumSprites();
 
-	// Increase the number of sprites to render by 1.
-	void incrementNumSprites();
-
 	// Sort the array of sprites with respect to camera distance and then
 	// populate the data buffers with their values for the GPU.
-	void updateData();
+	//void updateData();
 
 	// Render the current room and all queued sprites.
 	void render(Camera *camera, glm::ivec2 windowSize, Room *room);
@@ -78,7 +75,7 @@ private:
 		m_texCoordsVBO, m_transformVBO;
 
 	// Hold all the sprites to render.
-	Sprite m_sprites[GameEngine::MAX_ENTITIES];
+	//Sprite m_sprites[GameEngine::MAX_ENTITIES];
 
 	// The number of sprites to render for the current frame.
 	int m_numSprites{ 0 };
@@ -88,6 +85,8 @@ private:
 
 	// Hold the pointer to the map tileset.
 	std::unique_ptr<SpriteSheet> m_tileset;
+
+	SpriteSheet *m_playerSheet{ nullptr };
 };
 
 #endif

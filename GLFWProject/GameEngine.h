@@ -14,6 +14,7 @@
 
 class Renderer;
 class SpriteRenderer;
+class UIRenderer;
 class InputManager;
 
 class GameEngine
@@ -24,7 +25,7 @@ public:
 
 	// Start the game loop.
 	// The function will only return when the game ends.
-	void start(SpriteRenderer *renderer, InputManager *input);
+	void start(SpriteRenderer *renderer, InputManager *input, UIRenderer *uRenderer);
 
 	// Update the camera to look at a position on the screen.
 	void updateCameraLook(glm::vec2 screenPos);
@@ -45,13 +46,13 @@ public:
 private:
 	// Constructor is private to prevent instantiating singleton.
 	// Handle all user inputs for the game loop's current iteration.
-	void processInput();
+	void processInput(InputManager *input);
 
 	// Update all appropriate values for the game loop's current iteration.
-	void update(SpriteRenderer *renderer, InputManager *input);
+	void update(SpriteRenderer *sRenderer, InputManager *input, UIRenderer *uRenderer);
 
 	// Render all appropriate visuals for the game loop's current iteration.
-	void render(SpriteRenderer *renderer);
+	void render(SpriteRenderer *sRenderer, UIRenderer *uRenderer);
 
 	// Delete all flagged entities.
 	void deleteFlaggedEntities();
@@ -99,6 +100,9 @@ private:
 	// TODO: remove this later for a more flexible implementation.
 	std::unique_ptr<SpriteSheet> m_texture;
 	std::unique_ptr<Room> m_currentRoom;
+
+	// Flag for if debug mode is enabled.
+	bool m_isDebugMode{ false };
 };
 
 #endif

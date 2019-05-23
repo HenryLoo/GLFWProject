@@ -78,8 +78,7 @@ bool GameSystem::updateSprite(float deltaTime, SpriteRenderer *renderer,
 	}
 
 	// Update the renderer's array of sprites.
-	renderer->updateSprites(physics, sprite);
-	renderer->incrementNumSprites();
+	renderer->addSprite(physics, sprite);
 
 	return isAlive;
 }
