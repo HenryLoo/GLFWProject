@@ -139,17 +139,23 @@ bool GameSystem::updateRoomCollision(float deltaTime,
 	{
 		// Extend the halfsize of the entity to see how much distance it will
 		// cover this frame.
-		float halfSize{ aabb.halfSize.y };
-		float distY = halfSize + abs(speed.y) * deltaTime;
+		glm::vec2 halfSize{ aabb.halfSize };
+		float distY = halfSize.y + abs(speed.y) * deltaTime;
 		glm::ivec2 currentTile{ room->getTileCoord(physics.pos) };
 
 		// 1 = moving down, -1 = moving up.
 		int direction{ speed.y < 0 ? 1 : -1 };
-		glm::vec2 maxDistPos{ physics.pos.x, physics.pos.y - direction * distY };
-		glm::ivec2 maxDistTile{ room->getTileCoord(maxDistPos) };
+
+		// Get the horizontal tile bounds at the maximum Y-distance.
+		float maxDistY{ physics.pos.y - direction * distY };
+		glm::vec2 minXPos{ physics.pos.x - halfSize.x, maxDistY };
+		glm::vec2 maxXPos{ physics.pos.x + halfSize.x, maxDistY };
+		glm::ivec2 minXTile{ room->getTileCoord(minXPos) };
+		glm::ivec2 maxXTile{ room->getTileCoord(maxXPos) };
 
 		// Set up bounds for the loop.
-		glm::ivec2 tileRangeToCheck{ currentTile.y, maxDistTile.y };
+		// minXTile.y == maxXTile.y should be true.
+		glm::ivec2 tileRangeToCheck{ currentTile.y, minXTile.y };
 		tileRangeToCheck.y -= direction;
 
 		// Check all potential collisions before applying velocity.
@@ -158,17 +164,21 @@ bool GameSystem::updateRoomCollision(float deltaTime,
 		int currentTileY{ tileRangeToCheck.x };
 		while (currentTileY != tileRangeToCheck.y)
 		{
-			glm::ivec2 thisTileCoord{ currentTile.x, currentTileY };
-			TileType type{ room->getTileType(thisTileCoord) };
-			if (type == TILE_WALL)
+			// Check all tiles at this height.
+			for (int i = minXTile.x; i <= maxXTile.x; ++i)
 			{
-				float tileEdgePos{ room->getTilePos(thisTileCoord).y 
-					+ direction * Room::TILE_SIZE / 2.f };
-				physics.pos.y = tileEdgePos + direction * halfSize;
-				isColliding = true;
+				glm::ivec2 thisTileCoord{ i, currentTileY };
+				TileType type{ room->getTileType(thisTileCoord) };
+				if (type == TILE_WALL)
+				{
+					float tileEdgePos{ room->getTilePos(thisTileCoord).y
+						+ direction * Room::TILE_SIZE / 2.f };
+					physics.pos.y = tileEdgePos + direction * halfSize.y;
+					isColliding = true;
 
-				// Collision was found, so there is no need to keep checking.
-				break;
+					// Collision was found, so there is no need to keep checking.
+					break;
+				}
 			}
 
 			currentTileY -= direction;
