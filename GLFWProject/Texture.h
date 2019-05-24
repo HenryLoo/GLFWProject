@@ -19,6 +19,8 @@ public:
 	// Get the dimensions of the texture.
 	glm::ivec2 getSize() const;
 
+	const static std::string TEXTURE_PATH;
+
 protected:
 	// This texture's id.
 	GLuint m_id;

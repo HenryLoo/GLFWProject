@@ -143,27 +143,14 @@ bool GameSystem::updateRoomCollision(float deltaTime,
 		float distY = halfSize + abs(speed.y) * deltaTime;
 		glm::ivec2 currentTile{ room->getTileCoord(physics.pos) };
 
-		// Moving down.
-		if (speed.y < 0)
-		{
-			distY *= -1;
-		}
-
-		glm::vec2 maxDistPos{ physics.pos.x, physics.pos.y + distY };
+		// 1 = moving down, -1 = moving up.
+		int direction{ speed.y < 0 ? 1 : -1 };
+		glm::vec2 maxDistPos{ physics.pos.x, physics.pos.y - direction * distY };
 		glm::ivec2 maxDistTile{ room->getTileCoord(maxDistPos) };
 
 		// Set up bounds for the loop.
 		glm::ivec2 tileRangeToCheck{ currentTile.y, maxDistTile.y };
-		int incrAmount{ speed.y < 0 ? -1 : 1 };
-		if (speed.y < 0)
-		{
-			tileRangeToCheck.y--;
-		}
-		else
-		{
-			halfSize *= -1;
-			tileRangeToCheck.y++;
-		}
+		tileRangeToCheck.y -= direction;
 
 		// Check all potential collisions before applying velocity.
 		// We check in order of closest to furthest tiles.
@@ -175,15 +162,16 @@ bool GameSystem::updateRoomCollision(float deltaTime,
 			TileType type{ room->getTileType(thisTileCoord) };
 			if (type == TILE_WALL)
 			{
-				float tileEdgePos{ room->getTilePos(thisTileCoord).y + Room::TILE_SIZE / 2.f };
-				physics.pos.y = tileEdgePos + halfSize;
+				float tileEdgePos{ room->getTilePos(thisTileCoord).y 
+					+ direction * Room::TILE_SIZE / 2.f };
+				physics.pos.y = tileEdgePos + direction * halfSize;
 				isColliding = true;
 
 				// Collision was found, so there is no need to keep checking.
 				break;
 			}
 
-			currentTileY += incrAmount;
+			currentTileY -= direction;
 		}
 
 		// If not colliding, then just apply velocity as usual.

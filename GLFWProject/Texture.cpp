@@ -5,10 +5,7 @@
 
 #include <iostream>
 
-namespace
-{
-	const std::string TEXTURE_PATH = "textures/";
-}
+const std::string Texture::TEXTURE_PATH{ "textures/" };
 
 Texture::Texture(const std::string &filePath)
 {

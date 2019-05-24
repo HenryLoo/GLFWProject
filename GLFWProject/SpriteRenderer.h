@@ -86,6 +86,7 @@ private:
 	// Hold the pointer to the map tileset.
 	std::unique_ptr<SpriteSheet> m_tileset;
 
+	// TODO: replace this to handle multiple spritesheets.
 	SpriteSheet *m_playerSheet{ nullptr };
 };
 

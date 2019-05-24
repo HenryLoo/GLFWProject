@@ -45,6 +45,10 @@ public:
 	const static int TILE_SIZE{ 16 };
 
 private:
+	// Check if a pixel matches the given rgb values.
+	// This is used to determine the tile type of a tile from a layout texture.
+	bool isTileType(const unsigned char *pixel, unsigned char rgb[3]);
+
 	// Hold all the tiles in this room.
 	// Tiles are stored in row-major order, bottom-up.
 	std::vector<TileType> m_tileTypes;
