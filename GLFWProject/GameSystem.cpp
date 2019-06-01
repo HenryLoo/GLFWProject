@@ -132,7 +132,7 @@ bool GameSystem::updatePlayer(InputManager *input,
 bool GameSystem::updateRoomCollision(float deltaTime,
 	GameComponent::Physics &physics, GameComponent::AABB &aabb, Room *room)
 {
-	glm::vec2 speed{ physics.speed.y };
+	glm::vec2 speed{ physics.speed };
 
 	// Check for vertical collisions.
 	if (speed.y != 0)
@@ -180,6 +180,10 @@ bool GameSystem::updateRoomCollision(float deltaTime,
 					break;
 				}
 			}
+
+			// Collision was found, so there is no need to keep checking. 
+			if (isColliding)
+				break;
 
 			currentTileY -= direction;
 		}
