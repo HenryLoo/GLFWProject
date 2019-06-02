@@ -74,7 +74,16 @@ namespace GameComponent
 
 	struct Player
 	{
+		// Hold the current state's label.
+		// This label is used as a key for the spritesheet's animations.
 		std::string currentState;
+
+		// The maximum number of jumps that the player can perform.
+		int numMaxJumps{ 1 };
+
+		// The number of jumps that the player can still perform.
+		// This value is reset to numMaxJumps when landing on the ground.
+		int numRemainingJumps{ 0 };
 	};
 
 	struct AABB
@@ -84,6 +93,10 @@ namespace GameComponent
 
 		// The pixel offset from the box's origin position.
 		glm::vec2 offset;
+
+		// Flag for if the box has collided from the bottom during this frame.
+		bool isCollidingTop{ false };
+		bool isCollidingBottom{ false };
 	};
 }
 

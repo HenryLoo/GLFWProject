@@ -80,8 +80,8 @@ void UIRenderer::addBox(const GameComponent::Physics &physics,
 	const GameComponent::AABB &aabb,
 	unsigned char r, unsigned char g, unsigned char b, unsigned char a)
 {
-	m_posSizeData[4 * m_numBoxes] = physics.pos.x;
-	m_posSizeData[4 * m_numBoxes + 1] = physics.pos.y;
+	m_posSizeData[4 * m_numBoxes] = physics.pos.x + aabb.offset.x;
+	m_posSizeData[4 * m_numBoxes + 1] = physics.pos.y + aabb.offset.y;
 	m_posSizeData[4 * m_numBoxes + 2] = aabb.halfSize.x * 2;
 	m_posSizeData[4 * m_numBoxes + 3] = aabb.halfSize.y * 2;
 

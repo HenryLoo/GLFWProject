@@ -22,7 +22,8 @@ namespace GameSystem
 
 	// Update a player component's values
 	bool updatePlayer(InputManager *input, GameComponent::Player &player, 
-		GameComponent::Physics &physics, GameComponent::Sprite &sprite);
+		GameComponent::Physics &physics, GameComponent::Sprite &sprite,
+		GameComponent::AABB &aabb);
 
 	// Update collisions using axis-aligned bounding boxes.
 	bool updateRoomCollision(float deltaTime, GameComponent::Physics &physics,

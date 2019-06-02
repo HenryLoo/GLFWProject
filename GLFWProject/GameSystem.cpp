@@ -7,6 +7,11 @@
 
 #include <iostream>
 
+namespace
+{
+	const float COLLISION_THRESHOLD{ 0.01f };
+}
+
 bool GameSystem::updatePhysics(float deltaTime, GameComponent::Physics &physics)
 {
 	// Update this component's values.
@@ -85,7 +90,7 @@ bool GameSystem::updateSprite(float deltaTime, SpriteRenderer *renderer,
 
 bool GameSystem::updatePlayer(InputManager *input, 
 	GameComponent::Player &player, GameComponent::Physics &physics, 
-	GameComponent::Sprite &sprite)
+	GameComponent::Sprite &sprite, GameComponent::AABB &aabb)
 {
 	bool isRunningLeft{ input->isKeyPressing(INPUT_LEFT) };
 	bool isRunningRight{ input->isKeyPressing(INPUT_RIGHT) };
@@ -113,10 +118,24 @@ bool GameSystem::updatePlayer(InputManager *input,
 	physics.speed.x = speed;
 	physics.scale.x = dir;
 
-	// Handle jumping.
-	if (input->isKeyPressed(INPUT_JUMP))
+	// If the player landed on the ground, reset the remaining jumps.
+	if (aabb.isCollidingBottom)
 	{
-		physics.speed.y = 256.f;
+		player.numRemainingJumps = player.numMaxJumps;
+	}
+	// Remove 1 remaining jump if walking off a ledge.
+	else
+	{
+		player.numRemainingJumps = glm::min(player.numRemainingJumps, 
+			player.numMaxJumps - 1);
+	}
+
+	// Handle jumping.
+	// The player can only jump if there are still remaining jumps.
+	if (input->isKeyPressed(INPUT_JUMP) && player.numRemainingJumps > 0)
+	{
+		physics.speed.y = 192.f;
+		player.numRemainingJumps--;
 	}
 
 	// Change the sprite's state if it is a different one.
@@ -132,24 +151,91 @@ bool GameSystem::updatePlayer(InputManager *input,
 bool GameSystem::updateRoomCollision(float deltaTime,
 	GameComponent::Physics &physics, GameComponent::AABB &aabb, Room *room)
 {
+	// Reset collision flags.
+	aabb.isCollidingBottom = false;
+	aabb.isCollidingTop = false;
+
 	glm::vec2 speed{ physics.speed };
+	glm::vec2 halfSize{ aabb.halfSize };
+	glm::vec2 pos{ physics.pos.x + aabb.offset.x, 
+		physics.pos.y + aabb.offset.y };
+
+	// Check for horizontal collisions.
+	if (speed.x != 0)
+	{
+		// Extend the halfsize of the entity to see how much distance it will
+		// cover this frame.
+		float distX = halfSize.x + abs(speed.x) * deltaTime;
+		glm::ivec2 currentTile{ room->getTileCoord(pos) };
+
+		// 1 = moving left, -1 = moving right.
+		int direction{ speed.x < 0 ? 1 : -1 };
+
+		// Get the vertical tile bounds at the maximum X-distance.
+		float maxDistX{ pos.x - direction * distX };
+		float halfSizeY{ halfSize.y - COLLISION_THRESHOLD };
+		glm::vec2 minYPos{ maxDistX, pos.y - halfSizeY };
+		glm::vec2 maxYPos{ maxDistX, pos.y + halfSizeY };
+		glm::ivec2 minYTile{ room->getTileCoord(minYPos) };
+		glm::ivec2 maxYTile{ room->getTileCoord(maxYPos) };
+
+		// Set up bounds for the loop.
+		// minYTile.x == maxYTile.x should be true.
+		glm::ivec2 tileRangeToCheck{ currentTile.x, minYTile.x };
+		tileRangeToCheck.y -= direction;
+
+		// Check all potential collisions before applying velocity.
+		// We check in order of closest to furthest tiles.
+		bool isColliding{ false };
+		int currentTileX{ tileRangeToCheck.x };
+		while (currentTileX != tileRangeToCheck.y)
+		{
+			// Check all tiles at this height.
+			for (int i = minYTile.y; i <= maxYTile.y; ++i)
+			{
+				glm::ivec2 thisTileCoord{ currentTileX, i };
+				TileType type{ room->getTileType(thisTileCoord) };
+				if (type == TILE_WALL)
+				{
+					float tileEdgePos{ room->getTilePos(thisTileCoord).x
+						+ direction * Room::TILE_SIZE / 2.f };
+					physics.pos.x = tileEdgePos + direction * halfSize.x - aabb.offset.x;
+					isColliding = true;
+
+					// Collision was found, so there is no need to keep checking.
+					break;
+				}
+			}
+
+			// Collision was found, so there is no need to keep checking. 
+			if (isColliding)
+				break;
+
+			currentTileX -= direction;
+		}
+
+		// If not colliding, then just apply velocity as usual.
+		if (!isColliding)
+			physics.pos.x += physics.speed.x * deltaTime;
+	}
 
 	// Check for vertical collisions.
 	if (speed.y != 0)
 	{
 		// Extend the halfsize of the entity to see how much distance it will
 		// cover this frame.
-		glm::vec2 halfSize{ aabb.halfSize };
 		float distY = halfSize.y + abs(speed.y) * deltaTime;
-		glm::ivec2 currentTile{ room->getTileCoord(physics.pos) };
+		glm::ivec2 currentTile{ room->getTileCoord(pos) };
 
 		// 1 = moving down, -1 = moving up.
 		int direction{ speed.y < 0 ? 1 : -1 };
+		bool &isColliding{ direction == 1 ? aabb.isCollidingBottom : aabb.isCollidingTop };
 
 		// Get the horizontal tile bounds at the maximum Y-distance.
-		float maxDistY{ physics.pos.y - direction * distY };
-		glm::vec2 minXPos{ physics.pos.x - halfSize.x, maxDistY };
-		glm::vec2 maxXPos{ physics.pos.x + halfSize.x, maxDistY };
+		float maxDistY{ pos.y - direction * distY };
+		float halfSizeX{ halfSize.x - COLLISION_THRESHOLD };
+		glm::vec2 minXPos{ pos.x - halfSizeX, maxDistY };
+		glm::vec2 maxXPos{ pos.x + halfSizeX, maxDistY };
 		glm::ivec2 minXTile{ room->getTileCoord(minXPos) };
 		glm::ivec2 maxXTile{ room->getTileCoord(maxXPos) };
 
@@ -160,7 +246,6 @@ bool GameSystem::updateRoomCollision(float deltaTime,
 
 		// Check all potential collisions before applying velocity.
 		// We check in order of closest to furthest tiles.
-		bool isColliding{ false };
 		int currentTileY{ tileRangeToCheck.x };
 		while (currentTileY != tileRangeToCheck.y)
 		{
@@ -173,7 +258,7 @@ bool GameSystem::updateRoomCollision(float deltaTime,
 				{
 					float tileEdgePos{ room->getTilePos(thisTileCoord).y
 						+ direction * Room::TILE_SIZE / 2.f };
-					physics.pos.y = tileEdgePos + direction * halfSize.y;
+					physics.pos.y = tileEdgePos + direction * halfSize.y - aabb.offset.y;
 					isColliding = true;
 
 					// Collision was found, so there is no need to keep checking.
@@ -190,12 +275,11 @@ bool GameSystem::updateRoomCollision(float deltaTime,
 
 		// If not colliding, then just apply velocity as usual.
 		if (!isColliding)
-		{
 			physics.pos.y += physics.speed.y * deltaTime;
-		}
+		// Otherwise, stop moving.
+		else
+			physics.speed.y = 0;
 	}
-
-	physics.pos.x += physics.speed.x * deltaTime;
 
 	return true;
 }

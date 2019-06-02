@@ -197,9 +197,9 @@ void GameEngine::update(SpriteRenderer *sRenderer, InputManager *input, UIRender
 		{
 			isAlive = isAlive && GameSystem::updateSprite(m_deltaTime, sRenderer, cameraPos, spr, phys);
 		}
-		if (isAlive && hasPlayer && hasPhysics && hasSprite)
+		if (isAlive && hasPlayer && hasPhysics && hasSprite && hasAABB)
 		{
-			isAlive = isAlive && GameSystem::updatePlayer(input, player, phys, spr);
+			isAlive = isAlive && GameSystem::updatePlayer(input, player, phys, spr, aabb);
 		}
 
 		// Flag the entity for deletion if it isn't alive anymore.
@@ -357,5 +357,6 @@ void GameEngine::createPlayer()
 	spr.spriteSheet->setAnimation("idle", spr);
 
 	GameComponent::AABB &aabb = m_compAABBs[m_playerId];
-	aabb.halfSize = glm::vec2(16, 16);
+	aabb.halfSize = glm::vec2(8, 10);
+	aabb.offset = glm::vec2(0, -6);
 }
