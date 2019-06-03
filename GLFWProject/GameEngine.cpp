@@ -5,6 +5,7 @@
 #include "InputManager.h"
 #include "Room.h"
 #include "UIRenderer.h"
+#include "CharStates.h"
 
 #include <algorithm>
 #include <iostream>
@@ -75,8 +76,11 @@ GameEngine::GameEngine()
 
 	// TODO: replace these hardcoded resources.
 	std::unordered_map<std::string, SpriteAnimation> anims{
-		{"idle", { 0, 8, {3.f, 0.07f, 0.07f, 0.07f, 0.07f, 1.f, 0.07f, 0.07f}}},
-		{"run", { 10, 10, {0.07f, 0.07f, 0.07f, 0.07f, 0.07f, 0.07f, 0.07f, 0.07f, 0.07f, 0.07f} }}
+		{PlayerState::IDLE, { 0, 8, true, {3.f, 0.07f, 0.07f, 0.07f, 0.07f, 1.f, 0.07f, 0.07f}}},
+		{PlayerState::RUN, { 10, 10, true, {0.07f} }},
+		{PlayerState::JUMP_ASCEND, { 20, 4, false, {0.07f} }},
+		{PlayerState::JUMP_PEAK, { 24, 6, false, {0.07f} }},
+		{PlayerState::JUMP_DESCEND, { 30, 4, true, {0.07f} }},
 	};
 	m_texture = std::make_unique<SpriteSheet>("serah_sheet.png", anims, glm::ivec2(32, 32));
 	createPlayer();
@@ -324,7 +328,6 @@ void GameEngine::createNewEntities()
 		spr.b = rand() % 256;
 		spr.a = 255;
 
-		spr.isLooping = true;
 		spr.spriteSheet = m_texture.get();
 		spr.spriteSheet->setAnimation("run", spr);
 	}
@@ -350,7 +353,6 @@ void GameEngine::createPlayer()
 	spr.b = 255;
 	spr.a = 255;
 	spr.hasDuration = false;
-	spr.isLooping = true;
 
 	// TODO: replace hard-coded frames.
 	spr.spriteSheet = m_texture.get();

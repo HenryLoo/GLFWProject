@@ -2,6 +2,7 @@
 #include "GameEngine.h"
 #include "SpriteRenderer.h"
 #include "InputManager.h"
+#include "CharStates.h"
 
 #include <glm/gtx/norm.hpp>
 
@@ -46,12 +47,12 @@ bool GameSystem::updateSprite(float deltaTime, SpriteRenderer *renderer,
 
 		// Update this sprite's animation.
 		sprite.currentFrameTime += deltaTime;
-		float frameDuration{ sprite.currentAnimation.durations[sprite.currentFrame] };
+		float frameDuration{ GameComponent::getFrameDuration(sprite) };
 
 		// Process the next frame if the current frame is over and the 
 		// animation is not a non-looping one at its last frame.
 		if (sprite.currentFrameTime >= frameDuration &&
-			!(!sprite.isLooping && sprite.currentFrame == sprite.currentAnimation.numSprites - 1))
+			!(!sprite.currentAnimation.isLooping && sprite.currentFrame == sprite.currentAnimation.numSprites - 1))
 		{
 			// Check if deltaTime has accumulated a value greater than the
 			// frame's duration, and then find how many frames should be
@@ -66,7 +67,7 @@ bool GameSystem::updateSprite(float deltaTime, SpriteRenderer *renderer,
 
 				// Get how long this new frame lasts and see if there is still
 				// enough leftover time to process it.
-				frameDuration = sprite.currentAnimation.durations[sprite.currentFrame];
+				frameDuration = GameComponent::getFrameDuration(sprite);
 				leftoverTime -= frameDuration;
 			} while (leftoverTime >= frameDuration);
 		}
@@ -95,14 +96,20 @@ bool GameSystem::updatePlayer(InputManager *input,
 	bool isRunningLeft{ input->isKeyPressing(INPUT_LEFT) };
 	bool isRunningRight{ input->isKeyPressing(INPUT_RIGHT) };
 	bool isRunning{ isRunningLeft != isRunningRight };
-	std::string state{ "idle" };
+
+	std::string state{ player.currentState };
+	if (state.empty())
+		state = PlayerState::IDLE;
 
 	// Only one running key is pressed.
 	float speed = 0.f;
 	float dir = physics.scale.x;
 	if (isRunning)
 	{
-		state = "run";
+		// Show running animation if on the ground.
+		if (aabb.isCollidingBottom)
+			state = PlayerState::RUN;
+
 		speed = 128.f;
 
 		if (isRunningLeft)
@@ -121,6 +128,10 @@ bool GameSystem::updatePlayer(InputManager *input,
 	// If the player landed on the ground, reset the remaining jumps.
 	if (aabb.isCollidingBottom)
 	{
+		// Landed and not running.
+		if (!isRunning)
+			state = PlayerState::IDLE;
+
 		player.numRemainingJumps = player.numMaxJumps;
 	}
 	// Remove 1 remaining jump if walking off a ledge.
@@ -134,8 +145,27 @@ bool GameSystem::updatePlayer(InputManager *input,
 	// The player can only jump if there are still remaining jumps.
 	if (input->isKeyPressed(INPUT_JUMP) && player.numRemainingJumps > 0)
 	{
+		state = PlayerState::JUMP_ASCEND;
 		physics.speed.y = 192.f;
 		player.numRemainingJumps--;
+	}
+
+	// If starting to fall, then change to jump_peak.
+	if (physics.speed.y < 0)
+	{
+		if (player.currentState != PlayerState::JUMP_DESCEND)
+			state = PlayerState::JUMP_PEAK;
+	}
+
+	// Handle natural sprite transitions.
+	// If the current frame is over and the animation is a non-looping one 
+	// at its last frame.
+	float frameDuration{ GameComponent::getFrameDuration(sprite) };
+	if (sprite.currentFrameTime >= frameDuration &&
+		(!sprite.currentAnimation.isLooping && sprite.currentFrame == sprite.currentAnimation.numSprites - 1))
+	{
+		if (player.currentState == PlayerState::JUMP_PEAK)
+			state = PlayerState::JUMP_DESCEND;
 	}
 
 	// Change the sprite's state if it is a different one.

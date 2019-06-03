@@ -21,12 +21,6 @@ namespace GameComponent
 		COMPONENT_AABB = 8,
 	};
 
-	// Check if an entity has a component.
-	bool hasComponent(unsigned long entityCompMask, ComponentType comp);
-
-	// Add a component to an entity.
-	void addComponent(unsigned long &entityCompMask, ComponentType comp);
-
 	struct Physics
 	{
 		// This entity's position.
@@ -58,9 +52,6 @@ namespace GameComponent
 		SpriteAnimation currentAnimation;
 		int currentFrame{ 0 };
 		float currentFrameTime{ 0.f };
-
-		// Flag for if the sprite animation is looping.
-		bool isLooping{ false };
 
 		// Distance from the sprite to the camera.
 		float cameraDistance{ -1 };
@@ -98,6 +89,15 @@ namespace GameComponent
 		bool isCollidingTop{ false };
 		bool isCollidingBottom{ false };
 	};
+
+	// Check if an entity has a component.
+	bool hasComponent(unsigned long entityCompMask, ComponentType comp);
+
+	// Add a component to an entity.
+	void addComponent(unsigned long &entityCompMask, ComponentType comp);
+
+	// Get the duration of the current sprite frame.
+	float getFrameDuration(const Sprite &sprite);
 }
 
 #endif

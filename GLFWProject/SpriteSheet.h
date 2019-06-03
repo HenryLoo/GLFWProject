@@ -20,7 +20,12 @@ struct SpriteAnimation
 	// The number of sprites in this animation.
 	int numSprites;
 
+	// Flag for if the sprite animation is looping.
+	bool isLooping;
+
 	// The durations of each frame in the animation, in seconds.
+	// If there are more frames than durations, take the last duration 
+	// value in the vector for that frame.
 	std::vector<float> durations;
 };
 
