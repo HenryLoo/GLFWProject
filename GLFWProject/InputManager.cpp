@@ -40,7 +40,7 @@ bool InputManager::isKeyPressing(InputType type)
 	return m_inputStates[type] == GLFW_PRESS;
 }
 
-bool InputManager::isKeyReleased(InputType type)
+bool InputManager::isKeyReleasing(InputType type)
 {
 	return m_inputStates[type] == GLFW_RELEASE;
 }
@@ -48,4 +48,9 @@ bool InputManager::isKeyReleased(InputType type)
 bool InputManager::isKeyPressed(InputType type)
 {
 	return m_inputStates[type] == GLFW_PRESS && m_prevInputStates[type] == GLFW_RELEASE;
+}
+
+bool InputManager::isKeyReleased(InputType type)
+{
+	return m_inputStates[type] == GLFW_RELEASE && m_prevInputStates[type] == GLFW_PRESS;
 }

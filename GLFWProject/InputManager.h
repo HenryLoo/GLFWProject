@@ -30,8 +30,9 @@ public:
 
 	// Check key states for an input type.
 	bool isKeyPressing(InputType type);
-	bool isKeyReleased(InputType type);
+	bool isKeyReleasing(InputType type);
 	bool isKeyPressed(InputType type);
+	bool isKeyReleased(InputType type);
 
 private:
 	// Hold input states of each input type.

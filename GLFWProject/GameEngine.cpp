@@ -77,10 +77,14 @@ GameEngine::GameEngine()
 	// TODO: replace these hardcoded resources.
 	std::unordered_map<std::string, SpriteAnimation> anims{
 		{PlayerState::IDLE, { 0, 8, true, {3.f, 0.07f, 0.07f, 0.07f, 0.07f, 1.f, 0.07f, 0.07f}}},
-		{PlayerState::RUN, { 10, 10, true, {0.07f} }},
-		{PlayerState::JUMP_ASCEND, { 20, 4, false, {0.07f} }},
-		{PlayerState::JUMP_PEAK, { 24, 6, false, {0.07f} }},
-		{PlayerState::JUMP_DESCEND, { 30, 4, true, {0.07f} }},
+		{PlayerState::RUN, { 11, 10, true, {0.07f} }},
+		{PlayerState::JUMP_ASCEND, { 22, 4, false, {0.07f} }},
+		{PlayerState::JUMP_PEAK, { 26, 6, false, {0.07f} }},
+		{PlayerState::JUMP_DESCEND, { 33, 4, true, {0.07f} }},
+		{PlayerState::RUN_START, { 38, 5, false, {0.07f} }},
+		{PlayerState::RUN_STOP, { 44, 4, false, {0.07f} }},
+		{PlayerState::ALERT, { 48, 3, false, {3.f, 0.07, 0.07f} }},
+		{PlayerState::TURN, { 51, 4, false, {0.07f} }},
 	};
 	m_texture = std::make_unique<SpriteSheet>("serah_sheet.png", anims, glm::ivec2(32, 32));
 	createPlayer();

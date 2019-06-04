@@ -93,6 +93,11 @@ bool GameSystem::updatePlayer(InputManager *input,
 	GameComponent::Player &player, GameComponent::Physics &physics, 
 	GameComponent::Sprite &sprite, GameComponent::AABB &aabb)
 {
+	// Save the previous state.
+	player.previousState = player.currentState;
+	if (player.previousState.empty())
+		player.previousState = PlayerState::IDLE;
+
 	bool isRunningLeft{ input->isKeyPressing(INPUT_LEFT) };
 	bool isRunningRight{ input->isKeyPressing(INPUT_RIGHT) };
 	bool isRunning{ isRunningLeft != isRunningRight };
@@ -101,6 +106,10 @@ bool GameSystem::updatePlayer(InputManager *input,
 	if (state.empty())
 		state = PlayerState::IDLE;
 
+	// Flag for if the animation should be reset.
+	// This is used for setting the same state.
+	bool isResetAnimation{ false };
+
 	// Only one running key is pressed.
 	float speed = 0.f;
 	float dir = physics.scale.x;
@@ -108,7 +117,21 @@ bool GameSystem::updatePlayer(InputManager *input,
 	{
 		// Show running animation if on the ground.
 		if (aabb.isCollidingBottom)
-			state = PlayerState::RUN;
+		{
+			// Show turning animation if moving in opposite from the direction 
+			// the player is facing.
+			if ((physics.scale.x < 0 && isRunningRight) ||
+				(physics.scale.x > 0 && isRunningLeft))
+			{
+				isResetAnimation = true;
+				state = PlayerState::TURN;
+			}
+			// Otherwise just start running.
+			else if (player.currentState != PlayerState::RUN &&
+				player.currentState != PlayerState::TURN)
+				state = PlayerState::RUN_START;
+		}
+		
 
 		speed = 128.f;
 
@@ -125,11 +148,22 @@ bool GameSystem::updatePlayer(InputManager *input,
 	physics.speed.x = speed;
 	physics.scale.x = dir;
 
+	// Change state to run_stop if the player stops running.
+	bool isStopRunningLeft{ input->isKeyReleased(INPUT_LEFT) };
+	bool isStopRunningRight{ input->isKeyReleased(INPUT_RIGHT) };
+	if ((player.previousState == PlayerState::RUN || 
+		player.previousState == PlayerState::RUN_START) &&
+		(isStopRunningLeft || isStopRunningRight || !isRunning))
+	{
+		state = PlayerState::RUN_STOP;
+	}
+
 	// If the player landed on the ground, reset the remaining jumps.
 	if (aabb.isCollidingBottom)
 	{
 		// Landed and not running.
-		if (!isRunning)
+		if (!isRunning && (player.previousState == PlayerState::JUMP_DESCEND || 
+			player.previousState == PlayerState::JUMP_PEAK))
 			state = PlayerState::IDLE;
 
 		player.numRemainingJumps = player.numMaxJumps;
@@ -145,6 +179,7 @@ bool GameSystem::updatePlayer(InputManager *input,
 	// The player can only jump if there are still remaining jumps.
 	if (input->isKeyPressed(INPUT_JUMP) && player.numRemainingJumps > 0)
 	{
+		isResetAnimation = true;
 		state = PlayerState::JUMP_ASCEND;
 		physics.speed.y = 192.f;
 		player.numRemainingJumps--;
@@ -166,10 +201,18 @@ bool GameSystem::updatePlayer(InputManager *input,
 	{
 		if (player.currentState == PlayerState::JUMP_PEAK)
 			state = PlayerState::JUMP_DESCEND;
+		else if (player.currentState == PlayerState::RUN_START)
+			state = PlayerState::RUN;
+		else if (player.currentState == PlayerState::RUN_STOP)
+			state = PlayerState::ALERT;
+		else if (player.currentState == PlayerState::ALERT)
+			state = PlayerState::IDLE;
+		else if (player.currentState == PlayerState::TURN)
+			state = PlayerState::RUN_START;
 	}
 
 	// Change the sprite's state if it is a different one.
-	if (player.currentState != state)
+	if (player.currentState != state || isResetAnimation)
 	{
 		player.currentState = state;
 		sprite.spriteSheet->setAnimation(state, sprite);

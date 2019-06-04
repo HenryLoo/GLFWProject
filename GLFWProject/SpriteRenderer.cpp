@@ -174,7 +174,7 @@ void SpriteRenderer::addSprite(const GameComponent::Physics &physics,
 	glm::vec2 texSize{ sprite.spriteSheet->getSize() };
 	glm::vec2 clipSize{ sprite.spriteSheet->getClipSize() };
 	int spriteIndex{ sprite.currentAnimation.sheetIndex + sprite.currentFrame };
-	int numSpritesPerRow{ static_cast<int>(glm::max(1.f, texSize.x / clipSize.x - 1)) };
+	int numSpritesPerRow{ static_cast<int>(glm::max(1.f, texSize.x / clipSize.x)) };
 	glm::vec2 rowColIndex{ spriteIndex % numSpritesPerRow, glm::floor(spriteIndex / numSpritesPerRow) };
 
 	m_texCoordsData[4 * m_numSprites] = rowColIndex.x * clipSize.x / texSize.x;

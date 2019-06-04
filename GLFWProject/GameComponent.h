@@ -65,8 +65,9 @@ namespace GameComponent
 
 	struct Player
 	{
-		// Hold the current state's label.
+		// Hold the player state's label.
 		// This label is used as a key for the spritesheet's animations.
+		std::string previousState;
 		std::string currentState;
 
 		// The maximum number of jumps that the player can perform.
