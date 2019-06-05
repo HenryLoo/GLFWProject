@@ -11,4 +11,6 @@ namespace PlayerState
 	const std::string RUN_STOP{ "run_stop" };
 	const std::string ALERT{ "alert" };
 	const std::string TURN{ "turn" };
+	const std::string CROUCH{ "crouch" };
+	const std::string CROUCH_STOP{ "crouch_stop" };
 }

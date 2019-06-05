@@ -100,7 +100,9 @@ bool GameSystem::updatePlayer(InputManager *input,
 
 	bool isRunningLeft{ input->isKeyPressing(INPUT_LEFT) };
 	bool isRunningRight{ input->isKeyPressing(INPUT_RIGHT) };
+	bool isCrouching{ input->isKeyPressing(INPUT_DOWN) };
 	bool isRunning{ isRunningLeft != isRunningRight };
+	bool isOnGround{ aabb.isCollidingFloor || aabb.isCollidingGhost };
 
 	std::string state{ player.currentState };
 	if (state.empty())
@@ -113,10 +115,10 @@ bool GameSystem::updatePlayer(InputManager *input,
 	// Only one running key is pressed.
 	float speed = 0.f;
 	float dir = physics.scale.x;
-	if (isRunning)
+	if (isRunning && (!isOnGround || !isCrouching))
 	{
 		// Show running animation if on the ground.
-		if (aabb.isCollidingBottom)
+		if (isOnGround)
 		{
 			// Show turning animation if moving in opposite from the direction 
 			// the player is facing.
@@ -158,14 +160,28 @@ bool GameSystem::updatePlayer(InputManager *input,
 		state = PlayerState::RUN_STOP;
 	}
 
-	// If the player landed on the ground, reset the remaining jumps.
-	if (aabb.isCollidingBottom)
+	// While on the ground.
+	if (isOnGround)
 	{
-		// Landed and not running.
-		if (!isRunning && (player.previousState == PlayerState::JUMP_DESCEND || 
+		// Handle crouching.
+		// The player can only crouch while on the ground.
+		if (isCrouching)
+		{
+			state = PlayerState::CROUCH;
+		}
+		// Stopped crouching.
+		else if (input->isKeyReleased(INPUT_DOWN))
+		{
+			state = PlayerState::CROUCH_STOP;
+		}
+		// Landed and not running or crouching.
+		else if (!isRunning && (player.previousState == PlayerState::JUMP_DESCEND ||
 			player.previousState == PlayerState::JUMP_PEAK))
+		{
 			state = PlayerState::IDLE;
+		}
 
+		// If the player landed on the ground, reset the remaining jumps.
 		player.numRemainingJumps = player.numMaxJumps;
 	}
 	// Remove 1 remaining jump if walking off a ledge.
@@ -181,8 +197,18 @@ bool GameSystem::updatePlayer(InputManager *input,
 	{
 		isResetAnimation = true;
 		state = PlayerState::JUMP_ASCEND;
-		physics.speed.y = 192.f;
 		player.numRemainingJumps--;
+
+		// Dropping down, through ghost platforms.
+		if (aabb.isCollidingGhost && !aabb.isCollidingFloor && isCrouching)
+		{
+			physics.pos.y--;
+		}
+		// Regular jump.
+		else
+		{
+			physics.speed.y = 192.f;
+		}
 	}
 
 	// If starting to fall, then change to jump_peak.
@@ -205,7 +231,8 @@ bool GameSystem::updatePlayer(InputManager *input,
 			state = PlayerState::RUN;
 		else if (player.currentState == PlayerState::RUN_STOP)
 			state = PlayerState::ALERT;
-		else if (player.currentState == PlayerState::ALERT)
+		else if (player.currentState == PlayerState::ALERT || 
+			player.currentState == PlayerState::CROUCH_STOP)
 			state = PlayerState::IDLE;
 		else if (player.currentState == PlayerState::TURN)
 			state = PlayerState::RUN_START;
@@ -225,8 +252,8 @@ bool GameSystem::updateRoomCollision(float deltaTime,
 	GameComponent::Physics &physics, GameComponent::AABB &aabb, Room *room)
 {
 	// Reset collision flags.
-	aabb.isCollidingBottom = false;
-	aabb.isCollidingTop = false;
+	aabb.isCollidingFloor = false;
+	aabb.isCollidingGhost = false;
 
 	glm::vec2 speed{ physics.speed };
 	glm::vec2 halfSize{ aabb.halfSize };
@@ -302,7 +329,6 @@ bool GameSystem::updateRoomCollision(float deltaTime,
 
 		// 1 = moving down, -1 = moving up.
 		int direction{ speed.y < 0 ? 1 : -1 };
-		bool &isColliding{ direction == 1 ? aabb.isCollidingBottom : aabb.isCollidingTop };
 
 		// Get the horizontal tile bounds at the maximum Y-distance.
 		float maxDistY{ pos.y - direction * distY };
@@ -327,27 +353,40 @@ bool GameSystem::updateRoomCollision(float deltaTime,
 			{
 				glm::ivec2 thisTileCoord{ i, currentTileY };
 				TileType type{ room->getTileType(thisTileCoord) };
-				if (type == TILE_WALL)
-				{
-					float tileEdgePos{ room->getTilePos(thisTileCoord).y
-						+ direction * Room::TILE_SIZE / 2.f };
-					physics.pos.y = tileEdgePos + direction * halfSize.y - aabb.offset.y;
-					isColliding = true;
 
-					// Collision was found, so there is no need to keep checking.
-					break;
+				// The edge of the tile to check player collision against.
+				float tileEdgePos{ room->getTilePos(thisTileCoord).y
+					+ direction * Room::TILE_SIZE / 2.f };
+
+				// If the tile is a wall or the player is colliding against the
+				// top edge of a ghost platform.
+				// Unlike horizontal collisions, we don't break early here because
+				// we need to set all possible collision flags.
+				if (type == TILE_WALL || (type == TILE_GHOST && speed.y <= 0 && 
+					(physics.pos.y - halfSize.y + aabb.offset.y) >= tileEdgePos))
+				{
+					physics.pos.y = tileEdgePos + direction * halfSize.y - aabb.offset.y;
+
+					if (type == TILE_WALL)
+					{
+						aabb.isCollidingFloor = true;
+					}
+					else if (type == TILE_GHOST)
+					{
+						aabb.isCollidingGhost = true;
+					}
 				}
 			}
 
 			// Collision was found, so there is no need to keep checking. 
-			if (isColliding)
+			if (aabb.isCollidingFloor || aabb.isCollidingGhost)
 				break;
 
 			currentTileY -= direction;
 		}
 
 		// If not colliding, then just apply velocity as usual.
-		if (!isColliding)
+		if (!aabb.isCollidingFloor && !aabb.isCollidingGhost)
 			physics.pos.y += physics.speed.y * deltaTime;
 		// Otherwise, stop moving.
 		else

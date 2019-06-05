@@ -14,6 +14,7 @@ namespace
 	// These will be used in the layout texture.
 	unsigned char RGB_SPACE[3]{ 255, 255, 255 };
 	unsigned char RGB_WALL[3]{ 0, 0, 0 };
+	unsigned char RGB_GHOST[3]{ 0, 0, 255 };
 }
 
 Room::Room(const std::string &roomName)
@@ -43,6 +44,11 @@ Room::Room(const std::string &roomName)
 			else if (isTileType(pixel, RGB_WALL))
 			{
 				m_tileTypes.push_back(TILE_WALL);
+				continue;
+			}
+			else if (isTileType(pixel, RGB_GHOST))
+			{
+				m_tileTypes.push_back(TILE_GHOST);
 				continue;
 			}
 			// Placeholder tile, in case nothing matches.

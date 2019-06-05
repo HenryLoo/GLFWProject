@@ -85,6 +85,8 @@ GameEngine::GameEngine()
 		{PlayerState::RUN_STOP, { 44, 4, false, {0.07f} }},
 		{PlayerState::ALERT, { 48, 3, false, {3.f, 0.07, 0.07f} }},
 		{PlayerState::TURN, { 51, 4, false, {0.07f} }},
+		{PlayerState::CROUCH, { 55, 4, false, {0.07f} }},
+		{PlayerState::CROUCH_STOP, { 59, 2, false, {0.07f} }},
 	};
 	m_texture = std::make_unique<SpriteSheet>("serah_sheet.png", anims, glm::ivec2(32, 32));
 	createPlayer();

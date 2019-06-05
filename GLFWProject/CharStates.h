@@ -15,6 +15,8 @@ namespace PlayerState
 	extern const std::string RUN_STOP;
 	extern const std::string ALERT;
 	extern const std::string TURN;
+	extern const std::string CROUCH;
+	extern const std::string CROUCH_STOP;
 }
 
 #endif

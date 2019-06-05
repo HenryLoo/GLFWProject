@@ -87,8 +87,8 @@ namespace GameComponent
 		glm::vec2 offset;
 
 		// Flag for if the box has collided from the bottom during this frame.
-		bool isCollidingTop{ false };
-		bool isCollidingBottom{ false };
+		bool isCollidingFloor{ false };
+		bool isCollidingGhost{ false };
 	};
 
 	// Check if an entity has a component.
