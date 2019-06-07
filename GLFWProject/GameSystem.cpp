@@ -6,6 +6,7 @@
 
 #include <glm/gtx/norm.hpp>
 
+#include <cmath>
 #include <iostream>
 
 namespace
@@ -18,7 +19,6 @@ bool GameSystem::updatePhysics(float deltaTime, GameComponent::Physics &physics)
 	// Update this component's values.
 	physics.speed += glm::vec3(0.0f, -256.f * deltaTime, 0.0f);
 	physics.speed.y = glm::max(-128.f, physics.speed.y);
-	//physics.pos += physics.speed * deltaTime;
 
 	return true;
 }
@@ -178,7 +178,7 @@ bool GameSystem::updatePlayer(InputManager *input,
 		else if (!isRunning && (player.previousState == PlayerState::JUMP_DESCEND ||
 			player.previousState == PlayerState::JUMP_PEAK))
 		{
-			state = PlayerState::IDLE;
+			state = PlayerState::JUMP_LAND;
 		}
 
 		// If the player landed on the ground, reset the remaining jumps.
@@ -212,10 +212,10 @@ bool GameSystem::updatePlayer(InputManager *input,
 	}
 
 	// If starting to fall, then change to jump_peak.
-	if (physics.speed.y < 0)
+	if (physics.speed.y < 0 && !isOnGround &&
+		player.currentState != PlayerState::JUMP_DESCEND)
 	{
-		if (player.currentState != PlayerState::JUMP_DESCEND)
-			state = PlayerState::JUMP_PEAK;
+		state = PlayerState::JUMP_PEAK;
 	}
 
 	// Handle natural sprite transitions.
@@ -231,6 +231,8 @@ bool GameSystem::updatePlayer(InputManager *input,
 			state = PlayerState::RUN;
 		else if (player.currentState == PlayerState::RUN_STOP)
 			state = PlayerState::ALERT;
+		else if (player.currentState == PlayerState::JUMP_LAND)
+			state = PlayerState::CROUCH_STOP;
 		else if (player.currentState == PlayerState::ALERT || 
 			player.currentState == PlayerState::CROUCH_STOP)
 			state = PlayerState::IDLE;
@@ -355,14 +357,37 @@ bool GameSystem::updateRoomCollision(float deltaTime,
 				TileType type{ room->getTileType(thisTileCoord) };
 
 				// The edge of the tile to check player collision against.
-				float tileEdgePos{ room->getTilePos(thisTileCoord).y
-					+ direction * Room::TILE_SIZE / 2.f };
+				glm::vec2 thisTilePos{ room->getTilePos(thisTileCoord) };
+				const static int tileHalfSize{ Room::TILE_SIZE / 2 };
+				float tileEdgePos{ thisTilePos.y + direction * tileHalfSize };
 
+				// Check for collisions against slopes first.
+				if ((type == TILE_SLOPE_RIGHT || type == TILE_SLOPE_LEFT) && speed.y <= 0)
+				{
+					// Get the distance from the left edge of the tile to the entity's position.
+					float slopeRad{ atanf((float)Room::SLOPE_HEIGHT / Room::TILE_SIZE) };
+					float xDist{ physics.pos.x - (thisTilePos.x - tileHalfSize) };
+
+					// Not close enough onto the slope yet.
+					if (xDist < 0 ) 
+						continue;
+
+					float yDist{ tanf(slopeRad) * xDist };
+					tileEdgePos = thisTilePos.y - tileHalfSize + yDist;
+
+					// Slopes are shorter than regular tiles, so we need to check more precisely
+					// for collisions.
+					if ((physics.pos.y - halfSize.y + aabb.offset.y + speed.y * deltaTime) > tileEdgePos)
+						continue;
+
+					aabb.isCollidingFloor = true;
+					physics.pos.y = tileEdgePos + halfSize.y - aabb.offset.y;
+				}
 				// If the tile is a wall or the player is colliding against the
 				// top edge of a ghost platform.
 				// Unlike horizontal collisions, we don't break early here because
 				// we need to set all possible collision flags.
-				if (type == TILE_WALL || (type == TILE_GHOST && speed.y <= 0 && 
+				else if (type == TILE_WALL || (type == TILE_GHOST && speed.y <= 0 && 
 					(physics.pos.y - halfSize.y + aabb.offset.y) >= tileEdgePos))
 				{
 					physics.pos.y = tileEdgePos + direction * halfSize.y - aabb.offset.y;
@@ -387,10 +412,15 @@ bool GameSystem::updateRoomCollision(float deltaTime,
 
 		// If not colliding, then just apply velocity as usual.
 		if (!aabb.isCollidingFloor && !aabb.isCollidingGhost)
+		{
 			physics.pos.y += physics.speed.y * deltaTime;
-		// Otherwise, stop moving.
-		else
-			physics.speed.y = 0;
+			std::cout << aabb.isCollidingFloor << std::endl;
+		}
+
+		// Round to two decimal places to reduce sprite artifacts.
+		physics.pos *= 100;
+		physics.pos = glm::round(physics.pos);
+		physics.pos /= 100;
 	}
 
 	return true;

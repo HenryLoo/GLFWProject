@@ -15,6 +15,8 @@ namespace
 	unsigned char RGB_SPACE[3]{ 255, 255, 255 };
 	unsigned char RGB_WALL[3]{ 0, 0, 0 };
 	unsigned char RGB_GHOST[3]{ 0, 0, 255 };
+	unsigned char RGB_SLOPE_LEFT[3]{ 0, 255, 0 };
+	unsigned char RGB_SLOPE_RIGHT[3]{ 255, 0, 0 };
 }
 
 Room::Room(const std::string &roomName)
@@ -49,6 +51,16 @@ Room::Room(const std::string &roomName)
 			else if (isTileType(pixel, RGB_GHOST))
 			{
 				m_tileTypes.push_back(TILE_GHOST);
+				continue;
+			}
+			else if (isTileType(pixel, RGB_SLOPE_LEFT))
+			{
+				m_tileTypes.push_back(TILE_SLOPE_LEFT);
+				continue;
+			}
+			else if (isTileType(pixel, RGB_SLOPE_RIGHT))
+			{
+				m_tileTypes.push_back(TILE_SLOPE_RIGHT);
 				continue;
 			}
 			// Placeholder tile, in case nothing matches.

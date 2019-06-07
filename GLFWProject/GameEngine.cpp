@@ -81,6 +81,7 @@ GameEngine::GameEngine()
 		{PlayerState::JUMP_ASCEND, { 22, 4, false, {0.07f} }},
 		{PlayerState::JUMP_PEAK, { 26, 6, false, {0.07f} }},
 		{PlayerState::JUMP_DESCEND, { 33, 4, true, {0.07f} }},
+		{PlayerState::JUMP_LAND, { 37, 1, false, {0.1f} }},
 		{PlayerState::RUN_START, { 38, 5, false, {0.07f} }},
 		{PlayerState::RUN_STOP, { 44, 4, false, {0.07f} }},
 		{PlayerState::ALERT, { 48, 3, false, {3.f, 0.07, 0.07f} }},

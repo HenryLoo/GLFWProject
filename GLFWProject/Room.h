@@ -43,6 +43,7 @@ public:
 
 	// The size of each tile, in pixels.
 	const static int TILE_SIZE{ 16 };
+	const static int SLOPE_HEIGHT{ 8 };
 
 private:
 	// Check if a pixel matches the given rgb values.
