@@ -90,6 +90,7 @@ namespace GameComponent
 		bool isCollidingFloor{ false };
 		bool isCollidingGhost{ false };
 		bool isCollidingSlope{ false };
+		bool wasOnGround{ false };
 	};
 
 	// Check if an entity has a component.

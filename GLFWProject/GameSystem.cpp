@@ -11,7 +11,7 @@
 
 namespace
 {
-	const float COLLISION_THRESHOLD{ 0.01f };
+	const float COLLISION_THRESHOLD{ 1.f };
 }
 
 bool GameSystem::updatePhysics(float deltaTime, GameComponent::Physics &physics)
@@ -184,11 +184,17 @@ bool GameSystem::updatePlayer(InputManager *input,
 		// If the player landed on the ground, reset the remaining jumps.
 		player.numRemainingJumps = player.numMaxJumps;
 	}
-	// Remove 1 remaining jump if walking off a ledge.
 	else
 	{
+		// Remove 1 remaining jump if walking off a ledge.
 		player.numRemainingJumps = glm::min(player.numRemainingJumps, 
 			player.numMaxJumps - 1);
+
+		// Reset fall speed if walking off a ledge.
+		if (aabb.wasOnGround && physics.speed.y < 0)
+		{
+			physics.speed.y = 0.f;
+		}
 	}
 
 	// Handle jumping.
@@ -255,6 +261,7 @@ bool GameSystem::updateRoomCollision(float deltaTime,
 	GameComponent::Physics &physics, GameComponent::AABB &aabb, Room *room)
 {
 	// Reset collision flags.
+	aabb.wasOnGround = aabb.isCollidingFloor || aabb.isCollidingGhost || aabb.isCollidingSlope;
 	aabb.isCollidingFloor = false;
 	aabb.isCollidingGhost = false;
 
