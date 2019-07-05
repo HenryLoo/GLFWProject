@@ -15,8 +15,10 @@ enum TileType
 {
 	TILE_SPACE,
 	TILE_WALL,
-	TILE_SLOPE_LEFT,
-	TILE_SLOPE_RIGHT,
+	TILE_SLOPE_LEFT_1,
+	TILE_SLOPE_LEFT_2,
+	TILE_SLOPE_RIGHT_1,
+	TILE_SLOPE_RIGHT_2,
 	TILE_GHOST
 };
 
@@ -40,6 +42,9 @@ public:
 
 	// Get this room's tile sprites.
 	Texture *getTileSprites() const;
+
+	// Check if a given tile type is a slope.
+	static bool isSlope(TileType type);
 
 	// The size of each tile, in pixels.
 	const static int TILE_SIZE{ 16 };

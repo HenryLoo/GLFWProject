@@ -15,8 +15,10 @@ namespace
 	unsigned char RGB_SPACE[3]{ 255, 255, 255 };
 	unsigned char RGB_WALL[3]{ 0, 0, 0 };
 	unsigned char RGB_GHOST[3]{ 0, 0, 255 };
-	unsigned char RGB_SLOPE_LEFT[3]{ 0, 255, 0 };
-	unsigned char RGB_SLOPE_RIGHT[3]{ 255, 0, 0 };
+	unsigned char RGB_SLOPE_LEFT_1[3]{ 0, 160, 0 };
+	unsigned char RGB_SLOPE_LEFT_2[3]{ 0, 255, 0 };
+	unsigned char RGB_SLOPE_RIGHT_1[3]{ 255, 0, 0 };
+	unsigned char RGB_SLOPE_RIGHT_2[3]{ 160, 0, 0 };
 }
 
 Room::Room(const std::string &roomName)
@@ -53,14 +55,25 @@ Room::Room(const std::string &roomName)
 				m_tileTypes.push_back(TILE_GHOST);
 				continue;
 			}
-			else if (isTileType(pixel, RGB_SLOPE_LEFT))
+			else if (isTileType(pixel, RGB_SLOPE_LEFT_1))
 			{
-				m_tileTypes.push_back(TILE_SLOPE_LEFT);
+				m_tileTypes.push_back(TILE_SLOPE_LEFT_1);
 				continue;
 			}
-			else if (isTileType(pixel, RGB_SLOPE_RIGHT))
+
+			else if (isTileType(pixel, RGB_SLOPE_LEFT_2))
 			{
-				m_tileTypes.push_back(TILE_SLOPE_RIGHT);
+				m_tileTypes.push_back(TILE_SLOPE_LEFT_2);
+				continue;
+			}
+			else if (isTileType(pixel, RGB_SLOPE_RIGHT_1))
+			{
+				m_tileTypes.push_back(TILE_SLOPE_RIGHT_1);
+				continue;
+			}
+			else if (isTileType(pixel, RGB_SLOPE_RIGHT_2))
+			{
+				m_tileTypes.push_back(TILE_SLOPE_RIGHT_2);
 				continue;
 			}
 			// Placeholder tile, in case nothing matches.
@@ -117,4 +130,10 @@ bool Room::isTileType(const unsigned char *pixel, unsigned char rgb[3])
 	stbi_uc b{ pixel[2] };
 
 	return rgb[0] == r && rgb[1] == g && rgb[2] == b;
+}
+
+bool Room::isSlope(TileType type)
+{
+	return type == TILE_SLOPE_RIGHT_1 || type == TILE_SLOPE_RIGHT_2 ||
+		type == TILE_SLOPE_LEFT_1 || type == TILE_SLOPE_LEFT_2;
 }

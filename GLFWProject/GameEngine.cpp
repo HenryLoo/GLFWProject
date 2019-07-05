@@ -84,7 +84,7 @@ GameEngine::GameEngine()
 		{PlayerState::JUMP_LAND, { 37, 1, false, {0.1f} }},
 		{PlayerState::RUN_START, { 38, 5, false, {0.07f} }},
 		{PlayerState::RUN_STOP, { 44, 4, false, {0.07f} }},
-		{PlayerState::ALERT, { 48, 3, false, {3.f, 0.07, 0.07f} }},
+		{PlayerState::ALERT, { 48, 3, false, {3.f, 0.07f, 0.07f} }},
 		{PlayerState::TURN, { 51, 4, false, {0.07f} }},
 		{PlayerState::CROUCH, { 55, 4, false, {0.07f} }},
 		{PlayerState::CROUCH_STOP, { 59, 2, false, {0.07f} }},

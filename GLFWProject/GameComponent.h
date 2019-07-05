@@ -89,6 +89,7 @@ namespace GameComponent
 		// Flag for if the box has collided from the bottom during this frame.
 		bool isCollidingFloor{ false };
 		bool isCollidingGhost{ false };
+		bool isCollidingSlope{ false };
 	};
 
 	// Check if an entity has a component.

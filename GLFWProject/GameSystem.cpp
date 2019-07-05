@@ -102,7 +102,7 @@ bool GameSystem::updatePlayer(InputManager *input,
 	bool isRunningRight{ input->isKeyPressing(INPUT_RIGHT) };
 	bool isCrouching{ input->isKeyPressing(INPUT_DOWN) };
 	bool isRunning{ isRunningLeft != isRunningRight };
-	bool isOnGround{ aabb.isCollidingFloor || aabb.isCollidingGhost };
+	bool isOnGround{ aabb.isCollidingFloor || aabb.isCollidingGhost || aabb.isCollidingSlope };
 
 	std::string state{ player.currentState };
 	if (state.empty())
@@ -203,6 +203,7 @@ bool GameSystem::updatePlayer(InputManager *input,
 		if (aabb.isCollidingGhost && !aabb.isCollidingFloor && isCrouching)
 		{
 			physics.pos.y--;
+			physics.speed.y = 0;
 		}
 		// Regular jump.
 		else
@@ -281,6 +282,14 @@ bool GameSystem::updateRoomCollision(float deltaTime,
 		glm::ivec2 minYTile{ room->getTileCoord(minYPos) };
 		glm::ivec2 maxYTile{ room->getTileCoord(maxYPos) };
 
+		// If the entity is on a slope, ignore horizontal collisions for the
+		// bottom-most tile. This will stop the collision box from
+		// "catching" onto the tile when transitioning from slope onto floor.
+		if (aabb.isCollidingSlope)
+		{
+			minYTile.y = glm::min(minYTile.y + 1, maxYTile.y);
+		}
+
 		// Set up bounds for the loop.
 		// minYTile.x == maxYTile.x should be true.
 		glm::ivec2 tileRangeToCheck{ currentTile.x, minYTile.x };
@@ -321,6 +330,11 @@ bool GameSystem::updateRoomCollision(float deltaTime,
 			physics.pos.x += physics.speed.x * deltaTime;
 	}
 
+	// Reset the colliding-slope flag after checking for horizontal collisions,
+	// because we need to check it to properly transition between slopes and
+	// floor tiles.
+	aabb.isCollidingSlope = false;
+
 	// Check for vertical collisions.
 	if (speed.y != 0)
 	{
@@ -348,6 +362,15 @@ bool GameSystem::updateRoomCollision(float deltaTime,
 		// Check all potential collisions before applying velocity.
 		// We check in order of closest to furthest tiles.
 		int currentTileY{ tileRangeToCheck.x };
+
+		// The entity's new y-position if it has a vertical collision.
+		float newYPos{ -1 };
+
+		// Flag for if the entity has almost fallen onto a slope.
+		// Since slopes are shorter than regular tlies, we need this flag to check if
+		// the entity is within the slope's tile, but not yet colliding with it.
+		bool isAlmostSlope{ false };
+
 		while (currentTileY != tileRangeToCheck.y)
 		{
 			// Check all tiles at this height.
@@ -356,41 +379,63 @@ bool GameSystem::updateRoomCollision(float deltaTime,
 				glm::ivec2 thisTileCoord{ i, currentTileY };
 				TileType type{ room->getTileType(thisTileCoord) };
 
-				// The edge of the tile to check player collision against.
+				// The edge of the tile to check entity collision against.
 				glm::vec2 thisTilePos{ room->getTilePos(thisTileCoord) };
 				const static int tileHalfSize{ Room::TILE_SIZE / 2 };
 				float tileEdgePos{ thisTilePos.y + direction * tileHalfSize };
 
 				// Check for collisions against slopes first.
-				if ((type == TILE_SLOPE_RIGHT || type == TILE_SLOPE_LEFT) && speed.y <= 0)
+				if (Room::isSlope(type) && speed.y <= 0)
 				{
 					// Get the distance from the left edge of the tile to the entity's position.
 					float slopeRad{ atanf((float)Room::SLOPE_HEIGHT / Room::TILE_SIZE) };
 					float xDist{ physics.pos.x - (thisTilePos.x - tileHalfSize) };
 
 					// Not close enough onto the slope yet.
-					if (xDist < 0 ) 
+					if (xDist < 0 || xDist > Room::TILE_SIZE)
+					{
 						continue;
+					}
 
+					// Adjust y-distance to displace the entity, based on the type of slope.
 					float yDist{ tanf(slopeRad) * xDist };
+
+					if (type == TILE_SLOPE_LEFT_1 || type == TILE_SLOPE_LEFT_2)
+						yDist = Room::TILE_SIZE - yDist;
+
+					if (type == TILE_SLOPE_RIGHT_2)
+						yDist += Room::SLOPE_HEIGHT;
+					else if (type == TILE_SLOPE_LEFT_2)
+						yDist -= Room::SLOPE_HEIGHT;
+
 					tileEdgePos = thisTilePos.y - tileHalfSize + yDist;
 
 					// Slopes are shorter than regular tiles, so we need to check more precisely
 					// for collisions.
 					if ((physics.pos.y - halfSize.y + aabb.offset.y + speed.y * deltaTime) > tileEdgePos)
+					{
+						isAlmostSlope = true;
 						continue;
+					}
 
-					aabb.isCollidingFloor = true;
-					physics.pos.y = tileEdgePos + halfSize.y - aabb.offset.y;
+					aabb.isCollidingSlope = true;
+
+					// Set the new y-position if it isn't set already, or if it is at a lower
+					// y-position than the current one to set.
+					float yPosToSet = tileEdgePos + halfSize.y - aabb.offset.y;
+					newYPos = newYPos == -1 ? yPosToSet : glm::min(newYPos, yPosToSet);
 				}
-				// If the tile is a wall or the player is colliding against the
+				// If the tile is a wall or the entity is colliding against the
 				// top edge of a ghost platform.
 				// Unlike horizontal collisions, we don't break early here because
 				// we need to set all possible collision flags.
 				else if (type == TILE_WALL || (type == TILE_GHOST && speed.y <= 0 && 
 					(physics.pos.y - halfSize.y + aabb.offset.y) >= tileEdgePos))
 				{
-					physics.pos.y = tileEdgePos + direction * halfSize.y - aabb.offset.y;
+					// Set the new y-position if it isn't set already, or if it is at a lower
+					// y-position than the current one to set.
+					float yPosToSet = tileEdgePos + direction * halfSize.y - aabb.offset.y;
+					newYPos = newYPos == -1 ? yPosToSet : glm::min(newYPos, yPosToSet);
 
 					if (type == TILE_WALL)
 					{
@@ -404,17 +449,39 @@ bool GameSystem::updateRoomCollision(float deltaTime,
 			}
 
 			// Collision was found, so there is no need to keep checking. 
-			if (aabb.isCollidingFloor || aabb.isCollidingGhost)
+			if ((aabb.isCollidingFloor || aabb.isCollidingGhost || aabb.isCollidingSlope))
+			{
+				// If the entity is within a slope's tile but not yet 
+				// colliding with it, then discard any floor collisions that 
+				// would have occurred. Any floor collisions would have been 
+				// at the same tile y-position as the slope. Since slopes are 
+				// shorter than regular tiles, this would incorrectly set the 
+				// new y-position to the floor, even though it should be at the
+				// slope.
+				if (isAlmostSlope && !aabb.isCollidingSlope)
+				{
+					aabb.isCollidingFloor = false;
+				}
+
 				break;
+			}
 
 			currentTileY -= direction;
 		}
 
 		// If not colliding, then just apply velocity as usual.
-		if (!aabb.isCollidingFloor && !aabb.isCollidingGhost)
+		if (!aabb.isCollidingFloor && !aabb.isCollidingGhost && !aabb.isCollidingSlope)
 		{
 			physics.pos.y += physics.speed.y * deltaTime;
-			std::cout << aabb.isCollidingFloor << std::endl;
+		}
+		// Colliding against ceiling.
+		else if (aabb.isCollidingFloor && physics.speed.y > 0)
+		{
+			physics.speed.y = 0;
+		}
+		else
+		{
+			physics.pos.y = newYPos;
 		}
 
 		// Round to two decimal places to reduce sprite artifacts.
