@@ -76,6 +76,11 @@ namespace GameComponent
 		// The number of jumps that the player can still perform.
 		// This value is reset to numMaxJumps when landing on the ground.
 		int numRemainingJumps{ 0 };
+
+		// The remaining duration in seconds allowing for illusion jumps.
+		// An illusion jump refers to jumping during the short period of time
+		// after walking off a ledge. This allows for more forgiving jumps.
+		float illusionJumpTimer{ 0.f };
 	};
 
 	struct AABB

@@ -21,7 +21,7 @@ namespace GameSystem
 		GameComponent::Sprite &sprite, GameComponent::Physics &physics);
 
 	// Update a player component's values
-	bool updatePlayer(InputManager *input, GameComponent::Player &player, 
+	bool updatePlayer(float deltaTime, InputManager *input, GameComponent::Player &player, 
 		GameComponent::Physics &physics, GameComponent::Sprite &sprite,
 		GameComponent::AABB &aabb);
 

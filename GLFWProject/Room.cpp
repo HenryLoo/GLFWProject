@@ -57,23 +57,23 @@ Room::Room(const std::string &roomName)
 			}
 			else if (isTileType(pixel, RGB_SLOPE_LEFT_1))
 			{
-				m_tileTypes.push_back(TILE_SLOPE_LEFT_1);
+				m_tileTypes.push_back(TILE_SLOPE_LEFT_UPPER);
 				continue;
 			}
 
 			else if (isTileType(pixel, RGB_SLOPE_LEFT_2))
 			{
-				m_tileTypes.push_back(TILE_SLOPE_LEFT_2);
+				m_tileTypes.push_back(TILE_SLOPE_LEFT_LOWER);
 				continue;
 			}
 			else if (isTileType(pixel, RGB_SLOPE_RIGHT_1))
 			{
-				m_tileTypes.push_back(TILE_SLOPE_RIGHT_1);
+				m_tileTypes.push_back(TILE_SLOPE_RIGHT_LOWER);
 				continue;
 			}
 			else if (isTileType(pixel, RGB_SLOPE_RIGHT_2))
 			{
-				m_tileTypes.push_back(TILE_SLOPE_RIGHT_2);
+				m_tileTypes.push_back(TILE_SLOPE_RIGHT_UPPER);
 				continue;
 			}
 			// Placeholder tile, in case nothing matches.
@@ -134,6 +134,6 @@ bool Room::isTileType(const unsigned char *pixel, unsigned char rgb[3])
 
 bool Room::isSlope(TileType type)
 {
-	return type == TILE_SLOPE_RIGHT_1 || type == TILE_SLOPE_RIGHT_2 ||
-		type == TILE_SLOPE_LEFT_1 || type == TILE_SLOPE_LEFT_2;
+	return type == TILE_SLOPE_RIGHT_LOWER || type == TILE_SLOPE_RIGHT_UPPER ||
+		type == TILE_SLOPE_LEFT_UPPER || type == TILE_SLOPE_LEFT_LOWER;
 }

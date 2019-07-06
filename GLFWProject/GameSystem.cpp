@@ -11,14 +11,19 @@
 
 namespace
 {
+	// Distance in pixels to subtract from collision boxes to
+	// prevent overlapping between horizontal and vertical tests.
 	const float COLLISION_THRESHOLD{ 1.f };
+
+	// Duration of time in seconds to allow for illusion jumps.
+	const float ILLUSION_JUMP_DURATION{ 0.1f };
 }
 
 bool GameSystem::updatePhysics(float deltaTime, GameComponent::Physics &physics)
 {
 	// Update this component's values.
 	physics.speed += glm::vec3(0.0f, -256.f * deltaTime, 0.0f);
-	physics.speed.y = glm::max(-128.f, physics.speed.y);
+	physics.speed.y = glm::max(-144.f, physics.speed.y);
 
 	return true;
 }
@@ -89,7 +94,7 @@ bool GameSystem::updateSprite(float deltaTime, SpriteRenderer *renderer,
 	return isAlive;
 }
 
-bool GameSystem::updatePlayer(InputManager *input, 
+bool GameSystem::updatePlayer(float deltaTime, InputManager *input, 
 	GameComponent::Player &player, GameComponent::Physics &physics, 
 	GameComponent::Sprite &sprite, GameComponent::AABB &aabb)
 {
@@ -102,20 +107,33 @@ bool GameSystem::updatePlayer(InputManager *input,
 	bool isRunningRight{ input->isKeyPressing(INPUT_RIGHT) };
 	bool isCrouching{ input->isKeyPressing(INPUT_DOWN) };
 	bool isRunning{ isRunningLeft != isRunningRight };
-	bool isOnGround{ aabb.isCollidingFloor || aabb.isCollidingGhost || aabb.isCollidingSlope };
+	bool isOnGround{ aabb.isCollidingFloor || aabb.isCollidingGhost ||
+		aabb.isCollidingSlope };
+	bool isJumping{ input->isKeyPressed(INPUT_JUMP) };
+	bool isAttacking{ input->isKeyPressed(INPUT_ATTACK) };
 
 	std::string state{ player.currentState };
 	if (state.empty())
 		state = PlayerState::IDLE;
 
+	bool isAttackState{ state == PlayerState::ATTACK || 
+		state == PlayerState::ATTACK_AIR || 
+		state == PlayerState::ATTACK_CROUCH };
+
+	bool isCrouchState{ state == PlayerState::CROUCH ||
+		state == PlayerState::ATTACK_CROUCH };
+
 	// Flag for if the animation should be reset.
 	// This is used for setting the same state.
 	bool isResetAnimation{ false };
 
-	// Only one running key is pressed.
+	// Handle running.
+	// Can't move if crouch key is being pressed.
+	// Can only move while attacking if in the air.
 	float speed = 0.f;
 	float dir = physics.scale.x;
-	if (isRunning && (!isOnGround || !isCrouching))
+	if (isRunning && (!isOnGround || !isCrouching) && 
+		!(isAttackState && isOnGround && state != PlayerState::ATTACK_AIR))
 	{
 		// Show running animation if on the ground.
 		if (isOnGround)
@@ -134,7 +152,6 @@ bool GameSystem::updatePlayer(InputManager *input,
 				state = PlayerState::RUN_START;
 		}
 		
-
 		speed = 128.f;
 
 		if (isRunningLeft)
@@ -165,30 +182,43 @@ bool GameSystem::updatePlayer(InputManager *input,
 	{
 		// Handle crouching.
 		// The player can only crouch while on the ground.
-		if (isCrouching)
+		if (isCrouching && !isAttackState)
 		{
 			state = PlayerState::CROUCH;
 		}
 		// Stopped crouching.
-		else if (input->isKeyReleased(INPUT_DOWN))
+		else if (state == PlayerState::CROUCH && !isCrouching && !isAttackState)
 		{
 			state = PlayerState::CROUCH_STOP;
 		}
 		// Landed and not running or crouching.
 		else if (!isRunning && (player.previousState == PlayerState::JUMP_DESCEND ||
-			player.previousState == PlayerState::JUMP_PEAK))
+			player.previousState == PlayerState::JUMP_PEAK ||
+			player.previousState == PlayerState::ATTACK_AIR))
 		{
 			state = PlayerState::JUMP_LAND;
 		}
 
 		// If the player landed on the ground, reset the remaining jumps.
 		player.numRemainingJumps = player.numMaxJumps;
+
+		// Reset illusion jump timer.
+		player.illusionJumpTimer = 0.f;
 	}
 	else
 	{
 		// Remove 1 remaining jump if walking off a ledge.
-		player.numRemainingJumps = glm::min(player.numRemainingJumps, 
-			player.numMaxJumps - 1);
+		// Allow for a short duration of time before doing this, so
+		// that it feels more forgiving when jumping off ledges.
+		if (player.illusionJumpTimer >= ILLUSION_JUMP_DURATION)
+		{
+			player.numRemainingJumps = glm::min(player.numRemainingJumps,
+				player.numMaxJumps - 1);
+		}
+		else
+		{
+			player.illusionJumpTimer += deltaTime;
+		}
 
 		// Reset fall speed if walking off a ledge.
 		if (aabb.wasOnGround && physics.speed.y < 0)
@@ -199,7 +229,7 @@ bool GameSystem::updatePlayer(InputManager *input,
 
 	// Handle jumping.
 	// The player can only jump if there are still remaining jumps.
-	if (input->isKeyPressed(INPUT_JUMP) && player.numRemainingJumps > 0)
+	if (isJumping && player.numRemainingJumps > 0)
 	{
 		isResetAnimation = true;
 		state = PlayerState::JUMP_ASCEND;
@@ -220,9 +250,27 @@ bool GameSystem::updatePlayer(InputManager *input,
 
 	// If starting to fall, then change to jump_peak.
 	if (physics.speed.y < 0 && !isOnGround &&
-		player.currentState != PlayerState::JUMP_DESCEND)
+		player.currentState != PlayerState::JUMP_DESCEND &&
+		!isAttackState)
 	{
 		state = PlayerState::JUMP_PEAK;
+	}
+
+
+	// Handle attacking.
+	if (isAttacking)
+	{
+		if (isOnGround)
+		{
+			if (!isCrouchState)
+				state = PlayerState::ATTACK;
+			else
+				state = PlayerState::ATTACK_CROUCH;
+		}
+		else
+		{
+			state = PlayerState::ATTACK_AIR;
+		}
 	}
 
 	// Handle natural sprite transitions.
@@ -232,19 +280,34 @@ bool GameSystem::updatePlayer(InputManager *input,
 	if (sprite.currentFrameTime >= frameDuration &&
 		(!sprite.currentAnimation.isLooping && sprite.currentFrame == sprite.currentAnimation.numSprites - 1))
 	{
-		if (player.currentState == PlayerState::JUMP_PEAK)
+		const std::string &currentState{ player.currentState };
+		if (currentState == PlayerState::JUMP_PEAK)
 			state = PlayerState::JUMP_DESCEND;
-		else if (player.currentState == PlayerState::RUN_START)
+		else if (currentState == PlayerState::RUN_START)
 			state = PlayerState::RUN;
-		else if (player.currentState == PlayerState::RUN_STOP)
+		else if (currentState == PlayerState::RUN_STOP)
 			state = PlayerState::ALERT;
-		else if (player.currentState == PlayerState::JUMP_LAND)
+		else if (currentState == PlayerState::JUMP_LAND ||
+			currentState == PlayerState::ATTACK)
 			state = PlayerState::CROUCH_STOP;
-		else if (player.currentState == PlayerState::ALERT || 
-			player.currentState == PlayerState::CROUCH_STOP)
+		else if (currentState == PlayerState::ALERT || 
+			currentState == PlayerState::CROUCH_STOP)
 			state = PlayerState::IDLE;
-		else if (player.currentState == PlayerState::TURN)
+		else if (currentState == PlayerState::TURN)
 			state = PlayerState::RUN_START;
+		else if (currentState == PlayerState::ATTACK_CROUCH)
+			state = PlayerState::CROUCH;
+		else if (currentState == PlayerState::ATTACK_AIR)
+		{
+			if (physics.speed.y > 0)
+			{
+				state = PlayerState::JUMP_ASCEND;
+			}
+			else
+			{
+				state = PlayerState::JUMP_DESCEND;
+			}
+		}
 	}
 
 	// Change the sprite's state if it is a different one.
@@ -407,12 +470,12 @@ bool GameSystem::updateRoomCollision(float deltaTime,
 					// Adjust y-distance to displace the entity, based on the type of slope.
 					float yDist{ tanf(slopeRad) * xDist };
 
-					if (type == TILE_SLOPE_LEFT_1 || type == TILE_SLOPE_LEFT_2)
+					if (type == TILE_SLOPE_LEFT_UPPER || type == TILE_SLOPE_LEFT_LOWER)
 						yDist = Room::TILE_SIZE - yDist;
 
-					if (type == TILE_SLOPE_RIGHT_2)
+					if (type == TILE_SLOPE_RIGHT_UPPER)
 						yDist += Room::SLOPE_HEIGHT;
-					else if (type == TILE_SLOPE_LEFT_2)
+					else if (type == TILE_SLOPE_LEFT_LOWER)
 						yDist -= Room::SLOPE_HEIGHT;
 
 					tileEdgePos = thisTilePos.y - tileHalfSize + yDist;

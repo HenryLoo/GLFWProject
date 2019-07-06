@@ -18,6 +18,9 @@ namespace PlayerState
 	extern const std::string TURN;
 	extern const std::string CROUCH;
 	extern const std::string CROUCH_STOP;
+	extern const std::string ATTACK;
+	extern const std::string ATTACK_AIR;
+	extern const std::string ATTACK_CROUCH;
 }
 
 #endif

@@ -88,6 +88,9 @@ GameEngine::GameEngine()
 		{PlayerState::TURN, { 51, 4, false, {0.07f} }},
 		{PlayerState::CROUCH, { 55, 4, false, {0.07f} }},
 		{PlayerState::CROUCH_STOP, { 59, 2, false, {0.07f} }},
+		{PlayerState::ATTACK, { 61, 10, false, {0.05f} }},
+		{PlayerState::ATTACK_AIR, { 71, 9, false, {0.05f} }},
+		{PlayerState::ATTACK_CROUCH, { 80, 9, false, {0.05f} }},
 	};
 	m_texture = std::make_unique<SpriteSheet>("serah_sheet.png", anims, glm::ivec2(32, 32));
 	createPlayer();
@@ -210,7 +213,7 @@ void GameEngine::update(SpriteRenderer *sRenderer, InputManager *input, UIRender
 		}
 		if (isAlive && hasPlayer && hasPhysics && hasSprite && hasAABB)
 		{
-			isAlive = isAlive && GameSystem::updatePlayer(input, player, phys, spr, aabb);
+			isAlive = isAlive && GameSystem::updatePlayer(m_deltaTime, input, player, phys, spr, aabb);
 		}
 
 		// Flag the entity for deletion if it isn't alive anymore.
