@@ -75,7 +75,7 @@ GameEngine::GameEngine()
 	//glfwSetWindowUserPointer(m_window, this);
 
 	// TODO: replace these hardcoded resources.
-	std::unordered_map<std::string, SpriteAnimation> anims{
+	std::unordered_map<std::string, SpriteAnimation> playerAnims{
 		{PlayerState::IDLE, { 0, 8, true, {3.f, 0.07f, 0.07f, 0.07f, 0.07f, 1.f, 0.07f, 0.07f}}},
 		{PlayerState::RUN, { 11, 10, true, {0.07f} }},
 		{PlayerState::JUMP_ASCEND, { 22, 4, false, {0.07f} }},
@@ -92,7 +92,15 @@ GameEngine::GameEngine()
 		{PlayerState::ATTACK_AIR, { 71, 9, false, {0.05f} }},
 		{PlayerState::ATTACK_CROUCH, { 80, 9, false, {0.05f} }},
 	};
-	m_texture = std::make_unique<SpriteSheet>("serah_sheet.png", anims, glm::ivec2(32, 32));
+	m_playerTexture = std::make_unique<SpriteSheet>("serah_sheet.png", playerAnims, glm::ivec2(32, 32));
+
+	std::unordered_map<std::string, SpriteAnimation> swordAnims{
+		{PlayerState::ATTACK, { 0, 10, false, {0.05f} }},
+		{PlayerState::ATTACK_AIR, { 11, 9, false, {0.05f} }},
+		{PlayerState::ATTACK_CROUCH, { 22, 9, false, {0.05f} }},
+	};
+	m_swordTexture = std::make_unique<SpriteSheet>("serah_sword.png", swordAnims, glm::ivec2(48, 48));
+
 	createPlayer();
 
 	m_currentRoom = std::make_unique<Room>("test");
@@ -187,6 +195,7 @@ void GameEngine::update(SpriteRenderer *sRenderer, InputManager *input, UIRender
 		GameComponent::Physics &phys{ m_compPhysics[i] };
 		GameComponent::Sprite &spr{ m_compSprites[i] };
 		GameComponent::AABB &aabb{ m_compAABBs[i] };
+		GameComponent::Weapon &wpn{ m_compWeapons[i] };
 		bool isAlive{ true };
 
 		// Update relevant components for this entity.
@@ -194,6 +203,7 @@ void GameEngine::update(SpriteRenderer *sRenderer, InputManager *input, UIRender
 		bool hasSprite{ GameComponent::hasComponent(e, GameComponent::COMPONENT_SPRITE) };
 		bool hasPlayer{ GameComponent::hasComponent(e, GameComponent::COMPONENT_PLAYER) };
 		bool hasAABB{ GameComponent::hasComponent(e, GameComponent::COMPONENT_AABB) };
+		bool hasWeapon{ GameComponent::hasComponent(e, GameComponent::COMPONENT_WEAPON) };
 		if (isAlive && hasPhysics)
 		{
 			isAlive = isAlive && GameSystem::updatePhysics(m_deltaTime, phys);
@@ -210,10 +220,15 @@ void GameEngine::update(SpriteRenderer *sRenderer, InputManager *input, UIRender
 		if (isAlive && hasPhysics && hasSprite)
 		{
 			isAlive = isAlive && GameSystem::updateSprite(m_deltaTime, sRenderer, cameraPos, spr, phys);
+
+			if (isAlive && hasWeapon)
+			{
+				isAlive = isAlive && GameSystem::updateWeapon(m_deltaTime, sRenderer, cameraPos, spr, phys, wpn);
+			}
 		}
 		if (isAlive && hasPlayer && hasPhysics && hasSprite && hasAABB)
 		{
-			isAlive = isAlive && GameSystem::updatePlayer(m_deltaTime, input, player, phys, spr, aabb);
+			isAlive = isAlive && GameSystem::updatePlayer(m_deltaTime, input, player, phys, spr, wpn, aabb);
 		}
 
 		// Flag the entity for deletion if it isn't alive anymore.
@@ -293,6 +308,11 @@ void GameEngine::deleteFlaggedEntities()
 			m_compAABBs[id] = m_compAABBs[lastIndex];
 			m_compAABBs[lastIndex] = {};
 		}
+		if (GameComponent::hasComponent(lastMask, GameComponent::COMPONENT_WEAPON))
+		{
+			m_compWeapons[id] = m_compWeapons[lastIndex];
+			m_compWeapons[lastIndex] = {};
+		}
 
 		m_numEntities--;
 	}
@@ -338,7 +358,7 @@ void GameEngine::createNewEntities()
 		spr.b = rand() % 256;
 		spr.a = 255;
 
-		spr.spriteSheet = m_texture.get();
+		spr.spriteSheet = m_playerTexture.get();
 		spr.spriteSheet->setAnimation("run", spr);
 	}
 }
@@ -350,6 +370,7 @@ void GameEngine::createPlayer()
 		GameComponent::COMPONENT_SPRITE,
 		GameComponent::COMPONENT_PLAYER,
 		GameComponent::COMPONENT_AABB,
+		GameComponent::COMPONENT_WEAPON,
 	});
 
 	GameComponent::Physics &phys = m_compPhysics[m_playerId];
@@ -365,8 +386,11 @@ void GameEngine::createPlayer()
 	spr.hasDuration = false;
 
 	// TODO: replace hard-coded frames.
-	spr.spriteSheet = m_texture.get();
+	spr.spriteSheet = m_playerTexture.get();
 	spr.spriteSheet->setAnimation("idle", spr);
+
+	GameComponent::Weapon &wp = m_compWeapons[m_playerId];
+	wp.spriteSheet = m_swordTexture.get();
 
 	GameComponent::AABB &aabb = m_compAABBs[m_playerId];
 	aabb.halfSize = glm::vec2(8, 10);

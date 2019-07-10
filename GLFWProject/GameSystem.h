@@ -22,12 +22,17 @@ namespace GameSystem
 
 	// Update a player component's values
 	bool updatePlayer(float deltaTime, InputManager *input, GameComponent::Player &player, 
-		GameComponent::Physics &physics, GameComponent::Sprite &sprite,
-		GameComponent::AABB &aabb);
+		GameComponent::Physics &physics, GameComponent::Sprite &sprite, 
+		GameComponent::Weapon &weapon, GameComponent::AABB &aabb);
 
 	// Update collisions using axis-aligned bounding boxes.
 	bool updateRoomCollision(float deltaTime, GameComponent::Physics &physics,
 		GameComponent::AABB &aabb, Room *room);
+
+	// Update a weapon component based on its entity's sprite component.
+	bool updateWeapon(float deltaTime, SpriteRenderer *renderer, glm::vec3 cameraPos,
+		GameComponent::Sprite &sprite, GameComponent::Physics &physics,
+		GameComponent::Weapon &weapon);
 }
 
 #endif

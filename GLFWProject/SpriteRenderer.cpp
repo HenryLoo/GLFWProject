@@ -39,12 +39,6 @@ SpriteRenderer::SpriteRenderer()
 	m_spriteShader = std::make_unique<Shader>("sprite.vs", "sprite.fs");
 	m_roomShader = std::make_unique<Shader>("room.vs", "room.fs");
 
-	// Prepare the data buffers.
-	m_positionData = new GLfloat[GameEngine::MAX_ENTITIES * 3];
-	m_colourData = new GLubyte[GameEngine::MAX_ENTITIES * 4];
-	m_texCoordsData = new GLfloat[GameEngine::MAX_ENTITIES * 4];
-	m_transformData = new GLfloat[GameEngine::MAX_ENTITIES * 3];
-
 	// Create the vertex array object and bind to it.
 	// All subsequent VBO configurations will be saved for this VAO.
 	glGenVertexArrays(1, &m_VAO);
@@ -131,11 +125,6 @@ SpriteRenderer::SpriteRenderer()
 
 SpriteRenderer::~SpriteRenderer()
 {
-	delete[] m_positionData;
-	delete[] m_colourData;
-	delete[] m_texCoordsData;
-	delete[] m_transformData;
-
 	glDeleteBuffers(1, &m_colourVBO);
 	glDeleteBuffers(1, &m_positionVBO);
 	glDeleteBuffers(1, &m_texCoordsVBO);
@@ -161,15 +150,41 @@ void SpriteRenderer::addSprite(const GameComponent::Physics &physics,
 	//spr.cameraDistance = sprite.cameraDistance;
 	//spr.spriteSheet = sprite.spriteSheet;
 	//spr.frameIndex = sprite.currentAnimation.sheetIndex + sprite.currentFrame;
-	
-	m_positionData[3 * m_numSprites] = physics.pos.x;
-	m_positionData[3 * m_numSprites + 1] = physics.pos.y;
-	m_positionData[3 * m_numSprites + 2] = physics.pos.z;
 
-	m_colourData[4 * m_numSprites] = sprite.r;
-	m_colourData[4 * m_numSprites + 1] = sprite.g;
-	m_colourData[4 * m_numSprites + 2] = sprite.b;
-	m_colourData[4 * m_numSprites + 3] = sprite.a;
+	const std::string spriteName{ sprite.spriteSheet->getFilePath() };
+	auto it{ m_spriteData.find(spriteName) };
+	if (it == m_spriteData.end())
+	{
+		// Sprite sheet has not been added yet, so keep track of its insertion
+		// order.
+		m_spriteOrder.push_back(spriteName);
+
+		// Insert new sprite data for this sprite sheet.
+		SpriteData data;
+		data.spriteSheet = sprite.spriteSheet;
+		SpriteRenderer::addSpriteData(data, physics, sprite);
+		m_spriteData.insert({ spriteName, data });
+	}
+	else
+	{
+		// Sprite sheet was already added, so just push the vertex data for
+		// this instance.
+		SpriteData &data{ it->second };
+		SpriteRenderer::addSpriteData(data, physics, sprite);
+	}
+}
+
+void SpriteRenderer::addSpriteData(SpriteData &data, const GameComponent::Physics &physics,
+	const GameComponent::Sprite &sprite)
+{
+	data.positions.push_back(physics.pos.x);
+	data.positions.push_back(physics.pos.y);
+	data.positions.push_back(physics.pos.z);
+
+	data.colours.push_back(sprite.r);
+	data.colours.push_back(sprite.g);
+	data.colours.push_back(sprite.b);
+	data.colours.push_back(sprite.a);
 
 	glm::vec2 texSize{ sprite.spriteSheet->getSize() };
 	glm::vec2 clipSize{ sprite.spriteSheet->getClipSize() };
@@ -177,23 +192,25 @@ void SpriteRenderer::addSprite(const GameComponent::Physics &physics,
 	int numSpritesPerRow{ static_cast<int>(glm::max(1.f, texSize.x / clipSize.x)) };
 	glm::vec2 rowColIndex{ spriteIndex % numSpritesPerRow, glm::floor(spriteIndex / numSpritesPerRow) };
 
-	m_texCoordsData[4 * m_numSprites] = rowColIndex.x * clipSize.x / texSize.x;
-	m_texCoordsData[4 * m_numSprites + 1] = 1 - (rowColIndex.y + 1) * clipSize.y / texSize.y;
-	m_texCoordsData[4 * m_numSprites + 2] = clipSize.x / texSize.x;
-	m_texCoordsData[4 * m_numSprites + 3] = clipSize.y / texSize.y;
+	data.texCoords.push_back(rowColIndex.x * clipSize.x / texSize.x);
+	data.texCoords.push_back(1 - (rowColIndex.y + 1) * clipSize.y / texSize.y);
+	data.texCoords.push_back(clipSize.x / texSize.x);
+	data.texCoords.push_back(clipSize.y / texSize.y);
 
-	m_transformData[3 * m_numSprites] = physics.scale.x * clipSize.x;
-	m_transformData[3 * m_numSprites + 1] = physics.scale.y * clipSize.y;
-	m_transformData[3 * m_numSprites + 2] = physics.rotation;
+	data.transforms.push_back(physics.scale.x * clipSize.x);
+	data.transforms.push_back(physics.scale.y * clipSize.y);
+	data.transforms.push_back(physics.rotation);
 
-	m_playerSheet = sprite.spriteSheet;
-
-	m_numSprites++;
+	data.numSprites++;
 }
 
 void SpriteRenderer::resetNumSprites()
 {
-	m_numSprites = 0;
+	//m_numSprites = 0;
+
+	// Clear sprite data.
+	m_spriteData.clear();
+	m_spriteOrder.clear();
 }
 
 //void SpriteRenderer::updateData()
@@ -288,27 +305,21 @@ void SpriteRenderer::render(Camera *camera, glm::ivec2 windowSize, Room *room = 
 	// Update the instance buffers.
 	glBindBuffer(GL_ARRAY_BUFFER, m_positionVBO);
 	glBufferData(GL_ARRAY_BUFFER, GameEngine::MAX_ENTITIES * 3 * sizeof(GLfloat), NULL, GL_STREAM_DRAW);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, m_numSprites * sizeof(GLfloat) * 3, m_positionData);
 
 	glBindBuffer(GL_ARRAY_BUFFER, m_colourVBO);
 	glBufferData(GL_ARRAY_BUFFER, GameEngine::MAX_ENTITIES * 4 * sizeof(GLubyte), NULL, GL_STREAM_DRAW);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, m_numSprites * sizeof(GLubyte) * 4, m_colourData);
 
 	glBindBuffer(GL_ARRAY_BUFFER, m_texCoordsVBO);
 	glBufferData(GL_ARRAY_BUFFER, GameEngine::MAX_ENTITIES * 4 * sizeof(GLfloat), NULL, GL_STREAM_DRAW);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, m_numSprites * sizeof(GLfloat) * 4, m_texCoordsData);
 
 	glBindBuffer(GL_ARRAY_BUFFER, m_transformVBO);
 	glBufferData(GL_ARRAY_BUFFER, GameEngine::MAX_ENTITIES * 3 * sizeof(GLfloat), NULL, GL_STREAM_DRAW);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, m_numSprites * sizeof(GLfloat) * 3, m_transformData);
 
 	// Use the shader.
 	m_spriteShader->use();
 
 	// Bind to the texture at texture unit 0 and set the shader's sampler to this.
 	glActiveTexture(GL_TEXTURE1);
-	//m_sprites[0].spriteSheet->bind(); // TODO: fix this to support multiple textures.
-	m_playerSheet->bind();
 	m_spriteShader->setInt("textureSampler", 1);
 
 	// Set the camera uniforms.
@@ -316,6 +327,34 @@ void SpriteRenderer::render(Camera *camera, glm::ivec2 windowSize, Room *room = 
 	m_spriteShader->setVec3("cameraWorldUp", viewMatrix[0][1], viewMatrix[1][1], viewMatrix[2][1]);
 	m_spriteShader->setMat4("viewProjection", viewProjectionMatrix);
 
-	// Draw the instances.
-	glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, m_numSprites);
+	// Iterate through each spritesheet type in order of their insertion.
+	// Bind to the spritesheet texture, and then call draw.
+	for (const std::string &sprite : m_spriteOrder)
+	{
+		auto it{ m_spriteData.find(sprite) };
+		if (it != m_spriteData.end())
+		{
+			SpriteData &data{ it->second };
+
+			glBindBuffer(GL_ARRAY_BUFFER, m_positionVBO);
+			glBufferSubData(GL_ARRAY_BUFFER, 0, data.numSprites * sizeof(GLfloat) * 3, &data.positions[0]);
+
+			glBindBuffer(GL_ARRAY_BUFFER, m_colourVBO);
+			glBufferSubData(GL_ARRAY_BUFFER, 0, data.numSprites * sizeof(GLubyte) * 4, &data.colours[0]);
+
+			glBindBuffer(GL_ARRAY_BUFFER, m_texCoordsVBO);
+			glBufferSubData(GL_ARRAY_BUFFER, 0, data.numSprites * sizeof(GLfloat) * 4, &data.texCoords[0]);
+
+			glBindBuffer(GL_ARRAY_BUFFER, m_transformVBO);
+			glBufferSubData(GL_ARRAY_BUFFER, 0, data.numSprites * sizeof(GLfloat) * 3, &data.transforms[0]);
+
+			// Draw the instances.
+			data.spriteSheet->bind();
+			glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, data.numSprites);
+		}
+		else
+		{
+			std::cout << "SpriteRenderer::render: Could not find added sprite!" << std::endl;
+		}
+	}
 }

@@ -4,7 +4,7 @@
 SpriteSheet::SpriteSheet(const std::string &filePath,
 	const std::unordered_map<std::string, SpriteAnimation> &animations,
 	glm::ivec2 clipSize) :
-	Texture(filePath), m_animations(animations), m_clipSize(clipSize)
+	Texture(filePath), m_filePath(filePath), m_animations(animations), m_clipSize(clipSize)
 {
 
 }
@@ -25,7 +25,7 @@ glm::ivec2 SpriteSheet::getClipSize() const
 	return m_clipSize;
 }
 
-void SpriteSheet::setAnimation(const std::string &label, 
+bool SpriteSheet::setAnimation(const std::string &label, 
 	GameComponent::Sprite &output) const
 {
 	auto it{ m_animations.find(label) };
@@ -35,5 +35,14 @@ void SpriteSheet::setAnimation(const std::string &label,
 		output.currentAnimation = it->second;
 		output.currentFrame = 0;
 		output.currentFrameTime = 0;
+
+		return true;
 	}
+
+	return false;
+}
+
+const std::string &SpriteSheet::getFilePath() const
+{
+	return m_filePath;
 }

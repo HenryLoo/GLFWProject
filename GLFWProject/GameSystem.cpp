@@ -96,7 +96,8 @@ bool GameSystem::updateSprite(float deltaTime, SpriteRenderer *renderer,
 
 bool GameSystem::updatePlayer(float deltaTime, InputManager *input, 
 	GameComponent::Player &player, GameComponent::Physics &physics, 
-	GameComponent::Sprite &sprite, GameComponent::AABB &aabb)
+	GameComponent::Sprite &sprite, GameComponent::Weapon &weapon, 
+	GameComponent::AABB &aabb)
 {
 	// Save the previous state.
 	player.previousState = player.currentState;
@@ -315,6 +316,15 @@ bool GameSystem::updatePlayer(float deltaTime, InputManager *input,
 	{
 		player.currentState = state;
 		sprite.spriteSheet->setAnimation(state, sprite);
+
+		// Create a temporary sprite component to get the weapon's 
+		// sprite animation. Set the animation if it exists.
+		GameComponent::Sprite weaponSprite;
+		weapon.isVisible = weapon.spriteSheet->setAnimation(state, weaponSprite);
+		if (weapon.isVisible)
+		{
+			weapon.currentAnimation = weaponSprite.currentAnimation;
+		}
 	}
 
 	return true;
@@ -559,6 +569,32 @@ bool GameSystem::updateRoomCollision(float deltaTime,
 		physics.pos = glm::round(physics.pos);
 		physics.pos /= 100;
 	}
+
+	return true;
+}
+
+bool GameSystem::updateWeapon(float deltaTime, SpriteRenderer *renderer,
+	glm::vec3 cameraPos, GameComponent::Sprite &sprite,
+	GameComponent::Physics &physics, GameComponent::Weapon &weapon)
+{
+	if (weapon.isVisible)
+	{
+		// Create a temporary sprite component to hold the weapon 
+		// sprite's values.
+		GameComponent::Sprite weaponSprite;
+		weaponSprite.spriteSheet = weapon.spriteSheet;
+		weaponSprite.currentAnimation = weapon.currentAnimation;
+		weaponSprite.currentFrame = sprite.currentFrame;
+		weaponSprite.cameraDistance = sprite.cameraDistance;
+		weaponSprite.r = sprite.r;
+		weaponSprite.g = sprite.g;
+		weaponSprite.b = sprite.b;
+		weaponSprite.a = sprite.a;
+
+		// Update the renderer's array of sprites.
+		renderer->addSprite(physics, weaponSprite);
+	}
+	
 
 	return true;
 }

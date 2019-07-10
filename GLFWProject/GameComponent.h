@@ -19,6 +19,7 @@ namespace GameComponent
 		COMPONENT_SPRITE = 2,
 		COMPONENT_PLAYER = 4,
 		COMPONENT_AABB = 8,
+		COMPONENT_WEAPON = 16,
 	};
 
 	struct Physics
@@ -48,7 +49,6 @@ namespace GameComponent
 		bool hasDuration{ true };
 
 		// Hold all frames for this sprite.
-		//std::vector<SpriteFrame> frames{ SpriteFrame{} };
 		SpriteAnimation currentAnimation;
 		int currentFrame{ 0 };
 		float currentFrameTime{ 0.f };
@@ -58,7 +58,7 @@ namespace GameComponent
 
 		bool operator<(const Sprite &that) const
 		{
-			// Sort in reverse order : far particles drawn first.
+			// Sort in reverse order, so that far particles are drawn first.
 			return this->cameraDistance > that.cameraDistance;
 		}
 	};
@@ -96,6 +96,30 @@ namespace GameComponent
 		bool isCollidingGhost{ false };
 		bool isCollidingSlope{ false };
 		bool wasOnGround{ false };
+	};
+
+	struct Weapon
+	{
+		// This weapon's texture.
+		SpriteSheet *spriteSheet;
+
+		// Hold all frames for this sprite.
+		// The weapon's frame timer will be dependent on the entity's sprite
+		// component.
+		SpriteAnimation currentAnimation;
+		int currentFrame{ 0 };
+
+		// Distance from the sprite to the camera.
+		float cameraDistance{ -1 };
+
+		// Flag for if the weapon should be shown.
+		bool isVisible{ false };
+
+		bool operator<(const Sprite &that) const
+		{
+			// Sort in reverse order, so that far particles are drawn first.
+			return this->cameraDistance > that.cameraDistance;
+		}
 	};
 
 	// Check if an entity has a component.

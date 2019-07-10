@@ -90,6 +90,7 @@ private:
 	GameComponent::Sprite m_compSprites[MAX_ENTITIES];
 	GameComponent::Player m_compPlayer; // Only one player.
 	GameComponent::AABB m_compAABBs[MAX_ENTITIES];
+	GameComponent::Weapon m_compWeapons[MAX_ENTITIES];
 
 	// Hold the number of alive entities.
 	int m_numEntities{ 0 };
@@ -98,7 +99,8 @@ private:
 	std::vector<int> m_entitiesToDelete;
 
 	// TODO: remove this later for a more flexible implementation.
-	std::unique_ptr<SpriteSheet> m_texture;
+	std::unique_ptr<SpriteSheet> m_playerTexture;
+	std::unique_ptr<SpriteSheet> m_swordTexture;
 	std::unique_ptr<Room> m_currentRoom;
 
 	// Flag for if debug mode is enabled.

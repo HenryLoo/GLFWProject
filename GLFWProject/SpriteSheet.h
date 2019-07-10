@@ -43,9 +43,16 @@ public:
 
 	// Find animation corresponding to the given label and output it to the
 	// given SpriteComponent reference.
-	void setAnimation(const std::string &label, GameComponent::Sprite &output) const;
+	// Return true if animation was found, else return false.
+	bool setAnimation(const std::string &label, GameComponent::Sprite &output) const;
+
+	// Get the sprite sheet's file path.
+	const std::string &getFilePath() const;
 
 private:
+	// The sprite sheet's file path.
+	std::string m_filePath;
+
 	// The width and height of a sprite on the sheet.
 	glm::ivec2 m_clipSize;
 

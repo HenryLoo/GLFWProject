@@ -32,6 +32,20 @@ struct Sprite
 	}
 };
 
+struct SpriteData
+{
+	SpriteSheet *spriteSheet{ nullptr };
+
+	// The number of entities using this sprite.
+	int numSprites{ 0 };
+
+	// Data to send to the GPU.
+	std::vector<GLfloat> positions;
+	std::vector<GLubyte> colours;
+	std::vector<GLfloat> texCoords;
+	std::vector<GLfloat> transforms;
+};
+
 class Camera;
 class Room;
 
@@ -60,25 +74,17 @@ public:
 	void render(Camera *camera, glm::ivec2 windowSize, Room *room);
 
 private:
+	// Add vertex values to SpriteData.
+	static void addSpriteData(SpriteData &data, const GameComponent::Physics &physics,
+		const GameComponent::Sprite &sprite);
+
 	// Shaders to render with.
 	std::unique_ptr<Shader> m_spriteShader;
 	std::unique_ptr<Shader> m_roomShader;
 
-	// Data to send to the GPU.
-	GLfloat *m_positionData;
-	GLubyte *m_colourData;
-	GLfloat *m_texCoordsData;
-	GLfloat *m_transformData;
-
 	// The vertex array object and vertex buffer object for sprite instances.
 	GLuint m_VAO, m_verticesVBO, m_positionVBO, m_colourVBO, 
 		m_texCoordsVBO, m_transformVBO;
-
-	// Hold all the sprites to render.
-	//Sprite m_sprites[GameEngine::MAX_ENTITIES];
-
-	// The number of sprites to render for the current frame.
-	int m_numSprites{ 0 };
 
 	// The vertex array object and vertex buffer object for the room.
 	GLuint m_roomVAO, m_roomVertsVBO;
@@ -86,8 +92,13 @@ private:
 	// Hold the pointer to the map tileset.
 	std::unique_ptr<SpriteSheet> m_tileset;
 
-	// TODO: replace this to handle multiple spritesheets.
-	SpriteSheet *m_playerSheet{ nullptr };
+	// Map texture name to its data.
+	// This groups all vertex data with common textures so they can be
+	// instanced together.
+	std::unordered_map<std::string, SpriteData> m_spriteData;
+
+	// Holds texture names, in order of insertion into m_spriteData.
+	std::vector<std::string> m_spriteOrder;
 };
 
 #endif
