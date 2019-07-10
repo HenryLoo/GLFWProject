@@ -76,28 +76,28 @@ GameEngine::GameEngine()
 
 	// TODO: replace these hardcoded resources.
 	std::unordered_map<std::string, SpriteAnimation> playerAnims{
-		{PlayerState::IDLE, { 0, 8, true, {3.f, 0.07f, 0.07f, 0.07f, 0.07f, 1.f, 0.07f, 0.07f}}},
-		{PlayerState::RUN, { 11, 10, true, {0.07f} }},
-		{PlayerState::JUMP_ASCEND, { 22, 4, false, {0.07f} }},
-		{PlayerState::JUMP_PEAK, { 26, 6, false, {0.07f} }},
-		{PlayerState::JUMP_DESCEND, { 33, 4, true, {0.07f} }},
-		{PlayerState::JUMP_LAND, { 37, 1, false, {0.1f} }},
-		{PlayerState::RUN_START, { 38, 5, false, {0.07f} }},
-		{PlayerState::RUN_STOP, { 44, 4, false, {0.07f} }},
-		{PlayerState::ALERT, { 48, 3, false, {3.f, 0.07f, 0.07f} }},
-		{PlayerState::TURN, { 51, 4, false, {0.07f} }},
-		{PlayerState::CROUCH, { 55, 4, false, {0.07f} }},
-		{PlayerState::CROUCH_STOP, { 59, 2, false, {0.07f} }},
-		{PlayerState::ATTACK, { 61, 10, false, {0.05f} }},
-		{PlayerState::ATTACK_AIR, { 71, 9, false, {0.05f} }},
-		{PlayerState::ATTACK_CROUCH, { 80, 9, false, {0.05f} }},
+		{PlayerState::IDLE, { 0, 8, true, glm::vec2(0.f),  {3.f, 0.07f, 0.07f, 0.07f, 0.07f, 1.f, 0.07f, 0.07f}}},
+		{PlayerState::RUN, { 11, 10, true, glm::vec2(0.f), {0.07f} }},
+		{PlayerState::JUMP_ASCEND, { 22, 4, false, glm::vec2(0.f), {0.07f} }},
+		{PlayerState::JUMP_PEAK, { 26, 6, false, glm::vec2(0.f), {0.07f} }},
+		{PlayerState::JUMP_DESCEND, { 33, 4, true, glm::vec2(0.f), {0.07f} }},
+		{PlayerState::JUMP_LAND, { 37, 1, false, glm::vec2(0.f), {0.1f} }},
+		{PlayerState::RUN_START, { 38, 5, false, glm::vec2(0.f), {0.07f} }},
+		{PlayerState::RUN_STOP, { 44, 4, false, glm::vec2(0.f), {0.07f} }},
+		{PlayerState::ALERT, { 48, 3, false, glm::vec2(0.f), {3.f, 0.07f, 0.07f} }},
+		{PlayerState::TURN, { 51, 4, false, glm::vec2(0.f), {0.07f} }},
+		{PlayerState::CROUCH, { 55, 4, false, glm::vec2(0.f), {0.07f} }},
+		{PlayerState::CROUCH_STOP, { 59, 2, false, glm::vec2(0.f), {0.07f} }},
+		{PlayerState::ATTACK, { 61, 10, false, glm::vec2(0.f), {0.05f} }},
+		{PlayerState::ATTACK_AIR, { 71, 9, false, glm::vec2(0.f), {0.05f} }},
+		{PlayerState::ATTACK_CROUCH, { 80, 9, false, glm::vec2(0.f), {0.05f} }},
 	};
 	m_playerTexture = std::make_unique<SpriteSheet>("serah_sheet.png", playerAnims, glm::ivec2(32, 32));
 
 	std::unordered_map<std::string, SpriteAnimation> swordAnims{
-		{PlayerState::ATTACK, { 0, 10, false, {0.05f} }},
-		{PlayerState::ATTACK_AIR, { 11, 9, false, {0.05f} }},
-		{PlayerState::ATTACK_CROUCH, { 22, 9, false, {0.05f} }},
+		{PlayerState::ATTACK, { 0, 10, false, glm::vec2(8.f, 8.f), {0.05f} }},
+		{PlayerState::ATTACK_AIR, { 11, 9, false, glm::vec2(4.f, 8.f), {0.05f} }},
+		{PlayerState::ATTACK_CROUCH, { 22, 9, false, glm::vec2(5.f, 0.f), {0.05f} }},
 	};
 	m_swordTexture = std::make_unique<SpriteSheet>("serah_sword.png", swordAnims, glm::ivec2(48, 48));
 

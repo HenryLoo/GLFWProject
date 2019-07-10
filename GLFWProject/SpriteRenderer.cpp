@@ -177,8 +177,8 @@ void SpriteRenderer::addSprite(const GameComponent::Physics &physics,
 void SpriteRenderer::addSpriteData(SpriteData &data, const GameComponent::Physics &physics,
 	const GameComponent::Sprite &sprite)
 {
-	data.positions.push_back(physics.pos.x);
-	data.positions.push_back(physics.pos.y);
+	data.positions.push_back(physics.pos.x + physics.scale.x * sprite.currentAnimation.offset.x);
+	data.positions.push_back(physics.pos.y + physics.scale.y * sprite.currentAnimation.offset.y);
 	data.positions.push_back(physics.pos.z);
 
 	data.colours.push_back(sprite.r);
