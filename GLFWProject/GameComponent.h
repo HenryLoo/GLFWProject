@@ -2,12 +2,14 @@
 #ifndef GameComponent_H
 #define GameComponent_H
 
-#include "SpriteSheet.h"
-
-#include <glm/glm.hpp>
+#include "AttackPattern.h"
+#include "SpriteAnimation.h"
 
 #include <string>
 #include <vector>
+#include <unordered_map>
+
+class SpriteSheet;
 
 namespace GameComponent
 {
@@ -20,6 +22,7 @@ namespace GameComponent
 		COMPONENT_PLAYER = 4,
 		COMPONENT_AABB = 8,
 		COMPONENT_WEAPON = 16,
+		COMPONENT_ATTACK = 32,
 	};
 
 	struct Physics
@@ -81,6 +84,9 @@ namespace GameComponent
 		// An illusion jump refers to jumping during the short period of time
 		// after walking off a ledge. This allows for more forgiving jumps.
 		float illusionJumpTimer{ 0.f };
+
+		// Map all player states to their appropriate attack patterns.
+		std::unordered_map<std::string, AttackPattern> attackPatterns;
 	};
 
 	struct AABB
@@ -120,6 +126,18 @@ namespace GameComponent
 			// Sort in reverse order, so that far particles are drawn first.
 			return this->cameraDistance > that.cameraDistance;
 		}
+	};
+
+	struct Attack
+	{
+		// Flag for if the attack is enabled.
+		bool isEnabled{ false };
+
+		// The source of the attack.
+		int source;
+
+		// This attack pattern's values.
+		AttackPattern pattern;
 	};
 
 	// Check if an entity has a component.

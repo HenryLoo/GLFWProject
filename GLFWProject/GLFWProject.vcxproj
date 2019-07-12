@@ -157,6 +157,7 @@
     <ClCompile Include="UIRenderer.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="AttackPattern.h" />
     <ClInclude Include="Camera.h" />
     <ClInclude Include="CharStates.h" />
     <ClInclude Include="GameComponent.h" />
@@ -167,6 +168,7 @@
     <ClInclude Include="Renderer.h" />
     <ClInclude Include="Room.h" />
     <ClInclude Include="Shader.h" />
+    <ClInclude Include="SpriteAnimation.h" />
     <ClInclude Include="SpriteRenderer.h" />
     <ClInclude Include="SpriteSheet.h" />
     <ClInclude Include="stb_image.h" />

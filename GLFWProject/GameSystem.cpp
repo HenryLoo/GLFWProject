@@ -97,7 +97,7 @@ bool GameSystem::updateSprite(float deltaTime, SpriteRenderer *renderer,
 bool GameSystem::updatePlayer(float deltaTime, InputManager *input, 
 	GameComponent::Player &player, GameComponent::Physics &physics, 
 	GameComponent::Sprite &sprite, GameComponent::Weapon &weapon, 
-	GameComponent::AABB &aabb)
+	GameComponent::AABB &aabb, GameComponent::Attack &attack)
 {
 	// Save the previous state.
 	player.previousState = player.currentState;
@@ -324,6 +324,17 @@ bool GameSystem::updatePlayer(float deltaTime, InputManager *input,
 		if (weapon.isVisible)
 		{
 			weapon.currentAnimation = weaponSprite.currentAnimation;
+		}
+
+		// Set the attack pattern for this state if it exists.
+		auto it{ player.attackPatterns.find(state) };
+		if (it != player.attackPatterns.end())
+		{
+			attack.pattern = it->second;
+		}
+		else
+		{
+			attack.pattern = {};
 		}
 	}
 
@@ -594,7 +605,16 @@ bool GameSystem::updateWeapon(float deltaTime, SpriteRenderer *renderer,
 		// Update the renderer's array of sprites.
 		renderer->addSprite(physics, weaponSprite);
 	}
-	
+
+	return true;
+}
+
+
+bool GameSystem::updateAttack(float deltaTIme, GameComponent::Sprite &sprite,
+	GameComponent::Attack &attack)
+{
+	attack.isEnabled = (sprite.currentFrame >= attack.pattern.frameRange.x &&
+		sprite.currentFrame <= attack.pattern.frameRange.y);
 
 	return true;
 }

@@ -9,6 +9,7 @@
 
 #include <algorithm>
 #include <iostream>
+#include <unordered_map>
 
 namespace
 {
@@ -196,6 +197,7 @@ void GameEngine::update(SpriteRenderer *sRenderer, InputManager *input, UIRender
 		GameComponent::Sprite &spr{ m_compSprites[i] };
 		GameComponent::AABB &aabb{ m_compAABBs[i] };
 		GameComponent::Weapon &wpn{ m_compWeapons[i] };
+		GameComponent::Attack &atk{ m_compAttacks[i] };
 		bool isAlive{ true };
 
 		// Update relevant components for this entity.
@@ -204,6 +206,7 @@ void GameEngine::update(SpriteRenderer *sRenderer, InputManager *input, UIRender
 		bool hasPlayer{ GameComponent::hasComponent(e, GameComponent::COMPONENT_PLAYER) };
 		bool hasAABB{ GameComponent::hasComponent(e, GameComponent::COMPONENT_AABB) };
 		bool hasWeapon{ GameComponent::hasComponent(e, GameComponent::COMPONENT_WEAPON) };
+		bool hasAttack{ GameComponent::hasComponent(e, GameComponent::COMPONENT_ATTACK) };
 		if (isAlive && hasPhysics)
 		{
 			isAlive = isAlive && GameSystem::updatePhysics(m_deltaTime, phys);
@@ -213,9 +216,20 @@ void GameEngine::update(SpriteRenderer *sRenderer, InputManager *input, UIRender
 			isAlive = isAlive && GameSystem::updateRoomCollision(m_deltaTime, 
 				phys, aabb, m_currentRoom.get());
 
-			// Draw hit boxes if debug modes is on.
+			// Draw hit boxes if debug mode is on.
 			if (m_isDebugMode)
 				uRenderer->addBox(phys, aabb, 0, 255, 0, 100);
+		}
+		if (isAlive && hasPhysics && hasAttack)
+		{
+			// Draw attack hit boxes if debug mode is on.
+			if (m_isDebugMode && atk.isEnabled)
+			{
+				GameComponent::AABB attackBox;
+				attackBox.halfSize = atk.pattern.halfSize;
+				attackBox.offset = atk.pattern.offset;
+				uRenderer->addBox(phys, attackBox, 0, 0, 255, 100);
+			}
 		}
 		if (isAlive && hasPhysics && hasSprite)
 		{
@@ -228,7 +242,11 @@ void GameEngine::update(SpriteRenderer *sRenderer, InputManager *input, UIRender
 		}
 		if (isAlive && hasPlayer && hasPhysics && hasSprite && hasAABB)
 		{
-			isAlive = isAlive && GameSystem::updatePlayer(m_deltaTime, input, player, phys, spr, wpn, aabb);
+			isAlive = isAlive && GameSystem::updatePlayer(m_deltaTime, input, player, phys, spr, wpn, aabb, atk);
+		}
+		if (isAlive && hasSprite && hasAttack)
+		{
+			isAlive = isAlive && GameSystem::updateAttack(m_deltaTime, spr, atk);
 		}
 
 		// Flag the entity for deletion if it isn't alive anymore.
@@ -313,6 +331,11 @@ void GameEngine::deleteFlaggedEntities()
 			m_compWeapons[id] = m_compWeapons[lastIndex];
 			m_compWeapons[lastIndex] = {};
 		}
+		if (GameComponent::hasComponent(lastMask, GameComponent::COMPONENT_ATTACK))
+		{
+			m_compAttacks[id] = m_compAttacks[lastIndex];
+			m_compAttacks[lastIndex] = {};
+		}
 
 		m_numEntities--;
 	}
@@ -371,6 +394,7 @@ void GameEngine::createPlayer()
 		GameComponent::COMPONENT_PLAYER,
 		GameComponent::COMPONENT_AABB,
 		GameComponent::COMPONENT_WEAPON,
+		GameComponent::COMPONENT_ATTACK,
 	});
 
 	GameComponent::Physics &phys = m_compPhysics[m_playerId];
@@ -395,4 +419,13 @@ void GameEngine::createPlayer()
 	GameComponent::AABB &aabb = m_compAABBs[m_playerId];
 	aabb.halfSize = glm::vec2(8, 10);
 	aabb.offset = glm::vec2(0, -6);
+
+	GameComponent::Attack &atk = m_compAttacks[m_playerId];
+	atk.source = m_playerId;
+
+	m_compPlayer.attackPatterns = {
+		{PlayerState::ATTACK, {glm::vec2(18, 21), glm::vec2(14, 6), glm::ivec2(2, 7), 0}},
+		{PlayerState::ATTACK_AIR, {glm::vec2(22, 17), glm::vec2(6, 4), glm::ivec2(1, 6), 0}},
+		{PlayerState::ATTACK_CROUCH, {glm::vec2(22, 17), glm::vec2(7, -3), glm::ivec2(1, 6), 0}}
+	};
 }

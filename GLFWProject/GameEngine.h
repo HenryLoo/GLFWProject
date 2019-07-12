@@ -91,6 +91,7 @@ private:
 	GameComponent::Player m_compPlayer; // Only one player.
 	GameComponent::AABB m_compAABBs[MAX_ENTITIES];
 	GameComponent::Weapon m_compWeapons[MAX_ENTITIES];
+	GameComponent::Attack m_compAttacks[MAX_ENTITIES];
 
 	// Hold the number of alive entities.
 	int m_numEntities{ 0 };

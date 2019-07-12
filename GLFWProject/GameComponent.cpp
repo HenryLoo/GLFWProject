@@ -1,4 +1,5 @@
 #include "GameComponent.h"
+#include "SpriteSheet.h"
 
 bool GameComponent::hasComponent(unsigned long entityCompMask, ComponentType comp)
 {
