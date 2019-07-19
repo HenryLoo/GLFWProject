@@ -18,3 +18,14 @@ namespace PlayerState
 	const std::string ATTACK_AIR{ "attack_air" };
 	const std::string ATTACK_CROUCH{ "attack_crouch" };
 }
+
+namespace EnemyState
+{
+	const std::string IDLE{ "idle" };
+	const std::string RUN{ "run" };
+	const std::string ALERT{ "alert" };
+	const std::string HURT{ "hurt" };
+	const std::string HURT_AIR{ "hurt_air" };
+	const std::string FALLEN{ "fallen" };
+	const std::string ATTACK{ "attack" };
+}

@@ -76,32 +76,7 @@ GameEngine::GameEngine()
 	//glfwSetWindowUserPointer(m_window, this);
 
 	// TODO: replace these hardcoded resources.
-	std::unordered_map<std::string, SpriteAnimation> playerAnims{
-		{PlayerState::IDLE, { 0, 8, true, glm::vec2(0.f),  {3.f, 0.07f, 0.07f, 0.07f, 0.07f, 1.f, 0.07f, 0.07f}}},
-		{PlayerState::RUN, { 11, 10, true, glm::vec2(0.f), {0.07f} }},
-		{PlayerState::JUMP_ASCEND, { 22, 4, false, glm::vec2(0.f), {0.07f} }},
-		{PlayerState::JUMP_PEAK, { 26, 6, false, glm::vec2(0.f), {0.07f} }},
-		{PlayerState::JUMP_DESCEND, { 33, 4, true, glm::vec2(0.f), {0.07f} }},
-		{PlayerState::JUMP_LAND, { 37, 1, false, glm::vec2(0.f), {0.1f} }},
-		{PlayerState::RUN_START, { 38, 5, false, glm::vec2(0.f), {0.07f} }},
-		{PlayerState::RUN_STOP, { 44, 4, false, glm::vec2(0.f), {0.07f} }},
-		{PlayerState::ALERT, { 48, 3, false, glm::vec2(0.f), {3.f, 0.07f, 0.07f} }},
-		{PlayerState::TURN, { 51, 4, false, glm::vec2(0.f), {0.07f} }},
-		{PlayerState::CROUCH, { 55, 4, false, glm::vec2(0.f), {0.07f} }},
-		{PlayerState::CROUCH_STOP, { 59, 2, false, glm::vec2(0.f), {0.07f} }},
-		{PlayerState::ATTACK, { 61, 10, false, glm::vec2(0.f), {0.05f} }},
-		{PlayerState::ATTACK_AIR, { 71, 9, false, glm::vec2(0.f), {0.05f} }},
-		{PlayerState::ATTACK_CROUCH, { 80, 9, false, glm::vec2(0.f), {0.05f} }},
-	};
-	m_playerTexture = std::make_unique<SpriteSheet>("serah_sheet.png", playerAnims, glm::ivec2(32, 32));
-
-	std::unordered_map<std::string, SpriteAnimation> swordAnims{
-		{PlayerState::ATTACK, { 0, 10, false, glm::vec2(8.f, 8.f), {0.05f} }},
-		{PlayerState::ATTACK_AIR, { 11, 9, false, glm::vec2(4.f, 8.f), {0.05f} }},
-		{PlayerState::ATTACK_CROUCH, { 22, 9, false, glm::vec2(5.f, 0.f), {0.05f} }},
-	};
-	m_swordTexture = std::make_unique<SpriteSheet>("serah_sword.png", swordAnims, glm::ivec2(48, 48));
-
+	createEnemy();
 	createPlayer();
 
 	m_currentRoom = std::make_unique<Room>("test");
@@ -195,18 +170,20 @@ void GameEngine::update(SpriteRenderer *sRenderer, InputManager *input, UIRender
 		unsigned long &e{ m_entities[i] };
 		GameComponent::Physics &phys{ m_compPhysics[i] };
 		GameComponent::Sprite &spr{ m_compSprites[i] };
-		GameComponent::AABB &aabb{ m_compAABBs[i] };
+		GameComponent::Collision &col{ m_compCollisions[i] };
 		GameComponent::Weapon &wpn{ m_compWeapons[i] };
 		GameComponent::Attack &atk{ m_compAttacks[i] };
+		GameComponent::Enemy &en{ m_compEnemies[i] };
 		bool isAlive{ true };
 
 		// Update relevant components for this entity.
 		bool hasPhysics{ GameComponent::hasComponent(e, GameComponent::COMPONENT_PHYSICS) };
 		bool hasSprite{ GameComponent::hasComponent(e, GameComponent::COMPONENT_SPRITE) };
 		bool hasPlayer{ GameComponent::hasComponent(e, GameComponent::COMPONENT_PLAYER) };
-		bool hasAABB{ GameComponent::hasComponent(e, GameComponent::COMPONENT_AABB) };
+		bool hasAABB{ GameComponent::hasComponent(e, GameComponent::COMPONENT_COLLISION) };
 		bool hasWeapon{ GameComponent::hasComponent(e, GameComponent::COMPONENT_WEAPON) };
 		bool hasAttack{ GameComponent::hasComponent(e, GameComponent::COMPONENT_ATTACK) };
+		bool hasEnemy{ GameComponent::hasComponent(e, GameComponent::COMPONENT_ENEMY) };
 		if (isAlive && hasPhysics)
 		{
 			isAlive = isAlive && GameSystem::updatePhysics(m_deltaTime, phys);
@@ -214,21 +191,18 @@ void GameEngine::update(SpriteRenderer *sRenderer, InputManager *input, UIRender
 		if (isAlive && hasPhysics && hasAABB)
 		{
 			isAlive = isAlive && GameSystem::updateRoomCollision(m_deltaTime, 
-				phys, aabb, m_currentRoom.get());
+				phys, col, m_currentRoom.get());
 
 			// Draw hit boxes if debug mode is on.
 			if (m_isDebugMode)
-				uRenderer->addBox(phys, aabb, 0, 255, 0, 100);
+				uRenderer->addBox(phys, col.aabb, 0, 255, 0, 100);
 		}
 		if (isAlive && hasPhysics && hasAttack)
 		{
 			// Draw attack hit boxes if debug mode is on.
 			if (m_isDebugMode && atk.isEnabled)
 			{
-				GameComponent::AABB attackBox;
-				attackBox.halfSize = atk.pattern.halfSize;
-				attackBox.offset = atk.pattern.offset;
-				uRenderer->addBox(phys, attackBox, 0, 0, 255, 100);
+				uRenderer->addBox(phys, atk.pattern.aabb, 0, 0, 255, 100);
 			}
 		}
 		if (isAlive && hasPhysics && hasSprite)
@@ -242,11 +216,12 @@ void GameEngine::update(SpriteRenderer *sRenderer, InputManager *input, UIRender
 		}
 		if (isAlive && hasPlayer && hasPhysics && hasSprite && hasAABB)
 		{
-			isAlive = isAlive && GameSystem::updatePlayer(m_deltaTime, input, player, phys, spr, wpn, aabb, atk);
+			isAlive = isAlive && GameSystem::updatePlayer(m_deltaTime, input, player, phys, spr, wpn, col, atk);
 		}
 		if (isAlive && hasSprite && hasAttack)
 		{
-			isAlive = isAlive && GameSystem::updateAttack(m_deltaTime, spr, atk);
+			isAlive = isAlive && GameSystem::updateAttack(m_deltaTime, spr, atk, phys,
+				m_playerId, m_enemyIds, m_compPhysics, m_compCollisions);
 		}
 
 		// Flag the entity for deletion if it isn't alive anymore.
@@ -259,6 +234,10 @@ void GameEngine::update(SpriteRenderer *sRenderer, InputManager *input, UIRender
 	//sRenderer->updateData();
 
 	deleteFlaggedEntities();
+
+	// TODO: handle collisions using broad and narrow phases after updating 
+	// entity values... may need to call deleteFlaggedEntities again if
+	// entities are deleted as a result of this.
 }
 
 void GameEngine::render(SpriteRenderer *sRenderer, UIRenderer *uRenderer)
@@ -321,10 +300,10 @@ void GameEngine::deleteFlaggedEntities()
 		{
 			m_compPlayer = {};
 		}
-		if (GameComponent::hasComponent(lastMask, GameComponent::COMPONENT_AABB))
+		if (GameComponent::hasComponent(lastMask, GameComponent::COMPONENT_COLLISION))
 		{
-			m_compAABBs[id] = m_compAABBs[lastIndex];
-			m_compAABBs[lastIndex] = {};
+			m_compCollisions[id] = m_compCollisions[lastIndex];
+			m_compCollisions[lastIndex] = {};
 		}
 		if (GameComponent::hasComponent(lastMask, GameComponent::COMPONENT_WEAPON))
 		{
@@ -335,6 +314,14 @@ void GameEngine::deleteFlaggedEntities()
 		{
 			m_compAttacks[id] = m_compAttacks[lastIndex];
 			m_compAttacks[lastIndex] = {};
+		}
+		if (GameComponent::hasComponent(lastMask, GameComponent::COMPONENT_ENEMY))
+		{
+			m_compEnemies[id] = m_compEnemies[lastIndex];
+			m_compEnemies[lastIndex] = {};
+
+			// Remove this entity's id from the list of all enemy ids.
+			m_enemyIds.erase(std::remove(m_enemyIds.begin(), m_enemyIds.end(), id), m_enemyIds.end());
 		}
 
 		m_numEntities--;
@@ -388,11 +375,37 @@ void GameEngine::createNewEntities()
 
 void GameEngine::createPlayer()
 {
+	std::unordered_map<std::string, SpriteAnimation> playerAnims{
+		{PlayerState::IDLE, { 0, 8, true, glm::vec2(0.f),  {3.f, 0.07f, 0.07f, 0.07f, 0.07f, 1.f, 0.07f, 0.07f}}},
+		{PlayerState::RUN, { 11, 10, true, glm::vec2(0.f), {0.07f} }},
+		{PlayerState::JUMP_ASCEND, { 22, 4, false, glm::vec2(0.f), {0.07f} }},
+		{PlayerState::JUMP_PEAK, { 26, 6, false, glm::vec2(0.f), {0.07f} }},
+		{PlayerState::JUMP_DESCEND, { 33, 4, true, glm::vec2(0.f), {0.07f} }},
+		{PlayerState::JUMP_LAND, { 37, 1, false, glm::vec2(0.f), {0.1f} }},
+		{PlayerState::RUN_START, { 38, 5, false, glm::vec2(0.f), {0.07f} }},
+		{PlayerState::RUN_STOP, { 44, 4, false, glm::vec2(0.f), {0.07f} }},
+		{PlayerState::ALERT, { 48, 3, false, glm::vec2(0.f), {3.f, 0.07f, 0.07f} }},
+		{PlayerState::TURN, { 51, 4, false, glm::vec2(0.f), {0.07f} }},
+		{PlayerState::CROUCH, { 55, 4, false, glm::vec2(0.f), {0.07f} }},
+		{PlayerState::CROUCH_STOP, { 59, 2, false, glm::vec2(0.f), {0.07f} }},
+		{PlayerState::ATTACK, { 61, 10, false, glm::vec2(0.f), {0.05f} }},
+		{PlayerState::ATTACK_AIR, { 71, 9, false, glm::vec2(0.f), {0.05f} }},
+		{PlayerState::ATTACK_CROUCH, { 80, 9, false, glm::vec2(0.f), {0.05f} }},
+	};
+	m_playerTexture = std::make_unique<SpriteSheet>("serah_sheet.png", playerAnims, glm::ivec2(32, 32));
+
+	std::unordered_map<std::string, SpriteAnimation> swordAnims{
+		{PlayerState::ATTACK, { 0, 10, false, glm::vec2(8.f, 8.f), {0.05f} }},
+		{PlayerState::ATTACK_AIR, { 11, 9, false, glm::vec2(4.f, 8.f), {0.05f} }},
+		{PlayerState::ATTACK_CROUCH, { 22, 9, false, glm::vec2(5.f, 0.f), {0.05f} }},
+	};
+	m_swordTexture = std::make_unique<SpriteSheet>("serah_sword.png", swordAnims, glm::ivec2(48, 48));
+
 	m_playerId = createEntity({
 		GameComponent::COMPONENT_PHYSICS,
 		GameComponent::COMPONENT_SPRITE,
 		GameComponent::COMPONENT_PLAYER,
-		GameComponent::COMPONENT_AABB,
+		GameComponent::COMPONENT_COLLISION,
 		GameComponent::COMPONENT_WEAPON,
 		GameComponent::COMPONENT_ATTACK,
 	});
@@ -411,14 +424,14 @@ void GameEngine::createPlayer()
 
 	// TODO: replace hard-coded frames.
 	spr.spriteSheet = m_playerTexture.get();
-	spr.spriteSheet->setAnimation("idle", spr);
+	spr.spriteSheet->setAnimation(PlayerState::IDLE, spr);
 
 	GameComponent::Weapon &wp = m_compWeapons[m_playerId];
 	wp.spriteSheet = m_swordTexture.get();
 
-	GameComponent::AABB &aabb = m_compAABBs[m_playerId];
-	aabb.halfSize = glm::vec2(8, 10);
-	aabb.offset = glm::vec2(0, -6);
+	GameComponent::Collision &col = m_compCollisions[m_playerId];
+	col.aabb.halfSize = glm::vec2(8, 10);
+	col.aabb.offset = glm::vec2(0, -6);
 
 	GameComponent::Attack &atk = m_compAttacks[m_playerId];
 	atk.source = m_playerId;
@@ -428,4 +441,47 @@ void GameEngine::createPlayer()
 		{PlayerState::ATTACK_AIR, {glm::vec2(22, 17), glm::vec2(6, 4), glm::ivec2(1, 6), 0}},
 		{PlayerState::ATTACK_CROUCH, {glm::vec2(22, 17), glm::vec2(7, -3), glm::ivec2(1, 6), 0}}
 	};
+}
+
+void GameEngine::createEnemy()
+{
+	std::unordered_map<std::string, SpriteAnimation> enemyAnims{
+		{EnemyState::IDLE, { 0, 1, false, glm::vec2(0.f),  {1.f}}},
+		{EnemyState::RUN, { 4, 4, true, glm::vec2(0.f), {0.07f} }},
+		{EnemyState::ALERT, { 8, 1, false, glm::vec2(0.f), {1.f} }},
+		{EnemyState::HURT, { 12, 2, false, glm::vec2(0.f), {0.07f} }},
+		{EnemyState::HURT_AIR, { 16, 3, false, glm::vec2(0.f), {0.07f} }},
+		{EnemyState::FALLEN, { 20, 1, false, glm::vec2(0.f), {1.f} }},
+		{EnemyState::ATTACK, { 24, 4, false, glm::vec2(0.f), {0.05f} }},
+	};
+	m_enemyTexture = std::make_unique<SpriteSheet>("clamper_sheet.png", enemyAnims, glm::ivec2(32, 32));
+
+	int enemyId = createEntity({
+		GameComponent::COMPONENT_PHYSICS,
+		GameComponent::COMPONENT_SPRITE,
+		GameComponent::COMPONENT_COLLISION,
+	});
+
+	GameComponent::Physics &phys = m_compPhysics[enemyId];
+	phys.pos = glm::vec3(128.f, 800.f, 0.f);
+	phys.speed = glm::vec3(0.f);
+	phys.scale = glm::vec2(1.f);
+
+	GameComponent::Sprite &spr = m_compSprites[enemyId];
+	spr.r = 255;
+	spr.g = 255;
+	spr.b = 255;
+	spr.a = 255;
+	spr.hasDuration = false;
+
+	// TODO: replace hard-coded frames.
+	spr.spriteSheet = m_enemyTexture.get();
+	spr.spriteSheet->setAnimation(EnemyState::IDLE, spr);
+
+	GameComponent::Collision &col = m_compCollisions[enemyId];
+	col.aabb.halfSize = glm::vec2(8, 10);
+	col.aabb.offset = glm::vec2(0, -6);
+
+	// Add this enemy's id to the list of all enemy ids.
+	m_enemyIds.push_back(enemyId);
 }

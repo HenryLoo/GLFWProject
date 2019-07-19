@@ -1,5 +1,4 @@
 #include "GameSystem.h"
-#include "GameEngine.h"
 #include "SpriteRenderer.h"
 #include "InputManager.h"
 #include "CharStates.h"
@@ -97,7 +96,7 @@ bool GameSystem::updateSprite(float deltaTime, SpriteRenderer *renderer,
 bool GameSystem::updatePlayer(float deltaTime, InputManager *input, 
 	GameComponent::Player &player, GameComponent::Physics &physics, 
 	GameComponent::Sprite &sprite, GameComponent::Weapon &weapon, 
-	GameComponent::AABB &aabb, GameComponent::Attack &attack)
+	GameComponent::Collision &col, GameComponent::Attack &attack)
 {
 	// Save the previous state.
 	player.previousState = player.currentState;
@@ -108,8 +107,8 @@ bool GameSystem::updatePlayer(float deltaTime, InputManager *input,
 	bool isRunningRight{ input->isKeyPressing(INPUT_RIGHT) };
 	bool isCrouching{ input->isKeyPressing(INPUT_DOWN) };
 	bool isRunning{ isRunningLeft != isRunningRight };
-	bool isOnGround{ aabb.isCollidingFloor || aabb.isCollidingGhost ||
-		aabb.isCollidingSlope };
+	bool isOnGround{ col.isCollidingFloor || col.isCollidingGhost ||
+		col.isCollidingSlope };
 	bool isJumping{ input->isKeyPressed(INPUT_JUMP) };
 	bool isAttacking{ input->isKeyPressed(INPUT_ATTACK) };
 
@@ -222,7 +221,7 @@ bool GameSystem::updatePlayer(float deltaTime, InputManager *input,
 		}
 
 		// Reset fall speed if walking off a ledge.
-		if (aabb.wasOnGround && physics.speed.y < 0)
+		if (col.wasOnGround && physics.speed.y < 0)
 		{
 			physics.speed.y = 0.f;
 		}
@@ -237,7 +236,7 @@ bool GameSystem::updatePlayer(float deltaTime, InputManager *input,
 		player.numRemainingJumps--;
 
 		// Dropping down, through ghost platforms.
-		if (aabb.isCollidingGhost && !aabb.isCollidingFloor && isCrouching)
+		if (col.isCollidingGhost && !col.isCollidingFloor && isCrouching)
 		{
 			physics.pos.y--;
 			physics.speed.y = 0;
@@ -342,13 +341,14 @@ bool GameSystem::updatePlayer(float deltaTime, InputManager *input,
 }
 
 bool GameSystem::updateRoomCollision(float deltaTime,
-	GameComponent::Physics &physics, GameComponent::AABB &aabb, Room *room)
+	GameComponent::Physics &physics, GameComponent::Collision &col, Room *room)
 {
 	// Reset collision flags.
-	aabb.wasOnGround = aabb.isCollidingFloor || aabb.isCollidingGhost || aabb.isCollidingSlope;
-	aabb.isCollidingFloor = false;
-	aabb.isCollidingGhost = false;
+	col.wasOnGround = col.isCollidingFloor || col.isCollidingGhost || col.isCollidingSlope;
+	col.isCollidingFloor = false;
+	col.isCollidingGhost = false;
 
+	const AABB &aabb{ col.aabb };
 	glm::vec2 speed{ physics.speed };
 	glm::vec2 halfSize{ aabb.halfSize };
 	glm::vec2 pos{ physics.pos.x + aabb.offset.x, 
@@ -376,7 +376,7 @@ bool GameSystem::updateRoomCollision(float deltaTime,
 		// If the entity is on a slope, ignore horizontal collisions for the
 		// bottom-most tile. This will stop the collision box from
 		// "catching" onto the tile when transitioning from slope onto floor.
-		if (aabb.isCollidingSlope)
+		if (col.isCollidingSlope)
 		{
 			minYTile.y = glm::min(minYTile.y + 1, maxYTile.y);
 		}
@@ -424,7 +424,7 @@ bool GameSystem::updateRoomCollision(float deltaTime,
 	// Reset the colliding-slope flag after checking for horizontal collisions,
 	// because we need to check it to properly transition between slopes and
 	// floor tiles.
-	aabb.isCollidingSlope = false;
+	col.isCollidingSlope = false;
 
 	// Check for vertical collisions.
 	if (speed.y != 0)
@@ -509,7 +509,7 @@ bool GameSystem::updateRoomCollision(float deltaTime,
 						continue;
 					}
 
-					aabb.isCollidingSlope = true;
+					col.isCollidingSlope = true;
 
 					// Set the new y-position if it isn't set already, or if it is at a lower
 					// y-position than the current one to set.
@@ -530,17 +530,17 @@ bool GameSystem::updateRoomCollision(float deltaTime,
 
 					if (type == TILE_WALL)
 					{
-						aabb.isCollidingFloor = true;
+						col.isCollidingFloor = true;
 					}
 					else if (type == TILE_GHOST)
 					{
-						aabb.isCollidingGhost = true;
+						col.isCollidingGhost = true;
 					}
 				}
 			}
 
 			// Collision was found, so there is no need to keep checking. 
-			if ((aabb.isCollidingFloor || aabb.isCollidingGhost || aabb.isCollidingSlope))
+			if ((col.isCollidingFloor || col.isCollidingGhost || col.isCollidingSlope))
 			{
 				// If the entity is within a slope's tile but not yet 
 				// colliding with it, then discard any floor collisions that 
@@ -549,9 +549,9 @@ bool GameSystem::updateRoomCollision(float deltaTime,
 				// shorter than regular tiles, this would incorrectly set the 
 				// new y-position to the floor, even though it should be at the
 				// slope.
-				if (isAlmostSlope && !aabb.isCollidingSlope)
+				if (isAlmostSlope && !col.isCollidingSlope)
 				{
-					aabb.isCollidingFloor = false;
+					col.isCollidingFloor = false;
 				}
 
 				break;
@@ -561,12 +561,12 @@ bool GameSystem::updateRoomCollision(float deltaTime,
 		}
 
 		// If not colliding, then just apply velocity as usual.
-		if (!aabb.isCollidingFloor && !aabb.isCollidingGhost && !aabb.isCollidingSlope)
+		if (!col.isCollidingFloor && !col.isCollidingGhost && !col.isCollidingSlope)
 		{
 			physics.pos.y += physics.speed.y * deltaTime;
 		}
 		// Colliding against ceiling.
-		else if (aabb.isCollidingFloor && physics.speed.y > 0)
+		else if (col.isCollidingFloor && physics.speed.y > 0)
 		{
 			physics.speed.y = 0;
 		}
@@ -609,12 +609,34 @@ bool GameSystem::updateWeapon(float deltaTime, SpriteRenderer *renderer,
 	return true;
 }
 
-
 bool GameSystem::updateAttack(float deltaTIme, GameComponent::Sprite &sprite,
-	GameComponent::Attack &attack)
+	GameComponent::Attack &attack, GameComponent::Physics &physics,
+	int playerId, const std::vector<int> &enemyIds,
+	GameComponent::Physics(&targetPhysics)[GameEngine::MAX_ENTITIES],
+	GameComponent::Collision(&targetCols)[GameEngine::MAX_ENTITIES])
 {
 	attack.isEnabled = (sprite.currentFrame >= attack.pattern.frameRange.x &&
 		sprite.currentFrame <= attack.pattern.frameRange.y);
+
+	if (attack.isEnabled)
+	{
+		//glm::vec2 atkOrigin{ physics.pos.x + physics.scale.x * attack.pattern.offset.x,
+		//	physics.pos.y + physics.scale.y * attack.pattern.offset.y };
+		//float atkLeftBound{ atkOrigin.x - attack.pattern.halfSize.x };
+		//float atkRightBound{ atkOrigin.x + attack.pattern.halfSize.x };
+		//float atkBottomBound{ atkOrigin.y - attack.pattern.halfSize.y };
+		//float atkTopBound{ atkOrigin.y + attack.pattern.halfSize.y };
+
+		// If this was a player's attack.
+		if (attack.source == playerId)
+		{
+			// Check collisions against all existing enemies.
+			for (int enemyId : enemyIds)
+			{
+				// TODO: AABB collision testing is O(n^2)... try to find a better way to do this.
+			}
+		}
+	}
 
 	return true;
 }

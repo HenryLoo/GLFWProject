@@ -20,7 +20,7 @@ public:
 	// Add box data to the array of boxes to prepare for rendering.
 	// The rgba colour values range from 0-255.
 	void addBox(const GameComponent::Physics &physics, 
-		const GameComponent::AABB &aabb,
+		const AABB &aabb,
 		unsigned char r, unsigned char g, unsigned char b, unsigned char a);
 
 	// Set the number of boxes to render to 0.

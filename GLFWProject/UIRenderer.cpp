@@ -77,7 +77,7 @@ UIRenderer::~UIRenderer()
 }
 
 void UIRenderer::addBox(const GameComponent::Physics &physics,
-	const GameComponent::AABB &aabb,
+	const AABB &aabb,
 	unsigned char r, unsigned char g, unsigned char b, unsigned char a)
 {
 	m_posSizeData[4 * m_numBoxes] = physics.pos.x + physics.scale.x * aabb.offset.x;

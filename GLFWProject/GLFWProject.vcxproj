@@ -141,6 +141,7 @@
   <ItemGroup>
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="CharStates.cpp" />
+    <ClCompile Include="CollisionBroadPhase.cpp" />
     <ClCompile Include="GameComponent.cpp" />
     <ClCompile Include="GameEngine.cpp" />
     <ClCompile Include="GameSystem.cpp" />
@@ -157,9 +158,12 @@
     <ClCompile Include="UIRenderer.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="AABB.h" />
     <ClInclude Include="AttackPattern.h" />
     <ClInclude Include="Camera.h" />
     <ClInclude Include="CharStates.h" />
+    <ClInclude Include="CollisionBroadPhase.h" />
+    <ClInclude Include="CollisionNarrowPhase.h" />
     <ClInclude Include="GameComponent.h" />
     <ClInclude Include="GameEngine.h" />
     <ClInclude Include="GameSystem.h" />

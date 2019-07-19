@@ -20,9 +20,10 @@ namespace GameComponent
 		COMPONENT_PHYSICS = 1,
 		COMPONENT_SPRITE = 2,
 		COMPONENT_PLAYER = 4,
-		COMPONENT_AABB = 8,
+		COMPONENT_COLLISION = 8,
 		COMPONENT_WEAPON = 16,
 		COMPONENT_ATTACK = 32,
+		COMPONENT_ENEMY = 64,
 	};
 
 	struct Physics
@@ -89,13 +90,10 @@ namespace GameComponent
 		std::unordered_map<std::string, AttackPattern> attackPatterns;
 	};
 
-	struct AABB
+	struct Collision
 	{
-		// The half value of width and height.
-		glm::vec2 halfSize;
-
-		// The pixel offset from the box's origin position.
-		glm::vec2 offset;
+		// The entity's collision box.
+		AABB aabb;
 
 		// Flag for if the box has collided from the bottom during this frame.
 		bool isCollidingFloor{ false };
@@ -138,6 +136,11 @@ namespace GameComponent
 
 		// This attack pattern's values.
 		AttackPattern pattern;
+	};
+
+	struct Enemy
+	{
+
 	};
 
 	// Check if an entity has a component.

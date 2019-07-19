@@ -2,15 +2,12 @@
 #ifndef AttackPattern_H
 #define AttackPattern_H
 
-#include <glm/glm.hpp>
+#include "AABB.h"
 
 struct AttackPattern
 {
-	// The half value of width and height of the attack's hit box.
-	glm::vec2 halfSize;
-
-	// The pixel offset from the box's origin position.
-	glm::vec2 offset;
+	// The attack's collision box.
+	AABB aabb;
 
 	// The start and end frame index bounds for which this attack is enabled.
 	glm::ivec2 frameRange;
