@@ -1,6 +1,8 @@
 #include "SpriteRenderer.h"
 
 #include "Camera.h"
+#include "EntityConstants.h"
+#include "Room.h"
 
 #include <glad/glad.h>
 #include <glm/glm.hpp>
@@ -60,7 +62,7 @@ SpriteRenderer::SpriteRenderer()
 	// Initialize with an empty buffer and update its values in the game loop.
 	glGenBuffers(1, &m_positionVBO);
 	glBindBuffer(GL_ARRAY_BUFFER, m_positionVBO);
-	glBufferData(GL_ARRAY_BUFFER, GameEngine::MAX_ENTITIES * 3 * sizeof(GLfloat), NULL, GL_STREAM_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, EntityConstants::MAX_ENTITIES * 3 * sizeof(GLfloat), NULL, GL_STREAM_DRAW);
 
 	// Set attribute for instance positions.
 	glEnableVertexAttribArray(1);
@@ -72,7 +74,7 @@ SpriteRenderer::SpriteRenderer()
 	// Initialize with an empty buffer and update its values in the game loop.
 	glGenBuffers(1, &m_colourVBO);
 	glBindBuffer(GL_ARRAY_BUFFER, m_colourVBO);
-	glBufferData(GL_ARRAY_BUFFER, GameEngine::MAX_ENTITIES * 4 * sizeof(GLubyte), NULL, GL_STREAM_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, EntityConstants::MAX_ENTITIES * 4 * sizeof(GLubyte), NULL, GL_STREAM_DRAW);
 
 	// Set attribute for instance colours.
 	glEnableVertexAttribArray(2);
@@ -85,7 +87,7 @@ SpriteRenderer::SpriteRenderer()
 	// Initialize with an empty buffer and update its values in the game loop.
 	glGenBuffers(1, &m_texCoordsVBO);
 	glBindBuffer(GL_ARRAY_BUFFER, m_texCoordsVBO);
-	glBufferData(GL_ARRAY_BUFFER, GameEngine::MAX_ENTITIES * 4 * sizeof(GLfloat), NULL, GL_STREAM_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, EntityConstants::MAX_ENTITIES * 4 * sizeof(GLfloat), NULL, GL_STREAM_DRAW);
 
 	// Set attribute for instance texture coordinates.
 	glEnableVertexAttribArray(3);
@@ -98,7 +100,7 @@ SpriteRenderer::SpriteRenderer()
 	// Initialize with an empty buffer and update its values in the game loop.
 	glGenBuffers(1, &m_transformVBO);
 	glBindBuffer(GL_ARRAY_BUFFER, m_transformVBO);
-	glBufferData(GL_ARRAY_BUFFER, GameEngine::MAX_ENTITIES * 3 * sizeof(GLfloat), NULL, GL_STREAM_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, EntityConstants::MAX_ENTITIES * 3 * sizeof(GLfloat), NULL, GL_STREAM_DRAW);
 
 	// Set attribute for instance transforms.
 	glEnableVertexAttribArray(4);
@@ -304,16 +306,16 @@ void SpriteRenderer::render(Camera *camera, glm::ivec2 windowSize, Room *room = 
 
 	// Update the instance buffers.
 	glBindBuffer(GL_ARRAY_BUFFER, m_positionVBO);
-	glBufferData(GL_ARRAY_BUFFER, GameEngine::MAX_ENTITIES * 3 * sizeof(GLfloat), NULL, GL_STREAM_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, EntityConstants::MAX_ENTITIES * 3 * sizeof(GLfloat), NULL, GL_STREAM_DRAW);
 
 	glBindBuffer(GL_ARRAY_BUFFER, m_colourVBO);
-	glBufferData(GL_ARRAY_BUFFER, GameEngine::MAX_ENTITIES * 4 * sizeof(GLubyte), NULL, GL_STREAM_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, EntityConstants::MAX_ENTITIES * 4 * sizeof(GLubyte), NULL, GL_STREAM_DRAW);
 
 	glBindBuffer(GL_ARRAY_BUFFER, m_texCoordsVBO);
-	glBufferData(GL_ARRAY_BUFFER, GameEngine::MAX_ENTITIES * 4 * sizeof(GLfloat), NULL, GL_STREAM_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, EntityConstants::MAX_ENTITIES * 4 * sizeof(GLfloat), NULL, GL_STREAM_DRAW);
 
 	glBindBuffer(GL_ARRAY_BUFFER, m_transformVBO);
-	glBufferData(GL_ARRAY_BUFFER, GameEngine::MAX_ENTITIES * 3 * sizeof(GLfloat), NULL, GL_STREAM_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, EntityConstants::MAX_ENTITIES * 3 * sizeof(GLfloat), NULL, GL_STREAM_DRAW);
 
 	// Use the shader.
 	m_spriteShader->use();

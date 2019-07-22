@@ -1,5 +1,7 @@
 #include "UIRenderer.h"
-#include "GameEngine.h"
+
+#include "Camera.h"
+#include "EntityConstants.h"
 
 #include <glm/gtc/matrix_transform.hpp>
 
@@ -21,8 +23,8 @@ UIRenderer::UIRenderer()
 	m_boxShader = std::make_unique<Shader>("box.vs", "box.fs");
 
 	// Prepare the data buffers.
-	m_posSizeData = new GLfloat[GameEngine::MAX_ENTITIES * 4];
-	m_colourData = new GLubyte[GameEngine::MAX_ENTITIES * 4];
+	m_posSizeData = new GLfloat[EntityConstants::MAX_ENTITIES * 4];
+	m_colourData = new GLubyte[EntityConstants::MAX_ENTITIES * 4];
 
 	// Create the vertex array object and bind to it.
 	// All subsequent VBO configurations will be saved for this VAO.
@@ -45,7 +47,7 @@ UIRenderer::UIRenderer()
 	// Initialize with an empty buffer and update its values in the game loop.
 	glGenBuffers(1, &m_posSizeVBO);
 	glBindBuffer(GL_ARRAY_BUFFER, m_posSizeVBO);
-	glBufferData(GL_ARRAY_BUFFER, GameEngine::MAX_ENTITIES * 4 * sizeof(GLfloat), NULL, GL_STREAM_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, EntityConstants::MAX_ENTITIES * 4 * sizeof(GLfloat), NULL, GL_STREAM_DRAW);
 
 	// Set attribute for instance positions and sizes.
 	glEnableVertexAttribArray(1);
@@ -57,7 +59,7 @@ UIRenderer::UIRenderer()
 	// Initialize with an empty buffer and update its values in the game loop.
 	glGenBuffers(1, &m_colourVBO);
 	glBindBuffer(GL_ARRAY_BUFFER, m_colourVBO);
-	glBufferData(GL_ARRAY_BUFFER, GameEngine::MAX_ENTITIES * 4 * sizeof(GLubyte), NULL, GL_STREAM_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, EntityConstants::MAX_ENTITIES * 4 * sizeof(GLubyte), NULL, GL_STREAM_DRAW);
 
 	// Set attribute for instance colours.
 	glEnableVertexAttribArray(2);
@@ -116,11 +118,11 @@ void UIRenderer::render(Camera *camera, glm::ivec2 windowSize)
 
 	// Update the instance buffers.
 	glBindBuffer(GL_ARRAY_BUFFER, m_posSizeVBO);
-	glBufferData(GL_ARRAY_BUFFER, GameEngine::MAX_ENTITIES * 4 * sizeof(GLfloat), NULL, GL_STREAM_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, EntityConstants::MAX_ENTITIES * 4 * sizeof(GLfloat), NULL, GL_STREAM_DRAW);
 	glBufferSubData(GL_ARRAY_BUFFER, 0, m_numBoxes * sizeof(GLfloat) * 4, m_posSizeData);
 
 	glBindBuffer(GL_ARRAY_BUFFER, m_colourVBO);
-	glBufferData(GL_ARRAY_BUFFER, GameEngine::MAX_ENTITIES * 4 * sizeof(GLubyte), NULL, GL_STREAM_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, EntityConstants::MAX_ENTITIES * 4 * sizeof(GLubyte), NULL, GL_STREAM_DRAW);
 	glBufferSubData(GL_ARRAY_BUFFER, 0, m_numBoxes * sizeof(GLubyte) * 4, m_colourData);
 
 	// Use the shader.

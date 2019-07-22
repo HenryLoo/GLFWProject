@@ -5,7 +5,6 @@
 #include "Shader.h"
 #include "SpriteSheet.h"
 #include "GameComponent.h"
-#include "GameEngine.h"
 
 #include <memory>
 

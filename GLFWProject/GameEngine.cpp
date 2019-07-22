@@ -6,6 +6,7 @@
 #include "Room.h"
 #include "UIRenderer.h"
 #include "CharStates.h"
+#include "EntityConstants.h"
 
 #include <algorithm>
 #include <iostream>
@@ -66,6 +67,15 @@ GameEngine::GameEngine()
 	// Set the callback function for automatically setting the viewport
 	// when the window is resized.
 	glfwSetFramebufferSizeCallback(m_window, framebufferSizeCallback);
+
+	// Initialize entity and component vectors.
+	m_entities.resize(EntityConstants::MAX_ENTITIES);
+	m_compPhysics.resize(EntityConstants::MAX_ENTITIES);
+	m_compSprites.resize(EntityConstants::MAX_ENTITIES);
+	m_compCollisions.resize(EntityConstants::MAX_ENTITIES);
+	m_compWeapons.resize(EntityConstants::MAX_ENTITIES);
+	m_compAttacks.resize(EntityConstants::MAX_ENTITIES);
+	m_compEnemies.resize(EntityConstants::MAX_ENTITIES);
 
 	// Initialize the camera.
 	m_camera = std::make_unique<Camera>();
@@ -239,7 +249,7 @@ void GameEngine::update(SpriteRenderer *sRenderer, InputManager *input, UIRender
 	m_broadPhase->updateAABBList(m_numEntities, m_entities, m_compCollisions, 
 		m_compAttacks, m_compPhysics);
 
-	std::vector<std::pair<int, int>> collisions;
+	std::vector<std::pair<AABBSource, AABBSource>> collisions;
 	m_broadPhase->generateOverlapList(collisions);
 	//std::cout << collisions.size() << std::endl;
 

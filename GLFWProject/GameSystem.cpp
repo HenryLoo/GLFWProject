@@ -1,7 +1,9 @@
 #include "GameSystem.h"
+
 #include "SpriteRenderer.h"
 #include "InputManager.h"
 #include "CharStates.h"
+#include "Room.h"
 #include "UIRenderer.h"
 
 #include <glm/gtx/norm.hpp>
@@ -20,8 +22,8 @@ namespace
 }
 
 void GameSystem::updatePhysics(float deltaTime, int numEntities,
-	unsigned long(&entities)[GameEngine::MAX_ENTITIES],
-	GameComponent::Physics(&physics)[GameEngine::MAX_ENTITIES])
+	std::vector<unsigned long> &entities,
+	std::vector<GameComponent::Physics> &physics)
 {
 	for (int i = 0; i < numEntities; i++)
 	{
@@ -36,10 +38,10 @@ void GameSystem::updatePhysics(float deltaTime, int numEntities,
 }
 
 void GameSystem::updateSprite(float deltaTime, int numEntities,
-	unsigned long(&entities)[GameEngine::MAX_ENTITIES],
+	std::vector<unsigned long> &entities,
 	SpriteRenderer *renderer, glm::vec3 cameraPos,
-	GameComponent::Sprite(&sprites)[GameEngine::MAX_ENTITIES],
-	GameComponent::Physics(&physics)[GameEngine::MAX_ENTITIES])
+	std::vector<GameComponent::Sprite> &sprites,
+	std::vector<GameComponent::Physics> &physics)
 {
 	for (int i = 0; i < numEntities; i++)
 	{
@@ -367,9 +369,9 @@ void GameSystem::updatePlayer(float deltaTime, unsigned long(&playerEntity),
 }
 
 void GameSystem::updateRoomCollision(float deltaTime, int numEntities,
-	unsigned long(&entities)[GameEngine::MAX_ENTITIES],
-	GameComponent::Physics(&physics)[GameEngine::MAX_ENTITIES],
-	GameComponent::Collision(&collisions)[GameEngine::MAX_ENTITIES],
+	std::vector<unsigned long> &entities,
+	std::vector<GameComponent::Physics> &physics,
+	std::vector<GameComponent::Collision> &collisions,
 	Room *room)
 {
 	for (int i = 0; i < numEntities; i++)
@@ -623,11 +625,11 @@ void GameSystem::updateRoomCollision(float deltaTime, int numEntities,
 }
 
 void GameSystem::updateWeapon(float deltaTime, int numEntities,
-	unsigned long(&entities)[GameEngine::MAX_ENTITIES],
+	std::vector<unsigned long> &entities,
 	SpriteRenderer *renderer, glm::vec3 cameraPos,
-	GameComponent::Sprite(&sprites)[GameEngine::MAX_ENTITIES],
-	GameComponent::Physics(&physics)[GameEngine::MAX_ENTITIES],
-	GameComponent::Weapon(&weapons)[GameEngine::MAX_ENTITIES])
+	std::vector<GameComponent::Sprite> &sprites,
+	std::vector<GameComponent::Physics> &physics,
+	std::vector<GameComponent::Weapon> &weapons)
 {
 	for (int i = 0; i < numEntities; i++)
 	{
@@ -664,8 +666,8 @@ void GameSystem::updateWeapon(float deltaTime, int numEntities,
 bool GameSystem::updateAttack(float deltaTIme, GameComponent::Sprite &sprite,
 	GameComponent::Attack &attack, GameComponent::Physics &physics,
 	int playerId, const std::vector<int> &enemyIds,
-	GameComponent::Physics(&targetPhysics)[GameEngine::MAX_ENTITIES],
-	GameComponent::Collision(&targetCols)[GameEngine::MAX_ENTITIES])
+	std::vector<GameComponent::Physics> &targetPhysics,
+	std::vector<GameComponent::Collision> &targetCols)
 {
 	attack.isEnabled = (sprite.currentFrame >= attack.pattern.frameRange.x &&
 		sprite.currentFrame <= attack.pattern.frameRange.y);
@@ -694,10 +696,10 @@ bool GameSystem::updateAttack(float deltaTIme, GameComponent::Sprite &sprite,
 }
 
 void GameSystem::updateDebug(int numEntities,
-	unsigned long(&entities)[GameEngine::MAX_ENTITIES],
-	GameComponent::Physics(&physics)[GameEngine::MAX_ENTITIES],
-	GameComponent::Collision(&collisions)[GameEngine::MAX_ENTITIES],
-	GameComponent::Attack(&attacks)[GameEngine::MAX_ENTITIES],
+	std::vector<unsigned long> &entities,
+	std::vector<GameComponent::Physics> &physics,
+	std::vector<GameComponent::Collision> &collisions,
+	std::vector<GameComponent::Attack> &attacks,
 	UIRenderer *uRenderer)
 {
 	for (int i = 0; i < numEntities; i++)

@@ -13,4 +13,20 @@ struct AABB
 	glm::vec2 offset;
 };
 
+// An AABB augmented with details about its source.
+struct AABBSource
+{
+	enum class Type
+	{
+		Collision,
+		Attack
+	};
+
+	// The id of the entity that this endpoint belongs to.
+	int entityId;
+
+	// The type of the endpoint: collision box or attack hit box.
+	Type type;
+};
+
 #endif

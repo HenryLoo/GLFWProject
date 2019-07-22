@@ -1,52 +1,55 @@
 #include "CollisionBroadPhase.h"
+
 #include <iostream>
 
-void CollisionBroadPhase::updateAABBList(int numEntities,
-	unsigned long(&entities)[100000],
-	const GameComponent::Collision(&cols)[100000],
-	const GameComponent::Attack(&atks)[100000],
-	const GameComponent::Physics(&phys)[100000])
+CollisionBroadPhase::CollisionBroadPhase()
 {
-	// TODO: fix this... currently using fixed size aabbList.
-	// Update values of existing AABB's.
-	//m_aabbList.clear();
-	int totalSize{ 2 };
-	m_aabbList.resize(totalSize);
-	int index{ 0 };
+	// Initialize AABB list's size.
+	m_aabbList.resize(EntityConstants::MAX_ENTITIES);
+}
+
+void CollisionBroadPhase::updateAABBList(int numEntities,
+	const std::vector<unsigned long> &entities,
+	const std::vector<GameComponent::Collision> &cols,
+	const std::vector<GameComponent::Attack> &atks,
+	const std::vector<GameComponent::Physics> &phys)
+{
+	int totalSize{ 0 };
 	for (int i = 0; i < numEntities; ++i)
 	{
-		unsigned long &e{ entities[i] };
-		bool hasPhysics{ GameComponent::hasComponent(e, GameComponent::COMPONENT_PHYSICS) };
-		bool hasCollision{ GameComponent::hasComponent(e, GameComponent::COMPONENT_COLLISION) };
-		bool hasAttack{ GameComponent::hasComponent(e, GameComponent::COMPONENT_ATTACK) };
+		bool hasPhysics{ GameComponent::hasComponent(entities[i], 
+			GameComponent::COMPONENT_PHYSICS) };
+		bool hasCollision{ GameComponent::hasComponent(entities[i], 
+			GameComponent::COMPONENT_COLLISION) };
+		bool hasAttack{ GameComponent::hasComponent(entities[i], 
+			GameComponent::COMPONENT_ATTACK) };
 		if (!hasPhysics) continue;
 
 		if (hasCollision)
 		{
-			AABBSource &src = m_aabbList[index];
-			src.entityId = i;
-			src.type = AABBSource::Type::Collision;
-			src.pos = phys[i].pos;
-			src.scale = phys[i].scale;
-			src.aabb = cols[i].aabb;
-			//m_aabbList.push_back(src);
-			//++totalSize;
-			++index;
+			AABBData &data = m_aabbList[totalSize];
+			data.src.entityId = i;
+			data.src.type = AABBSource::Type::Collision;
+			data.pos = phys[i].pos;
+			data.scale = phys[i].scale;
+			data.aabb = cols[i].aabb;
+			++totalSize;
 		}
 
-		if (hasAttack && atks[i].isEnabled)
+		if (hasAttack)
 		{
-			AABBSource &src = m_aabbList[index];
-			src.entityId = i;
-			src.type = AABBSource::Type::Attack;
-			src.pos = phys[i].pos;
-			src.scale = phys[i].scale;
-			src.aabb = atks[i].pattern.aabb;
-			//m_aabbList.push_back(src);
-			//++totalSize;
-			++index;
+			AABBData &data = m_aabbList[totalSize];
+			data.src.entityId = i;
+			data.src.type = AABBSource::Type::Attack;
+			data.pos = phys[i].pos;
+			data.scale = phys[i].scale;
+			data.aabb = atks[i].pattern.aabb;
+			++totalSize;
 		}
 	}
+
+	// Update the size of the AABB list.
+	m_aabbList.resize(totalSize);
 
 	// Update endpoints if new points were added or points were removed.
 	int numPoints{ 2 * totalSize };
@@ -83,7 +86,8 @@ void CollisionBroadPhase::updateAABBList(int numEntities,
 }
 
 
-void CollisionBroadPhase::generateOverlapList(std::vector<std::pair<int, int>> &output)
+void CollisionBroadPhase::generateOverlapList(
+	std::vector<std::pair<AABBSource, AABBSource>> &output)
 {
 	updateEndpoints();
 
@@ -106,10 +110,12 @@ void CollisionBroadPhase::generateOverlapList(std::vector<std::pair<int, int>> &
 		}
 	}
 
-	// Output the overlapping endpoints.
+	// Output the AABBSource of the overlapping endpoints.
 	for (const std::pair<int, int> &overlap : m_overlapsSet)
 	{
-		output.push_back(overlap);
+		output.push_back(std::make_pair(
+			m_aabbList[overlap.first].src,
+			m_aabbList[overlap.second].src));
 	}
 }
 
@@ -134,12 +140,16 @@ void CollisionBroadPhase::updateEndpoints()
 void  CollisionBroadPhase::updateIntervals(std::vector<Endpoint> &endpoints,
 	std::vector<int> &lookup)
 {
+	//std::cout << "---" << std::endl;
 	for (int i = 0; i < endpoints.size(); ++i)
 	{
 		// Sort the endpoints by value, in increasing order.
 		Endpoint thisPoint{ endpoints[i] };
+		//std::string type{ thisPoint.getType() == Endpoint::Type::Minimum ? "min" : "max" };
+		//std::cout << thisPoint.getAABBIndex() << " " << type << " " << thisPoint.getValue() << std::endl;
 		int j{ i - 1 };
-		while (j >= 0 && thisPoint < endpoints[j] && thisPoint.getValue() != -1)
+		while (j >= 0 && thisPoint < endpoints[j] &&
+			thisPoint.getValue() != EntityConstants::ENDPOINT_NOT_SET)
 		{
 			Endpoint prevPoint{ endpoints[j] };
 			Endpoint nextPoint{ endpoints[j + 1] };

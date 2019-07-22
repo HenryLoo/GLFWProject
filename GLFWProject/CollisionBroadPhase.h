@@ -3,6 +3,7 @@
 #define CollisionBroadPhase_H
 
 #include "AABB.h"
+#include "EntityConstants.h"
 #include "GameComponent.h"
 
 #include <set>
@@ -11,20 +12,9 @@
 // Uses a sort and sweep approach to detect collisions.
 class CollisionBroadPhase
 {
-	// An AABB augmented with details about its source.
-	struct AABBSource
+	struct AABBData
 	{
-		enum class Type
-		{
-			Collision,
-			Attack
-		};
-
-		// The id of the entity that this endpoint belongs to.
-		int entityId;
-
-		// The type of the endpoint: collision box or attack hit box.
-		Type type;
+		AABBSource src;
 
 		// The position of the AABB.
 		glm::vec2 pos;
@@ -49,7 +39,7 @@ class CollisionBroadPhase
 		{
 			m_aabbIndex = aabbIndex;
 			m_type = type;
-			m_value = -1.f;
+			m_value = EntityConstants::ENDPOINT_NOT_SET;
 		}
 
 		void setValue(float val)
@@ -136,19 +126,21 @@ class CollisionBroadPhase
 	};
 
 public:
+	CollisionBroadPhase();
+
 	// Update the list of AABB's.
 	// colIds contains a list of entity IDs that have collision components.
 	// atkIds contains a list of entity IDs that have attack components.
 	void updateAABBList(int numEntities,
-		unsigned long(&entities)[100000],
-		const GameComponent::Collision(&cols)[100000],
-		const GameComponent::Attack(&atks)[100000],
-		const GameComponent::Physics(&phys)[100000]);
+		const std::vector<unsigned long> &entities,
+		const std::vector<GameComponent::Collision> &cols,
+		const std::vector<GameComponent::Attack> &atks,
+		const std::vector<GameComponent::Physics> &phys);
 
 	// Generate the list of overlapping endpoints.
 	// The resulting list is passed into the output param.
 	// This is the "sweep" phase of the sort/sweep procedure.
-	void generateOverlapList(std::vector<std::pair<int, int>> &output);
+	void generateOverlapList(std::vector<std::pair<AABBSource, AABBSource>> &output);
 
 private:
 	// Update the position values in the list of endpoints with the values of the
@@ -166,7 +158,7 @@ private:
 		const std::vector<int> &lookup, const std::vector<Endpoint> &endpoints);
 
 	// An unordered list of all AABB's to consider.
-	std::vector<AABBSource> m_aabbList;
+	std::vector<AABBData> m_aabbList;
 
 	// Hold all endpoints in the x and y-directions.
 	// Endpoints refer to the bounds of an AABB, projected onto an axis.

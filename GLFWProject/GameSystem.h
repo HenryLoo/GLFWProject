@@ -3,7 +3,6 @@
 #define GameSystem_H
 
 #include "GameComponent.h"
-#include "GameEngine.h"
 
 class SpriteRenderer;
 class UIRenderer;
@@ -17,15 +16,15 @@ namespace GameSystem
 
 	// Update a physics component's values
 	void updatePhysics(float deltaTime, int numEntities,
-		unsigned long (&entities)[GameEngine::MAX_ENTITIES],
-		GameComponent::Physics(&physics)[GameEngine::MAX_ENTITIES]);
+		std::vector<unsigned long> &entities,
+		std::vector<GameComponent::Physics> &physics);
 
 	// Update a sprite component's values.
 	void updateSprite(float deltaTime, int numEntities,
-		unsigned long(&entities)[GameEngine::MAX_ENTITIES],
-		SpriteRenderer *renderer, glm::vec3 cameraPos, 
-		GameComponent::Sprite(&sprites)[GameEngine::MAX_ENTITIES],
-		GameComponent::Physics(&physics)[GameEngine::MAX_ENTITIES]);
+		std::vector<unsigned long> &entities,
+		SpriteRenderer *renderer, glm::vec3 cameraPos,
+		std::vector<GameComponent::Sprite> &sprites,
+		std::vector<GameComponent::Physics> &physics);
 
 	// Update a player component's values
 	void updatePlayer(float deltaTime, unsigned long(&playerEntity), InputManager *input, 
@@ -36,32 +35,32 @@ namespace GameSystem
 
 	// Update collisions using axis-aligned bounding boxes.
 	void updateRoomCollision(float deltaTime, int numEntities,
-		unsigned long(&entities)[GameEngine::MAX_ENTITIES],
-		GameComponent::Physics(&physics)[GameEngine::MAX_ENTITIES],
-		GameComponent::Collision(&collisions)[GameEngine::MAX_ENTITIES], 
+		std::vector<unsigned long> &entities,
+		std::vector<GameComponent::Physics> &physics,
+		std::vector<GameComponent::Collision> &collisions,
 		Room *room);
 
 	// Update a weapon component based on its entity's sprite component.
 	void updateWeapon(float deltaTime, int numEntities,
-		unsigned long(&entities)[GameEngine::MAX_ENTITIES],
+		std::vector<unsigned long> &entities,
 		SpriteRenderer *renderer, glm::vec3 cameraPos,
-		GameComponent::Sprite(&sprites)[GameEngine::MAX_ENTITIES],
-		GameComponent::Physics(&physics)[GameEngine::MAX_ENTITIES],
-		GameComponent::Weapon(&weapons)[GameEngine::MAX_ENTITIES]);
+		std::vector<GameComponent::Sprite> &sprites,
+		std::vector<GameComponent::Physics> &physics,
+		std::vector<GameComponent::Weapon> &weapons);
 
 	// Update an attack component's values and check for collisions against
 	// target entities.
 	bool updateAttack(float deltaTIme, GameComponent::Sprite &sprite, 
 		GameComponent::Attack &attack, GameComponent::Physics &physics,
 		int playerId, const std::vector<int> &enemyIds,
-		GameComponent::Physics(&targetPhysics)[GameEngine::MAX_ENTITIES],
-		GameComponent::Collision(&targetCols)[GameEngine::MAX_ENTITIES]);
+		std::vector<GameComponent::Physics> &targetPhysics,
+		std::vector<GameComponent::Collision> &targetCols);
 
 	void updateDebug(int numEntities,
-		unsigned long(&entities)[GameEngine::MAX_ENTITIES],
-		GameComponent::Physics(&physics)[GameEngine::MAX_ENTITIES],
-		GameComponent::Collision(&collisions)[GameEngine::MAX_ENTITIES],
-		GameComponent::Attack(&attacks)[GameEngine::MAX_ENTITIES],
+		std::vector<unsigned long> &entities, 
+		std::vector<GameComponent::Physics> &physics,
+		std::vector<GameComponent::Collision> &collisions,
+		std::vector<GameComponent::Attack> &attacks,
 		UIRenderer *uRenderer);
 }
 

@@ -12,6 +12,7 @@
 #include <GLFW/glfw3.h>
 
 #include <memory>
+#include <vector>
 
 class Renderer;
 class SpriteRenderer;
@@ -40,9 +41,6 @@ public:
 
 	// Flag an entity for deletion.
 	void deleteEntity(int id);
-
-	// The maximum number of entities supported by the game.
-	static const int MAX_ENTITIES{ 100000 };
 
 private:
 	// Constructor is private to prevent instantiating singleton.
@@ -82,19 +80,19 @@ private:
 
 	// Hold bitmasks that determines each entity's components.
 	// If the value is 0, then the entity is dead.
-	unsigned long m_entities[MAX_ENTITIES];
+	std::vector<unsigned long> m_entities;
 
 	// Hold the player's entity id.
 	int m_playerId;
 
 	// Hold components for each entity.
-	GameComponent::Physics m_compPhysics[MAX_ENTITIES];
-	GameComponent::Sprite m_compSprites[MAX_ENTITIES];
+	std::vector<GameComponent::Physics> m_compPhysics;
+	std::vector<GameComponent::Sprite> m_compSprites;
 	GameComponent::Player m_compPlayer; // Only one player.
-	GameComponent::Collision m_compCollisions[MAX_ENTITIES];
-	GameComponent::Weapon m_compWeapons[MAX_ENTITIES];
-	GameComponent::Attack m_compAttacks[MAX_ENTITIES];
-	GameComponent::Enemy m_compEnemies[MAX_ENTITIES];
+	std::vector<GameComponent::Collision> m_compCollisions;
+	std::vector<GameComponent::Weapon> m_compWeapons;
+	std::vector<GameComponent::Attack> m_compAttacks;
+	std::vector<GameComponent::Enemy> m_compEnemies;
 
 	// Hold the number of alive entities.
 	int m_numEntities{ 0 };
