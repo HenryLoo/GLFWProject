@@ -142,6 +142,7 @@
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="CharStates.cpp" />
     <ClCompile Include="CollisionBroadPhase.cpp" />
+    <ClCompile Include="EntityConstants.cpp" />
     <ClCompile Include="GameComponent.cpp" />
     <ClCompile Include="GameEngine.cpp" />
     <ClCompile Include="GameSystem.cpp" />
@@ -164,6 +165,7 @@
     <ClInclude Include="CharStates.h" />
     <ClInclude Include="CollisionBroadPhase.h" />
     <ClInclude Include="CollisionNarrowPhase.h" />
+    <ClInclude Include="EntityConstants.h" />
     <ClInclude Include="GameComponent.h" />
     <ClInclude Include="GameEngine.h" />
     <ClInclude Include="GameSystem.h" />

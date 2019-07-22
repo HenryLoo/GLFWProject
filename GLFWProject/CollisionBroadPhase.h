@@ -3,7 +3,7 @@
 #define CollisionBroadPhase_H
 
 #include "AABB.h"
-#include "GameEngine.h"
+#include "GameComponent.h"
 
 #include <set>
 #include <vector>
@@ -139,14 +139,15 @@ public:
 	// Update the list of AABB's.
 	// colIds contains a list of entity IDs that have collision components.
 	// atkIds contains a list of entity IDs that have attack components.
-	void updateAABBList(
-		const GameComponent::Collision(&cols)[GameEngine::MAX_ENTITIES],
-		const GameComponent::Attack(&atks)[GameEngine::MAX_ENTITIES], 
-		const GameComponent::Physics(&phys)[GameEngine::MAX_ENTITIES],
-		const std::vector<int> colIds, const std::vector<int> atkIds);
+	void updateAABBList(int numEntities,
+		unsigned long(&entities)[100000],
+		const GameComponent::Collision(&cols)[100000],
+		const GameComponent::Attack(&atks)[100000],
+		const GameComponent::Physics(&phys)[100000]);
 
 	// Generate the list of overlapping endpoints.
 	// The resulting list is passed into the output param.
+	// This is the "sweep" phase of the sort/sweep procedure.
 	void generateOverlapList(std::vector<std::pair<int, int>> &output);
 
 private:
@@ -157,6 +158,7 @@ private:
 	// Sort the endpoints and produce events to update the set of
 	// overlapping intervals. Intervals are defined by the area bounded
 	// by their 2 endpoints in one axis.
+	// This is the "sort" phase of the sort/sweep procedure.
 	void updateIntervals(std::vector<Endpoint> &endpoints, std::vector<int> &lookup);
 
 	// Check if two endpoints are overlapping.

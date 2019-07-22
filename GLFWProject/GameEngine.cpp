@@ -80,6 +80,8 @@ GameEngine::GameEngine()
 	createPlayer();
 
 	m_currentRoom = std::make_unique<Room>("test");
+
+	m_broadPhase = std::make_unique<CollisionBroadPhase>();
 }
 
 GameEngine::~GameEngine()
@@ -165,79 +167,102 @@ void GameEngine::update(SpriteRenderer *sRenderer, InputManager *input, UIRender
 	// Update all entities.
 	glm::vec3 cameraPos{ m_camera->getPosition() };
 	GameComponent::Player &player{ m_compPlayer };
-	for (int i = 0; i < m_numEntities; i++)
-	{
-		unsigned long &e{ m_entities[i] };
-		GameComponent::Physics &phys{ m_compPhysics[i] };
-		GameComponent::Sprite &spr{ m_compSprites[i] };
-		GameComponent::Collision &col{ m_compCollisions[i] };
-		GameComponent::Weapon &wpn{ m_compWeapons[i] };
-		GameComponent::Attack &atk{ m_compAttacks[i] };
-		GameComponent::Enemy &en{ m_compEnemies[i] };
-		bool isAlive{ true };
+	//for (int i = 0; i < m_numEntities; i++)
+	//{
+	//	unsigned long &e{ m_entities[i] };
+	//	GameComponent::Physics &phys{ m_compPhysics[i] };
+	//	GameComponent::Sprite &spr{ m_compSprites[i] };
+	//	GameComponent::Collision &col{ m_compCollisions[i] };
+	//	GameComponent::Weapon &wpn{ m_compWeapons[i] };
+	//	GameComponent::Attack &atk{ m_compAttacks[i] };
+	//	GameComponent::Enemy &en{ m_compEnemies[i] };
+	//	bool isAlive{ true };
 
-		// Update relevant components for this entity.
-		bool hasPhysics{ GameComponent::hasComponent(e, GameComponent::COMPONENT_PHYSICS) };
-		bool hasSprite{ GameComponent::hasComponent(e, GameComponent::COMPONENT_SPRITE) };
-		bool hasPlayer{ GameComponent::hasComponent(e, GameComponent::COMPONENT_PLAYER) };
-		bool hasAABB{ GameComponent::hasComponent(e, GameComponent::COMPONENT_COLLISION) };
-		bool hasWeapon{ GameComponent::hasComponent(e, GameComponent::COMPONENT_WEAPON) };
-		bool hasAttack{ GameComponent::hasComponent(e, GameComponent::COMPONENT_ATTACK) };
-		bool hasEnemy{ GameComponent::hasComponent(e, GameComponent::COMPONENT_ENEMY) };
-		if (isAlive && hasPhysics)
-		{
-			isAlive = isAlive && GameSystem::updatePhysics(m_deltaTime, phys);
-		}
-		if (isAlive && hasPhysics && hasAABB)
-		{
-			isAlive = isAlive && GameSystem::updateRoomCollision(m_deltaTime, 
-				phys, col, m_currentRoom.get());
+	//	// Update relevant components for this entity.
+	//	bool hasPhysics{ GameComponent::hasComponent(e, GameComponent::COMPONENT_PHYSICS) };
+	//	bool hasSprite{ GameComponent::hasComponent(e, GameComponent::COMPONENT_SPRITE) };
+	//	bool hasPlayer{ GameComponent::hasComponent(e, GameComponent::COMPONENT_PLAYER) };
+	//	bool hasAABB{ GameComponent::hasComponent(e, GameComponent::COMPONENT_COLLISION) };
+	//	bool hasWeapon{ GameComponent::hasComponent(e, GameComponent::COMPONENT_WEAPON) };
+	//	bool hasAttack{ GameComponent::hasComponent(e, GameComponent::COMPONENT_ATTACK) };
+	//	bool hasEnemy{ GameComponent::hasComponent(e, GameComponent::COMPONENT_ENEMY) };
+	//	if (isAlive && hasPhysics)
+	//	{
+	//		isAlive = isAlive && GameSystem::updatePhysics(m_deltaTime, phys);
+	//	}
+	//	if (isAlive && hasPhysics && hasAABB)
+	//	{
+	//		isAlive = isAlive && GameSystem::updateRoomCollision(m_deltaTime, 
+	//			phys, col, m_currentRoom.get());
 
-			// Draw hit boxes if debug mode is on.
-			if (m_isDebugMode)
-				uRenderer->addBox(phys, col.aabb, 0, 255, 0, 100);
-		}
-		if (isAlive && hasPhysics && hasAttack)
-		{
-			// Draw attack hit boxes if debug mode is on.
-			if (m_isDebugMode && atk.isEnabled)
-			{
-				uRenderer->addBox(phys, atk.pattern.aabb, 0, 0, 255, 100);
-			}
-		}
-		if (isAlive && hasPhysics && hasSprite)
-		{
-			isAlive = isAlive && GameSystem::updateSprite(m_deltaTime, sRenderer, cameraPos, spr, phys);
+	//		// Draw hit boxes if debug mode is on.
+	//		if (m_isDebugMode)
+	//			uRenderer->addBox(phys, col.aabb, 0, 255, 0, 100);
+	//	}
+	//	if (isAlive && hasPhysics && hasAttack)
+	//	{
+	//		// Draw attack hit boxes if debug mode is on.
+	//		if (m_isDebugMode && atk.isEnabled)
+	//		{
+	//			uRenderer->addBox(phys, atk.pattern.aabb, 0, 0, 255, 100);
+	//		}
+	//	}
+	//	if (isAlive && hasPhysics && hasSprite)
+	//	{
+	//		isAlive = isAlive && GameSystem::updateSprite(m_deltaTime, sRenderer, cameraPos, spr, phys);
 
-			if (isAlive && hasWeapon)
-			{
-				isAlive = isAlive && GameSystem::updateWeapon(m_deltaTime, sRenderer, cameraPos, spr, phys, wpn);
-			}
-		}
-		if (isAlive && hasPlayer && hasPhysics && hasSprite && hasAABB)
-		{
-			isAlive = isAlive && GameSystem::updatePlayer(m_deltaTime, input, player, phys, spr, wpn, col, atk);
-		}
-		if (isAlive && hasSprite && hasAttack)
-		{
-			isAlive = isAlive && GameSystem::updateAttack(m_deltaTime, spr, atk, phys,
-				m_playerId, m_enemyIds, m_compPhysics, m_compCollisions);
-		}
+	//		if (isAlive && hasWeapon)
+	//		{
+	//			isAlive = isAlive && GameSystem::updateWeapon(m_deltaTime, sRenderer, cameraPos, spr, phys, wpn);
+	//		}
+	//	}
+	//	if (isAlive && hasPlayer && hasPhysics && hasSprite && hasAABB)
+	//	{
+	//		isAlive = isAlive && GameSystem::updatePlayer(m_deltaTime, input, player, phys, spr, wpn, col, atk);
+	//	}
+	//	if (isAlive && hasSprite && hasAttack)
+	//	{
+	//		isAlive = isAlive && GameSystem::updateAttack(m_deltaTime, spr, atk, phys,
+	//			m_playerId, m_enemyIds, m_compPhysics, m_compCollisions);
+	//	}
 
-		// Flag the entity for deletion if it isn't alive anymore.
-		if (!isAlive)
-		{
-			deleteEntity(i);
-		}
-	}
+	//	// Flag the entity for deletion if it isn't alive anymore.
+	//	if (!isAlive)
+	//	{
+	//		deleteEntity(i);
+	//	}
+	//}
 
 	//sRenderer->updateData();
 
-	deleteFlaggedEntities();
 
-	// TODO: handle collisions using broad and narrow phases after updating 
-	// entity values... may need to call deleteFlaggedEntities again if
-	// entities are deleted as a result of this.
+	m_broadPhase->updateAABBList(m_numEntities, m_entities, m_compCollisions, 
+		m_compAttacks, m_compPhysics);
+
+	std::vector<std::pair<int, int>> collisions;
+	m_broadPhase->generateOverlapList(collisions);
+	//std::cout << collisions.size() << std::endl;
+
+	GameSystem::updatePhysics(m_deltaTime, m_numEntities, m_entities, 
+		m_compPhysics);
+	GameSystem::updateSprite(m_deltaTime, m_numEntities, m_entities, 
+		sRenderer, cameraPos, m_compSprites, m_compPhysics);
+	GameSystem::updateWeapon(m_deltaTime, m_numEntities, m_entities, 
+		sRenderer, cameraPos, m_compSprites, m_compPhysics, m_compWeapons);
+	GameSystem::updateRoomCollision(m_deltaTime, m_numEntities, m_entities, 
+		m_compPhysics, m_compCollisions, m_currentRoom.get());
+	GameSystem::updatePlayer(m_deltaTime, m_entities[m_playerId], 
+		input, player, 
+		m_compPhysics[m_playerId], m_compSprites[m_playerId], 
+		m_compWeapons[m_playerId], m_compCollisions[m_playerId], 
+		m_compAttacks[m_playerId]);
+	if (m_isDebugMode)
+	{
+		GameSystem::updateDebug(m_numEntities, m_entities, m_compPhysics, 
+			m_compCollisions, m_compAttacks, uRenderer);
+	}
+
+	deleteFlaggedEntities();
 }
 
 void GameEngine::render(SpriteRenderer *sRenderer, UIRenderer *uRenderer)

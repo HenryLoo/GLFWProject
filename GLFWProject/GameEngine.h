@@ -6,6 +6,7 @@
 #include "GameComponent.h"
 #include "SpriteSheet.h"
 #include "Room.h"
+#include "CollisionBroadPhase.h"
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -112,6 +113,8 @@ private:
 
 	// Flag for if debug mode is enabled.
 	bool m_isDebugMode{ false };
+
+	std::unique_ptr<CollisionBroadPhase> m_broadPhase;
 };
 
 #endif

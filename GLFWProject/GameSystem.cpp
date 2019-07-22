@@ -2,6 +2,7 @@
 #include "SpriteRenderer.h"
 #include "InputManager.h"
 #include "CharStates.h"
+#include "UIRenderer.h"
 
 #include <glm/gtx/norm.hpp>
 
@@ -18,86 +19,113 @@ namespace
 	const float ILLUSION_JUMP_DURATION{ 0.1f };
 }
 
-bool GameSystem::updatePhysics(float deltaTime, GameComponent::Physics &physics)
+void GameSystem::updatePhysics(float deltaTime, int numEntities,
+	unsigned long(&entities)[GameEngine::MAX_ENTITIES],
+	GameComponent::Physics(&physics)[GameEngine::MAX_ENTITIES])
 {
-	// Update this component's values.
-	physics.speed += glm::vec3(0.0f, -256.f * deltaTime, 0.0f);
-	physics.speed.y = glm::max(-144.f, physics.speed.y);
+	for (int i = 0; i < numEntities; i++)
+	{
+		unsigned long &e{ entities[i] };
+		bool hasPhysics{ GameComponent::hasComponent(e, GameComponent::COMPONENT_PHYSICS) };
+		if (!hasPhysics) continue;
 
-	return true;
+		// Update this component's values.
+		physics[i].speed += glm::vec3(0.0f, -256.f * deltaTime, 0.0f);
+		physics[i].speed.y = glm::max(-144.f, physics[i].speed.y);
+	}
 }
 
-bool GameSystem::updateSprite(float deltaTime, SpriteRenderer *renderer,
-	glm::vec3 cameraPos, GameComponent::Sprite &sprite, 
-	GameComponent::Physics &physics)
+void GameSystem::updateSprite(float deltaTime, int numEntities,
+	unsigned long(&entities)[GameEngine::MAX_ENTITIES],
+	SpriteRenderer *renderer, glm::vec3 cameraPos,
+	GameComponent::Sprite(&sprites)[GameEngine::MAX_ENTITIES],
+	GameComponent::Physics(&physics)[GameEngine::MAX_ENTITIES])
 {
-	// Do nothing if the sprite is time-based and the duration is over.
-	if (sprite.duration <= 0.f && sprite.hasDuration)
+	for (int i = 0; i < numEntities; i++)
 	{
-		return false;
-	}
+		unsigned long &e{ entities[i] };
+		bool hasPhysics{ GameComponent::hasComponent(e, GameComponent::COMPONENT_PHYSICS) };
+		bool hasSprite{ GameComponent::hasComponent(e, GameComponent::COMPONENT_SPRITE) };
+		if (!hasPhysics || !hasSprite) continue;
 
-	bool isAlive{ true };
+		GameComponent::Sprite &sprite{ sprites[i] };
+		GameComponent::Physics &phys{ physics[i] };
 
-	// Decrease the sprite's duration if the sprite is time-limited.
-	if (sprite.hasDuration)
-		sprite.duration -= deltaTime;
-
-	// Update sprite values for this frame.
-	if (sprite.duration > 0.0f || !sprite.hasDuration)
-	{
-		// Update this sprite's values.
-		sprite.cameraDistance = glm::length2(physics.pos - cameraPos);
-
-		// Update this sprite's animation.
-		sprite.currentFrameTime += deltaTime;
-		float frameDuration{ GameComponent::getFrameDuration(sprite) };
-
-		// Process the next frame if the current frame is over and the 
-		// animation is not a non-looping one at its last frame.
-		if (sprite.currentFrameTime >= frameDuration &&
-			!(!sprite.currentAnimation.isLooping && sprite.currentFrame == sprite.currentAnimation.numSprites - 1))
+		// Do nothing if the sprite is time-based and the duration is over.
+		if (sprite.duration <= 0.f && sprite.hasDuration)
 		{
-			// Check if deltaTime has accumulated a value greater than the
-			// frame's duration, and then find how many frames should be
-			// processed.
-			float leftoverTime = sprite.currentFrameTime - frameDuration;
-			do
-			{
-				sprite.currentFrameTime = leftoverTime;
-				sprite.currentFrame++;
-				if (sprite.currentFrame >= sprite.currentAnimation.numSprites)
-					sprite.currentFrame = 0;
-
-				// Get how long this new frame lasts and see if there is still
-				// enough leftover time to process it.
-				frameDuration = GameComponent::getFrameDuration(sprite);
-				leftoverTime -= frameDuration;
-			} while (leftoverTime >= frameDuration);
+			//return false;
 		}
+
+		bool isAlive{ true };
+
+		// Decrease the sprite's duration if the sprite is time-limited.
+		if (sprite.hasDuration)
+			sprite.duration -= deltaTime;
+
+		// Update sprite values for this frame.
+		if (sprite.duration > 0.0f || !sprite.hasDuration)
+		{
+			// Update this sprite's values.
+			sprite.cameraDistance = glm::length2(phys.pos - cameraPos);
+
+			// Update this sprite's animation.
+			sprite.currentFrameTime += deltaTime;
+			float frameDuration{ GameComponent::getFrameDuration(sprite) };
+
+			// Process the next frame if the current frame is over and the 
+			// animation is not a non-looping one at its last frame.
+			if (sprite.currentFrameTime >= frameDuration &&
+				!(!sprite.currentAnimation.isLooping && sprite.currentFrame == sprite.currentAnimation.numSprites - 1))
+			{
+				// Check if deltaTime has accumulated a value greater than the
+				// frame's duration, and then find how many frames should be
+				// processed.
+				float leftoverTime = sprite.currentFrameTime - frameDuration;
+				do
+				{
+					sprite.currentFrameTime = leftoverTime;
+					sprite.currentFrame++;
+					if (sprite.currentFrame >= sprite.currentAnimation.numSprites)
+						sprite.currentFrame = 0;
+
+					// Get how long this new frame lasts and see if there is still
+					// enough leftover time to process it.
+					frameDuration = GameComponent::getFrameDuration(sprite);
+					leftoverTime -= frameDuration;
+				} while (leftoverTime >= frameDuration);
+			}
+		}
+		// The sprite is time-limited and this is its last frame.
+		else
+		{
+			// Set distance to camera to be minimum value so that
+			// it will be placed at the back of the sprites array when sorted.
+			sprite.cameraDistance = -1.0f;
+
+			// Delete the entity.
+			isAlive = false;
+		}
+
+		// Update the renderer's array of sprites.
+		renderer->addSprite(phys, sprite);
 	}
-	// The sprite is time-limited and this is its last frame.
-	else
-	{
-		// Set distance to camera to be minimum value so that
-		// it will be placed at the back of the sprites array when sorted.
-		sprite.cameraDistance = -1.0f;
-
-		// Delete the entity.
-		isAlive = false;
-	}
-
-	// Update the renderer's array of sprites.
-	renderer->addSprite(physics, sprite);
-
-	return isAlive;
 }
 
-bool GameSystem::updatePlayer(float deltaTime, InputManager *input, 
+void GameSystem::updatePlayer(float deltaTime, unsigned long(&playerEntity), 
+	InputManager *input,
 	GameComponent::Player &player, GameComponent::Physics &physics, 
 	GameComponent::Sprite &sprite, GameComponent::Weapon &weapon, 
 	GameComponent::Collision &col, GameComponent::Attack &attack)
 {
+	bool hasPlayer{ GameComponent::hasComponent(playerEntity, GameComponent::COMPONENT_PLAYER) };
+	bool hasPhysics{ GameComponent::hasComponent(playerEntity, GameComponent::COMPONENT_PHYSICS) };
+	bool hasSprite{ GameComponent::hasComponent(playerEntity, GameComponent::COMPONENT_SPRITE) };
+	bool hasWeapon{ GameComponent::hasComponent(playerEntity, GameComponent::COMPONENT_WEAPON) };
+	bool hasCollision{ GameComponent::hasComponent(playerEntity, GameComponent::COMPONENT_COLLISION) };
+	bool hasAttack{ GameComponent::hasComponent(playerEntity, GameComponent::COMPONENT_ATTACK) };
+	if (!hasPlayer || !hasPhysics || !hasSprite || !hasWeapon || !hasCollision || !hasAttack) return;
+
 	// Save the previous state.
 	player.previousState = player.currentState;
 	if (player.previousState.empty())
@@ -336,277 +364,301 @@ bool GameSystem::updatePlayer(float deltaTime, InputManager *input,
 			attack.pattern = {};
 		}
 	}
-
-	return true;
 }
 
-bool GameSystem::updateRoomCollision(float deltaTime,
-	GameComponent::Physics &physics, GameComponent::Collision &col, Room *room)
+void GameSystem::updateRoomCollision(float deltaTime, int numEntities,
+	unsigned long(&entities)[GameEngine::MAX_ENTITIES],
+	GameComponent::Physics(&physics)[GameEngine::MAX_ENTITIES],
+	GameComponent::Collision(&collisions)[GameEngine::MAX_ENTITIES],
+	Room *room)
 {
-	// Reset collision flags.
-	col.wasOnGround = col.isCollidingFloor || col.isCollidingGhost || col.isCollidingSlope;
-	col.isCollidingFloor = false;
-	col.isCollidingGhost = false;
-
-	const AABB &aabb{ col.aabb };
-	glm::vec2 speed{ physics.speed };
-	glm::vec2 halfSize{ aabb.halfSize };
-	glm::vec2 pos{ physics.pos.x + aabb.offset.x, 
-		physics.pos.y + aabb.offset.y };
-
-	// Check for horizontal collisions.
-	if (speed.x != 0)
+	for (int i = 0; i < numEntities; i++)
 	{
-		// Extend the halfsize of the entity to see how much distance it will
-		// cover this frame.
-		float distX = halfSize.x + abs(speed.x) * deltaTime;
-		glm::ivec2 currentTile{ room->getTileCoord(pos) };
+		unsigned long &e{ entities[i] };
+		bool hasPhysics{ GameComponent::hasComponent(e, GameComponent::COMPONENT_PHYSICS) };
+		bool hasCollision{ GameComponent::hasComponent(e, GameComponent::COMPONENT_COLLISION) };
+		if (!hasPhysics || !hasCollision) continue;
 
-		// 1 = moving left, -1 = moving right.
-		int direction{ speed.x < 0 ? 1 : -1 };
+		GameComponent::Physics &phys{ physics[i] };
+		GameComponent::Collision &col{ collisions[i] };
 
-		// Get the vertical tile bounds at the maximum X-distance.
-		float maxDistX{ pos.x - direction * distX };
-		float halfSizeY{ halfSize.y - COLLISION_THRESHOLD };
-		glm::vec2 minYPos{ maxDistX, pos.y - halfSizeY };
-		glm::vec2 maxYPos{ maxDistX, pos.y + halfSizeY };
-		glm::ivec2 minYTile{ room->getTileCoord(minYPos) };
-		glm::ivec2 maxYTile{ room->getTileCoord(maxYPos) };
+			// Reset collision flags.
+		col.wasOnGround = col.isCollidingFloor || col.isCollidingGhost || col.isCollidingSlope;
+		col.isCollidingFloor = false;
+		col.isCollidingGhost = false;
 
-		// If the entity is on a slope, ignore horizontal collisions for the
-		// bottom-most tile. This will stop the collision box from
-		// "catching" onto the tile when transitioning from slope onto floor.
-		if (col.isCollidingSlope)
+		const AABB &aabb{ col.aabb };
+		glm::vec2 speed{ phys.speed };
+		glm::vec2 halfSize{ aabb.halfSize };
+		glm::vec2 pos{ phys.pos.x + aabb.offset.x,
+			phys.pos.y + aabb.offset.y };
+
+		// Check for horizontal collisions.
+		if (speed.x != 0)
 		{
-			minYTile.y = glm::min(minYTile.y + 1, maxYTile.y);
-		}
+			// Extend the halfsize of the entity to see how much distance it will
+			// cover this frame.
+			float distX = halfSize.x + abs(speed.x) * deltaTime;
+			glm::ivec2 currentTile{ room->getTileCoord(pos) };
 
-		// Set up bounds for the loop.
-		// minYTile.x == maxYTile.x should be true.
-		glm::ivec2 tileRangeToCheck{ currentTile.x, minYTile.x };
-		tileRangeToCheck.y -= direction;
+			// 1 = moving left, -1 = moving right.
+			int direction{ speed.x < 0 ? 1 : -1 };
 
-		// Check all potential collisions before applying velocity.
-		// We check in order of closest to furthest tiles.
-		bool isColliding{ false };
-		int currentTileX{ tileRangeToCheck.x };
-		while (currentTileX != tileRangeToCheck.y)
-		{
-			// Check all tiles at this height.
-			for (int i = minYTile.y; i <= maxYTile.y; ++i)
+			// Get the vertical tile bounds at the maximum X-distance.
+			float maxDistX{ pos.x - direction * distX };
+			float halfSizeY{ halfSize.y - COLLISION_THRESHOLD };
+			glm::vec2 minYPos{ maxDistX, pos.y - halfSizeY };
+			glm::vec2 maxYPos{ maxDistX, pos.y + halfSizeY };
+			glm::ivec2 minYTile{ room->getTileCoord(minYPos) };
+			glm::ivec2 maxYTile{ room->getTileCoord(maxYPos) };
+
+			// If the entity is on a slope, ignore horizontal collisions for the
+			// bottom-most tile. This will stop the collision box from
+			// "catching" onto the tile when transitioning from slope onto floor.
+			if (col.isCollidingSlope)
 			{
-				glm::ivec2 thisTileCoord{ currentTileX, i };
-				TileType type{ room->getTileType(thisTileCoord) };
-				if (type == TILE_WALL)
-				{
-					float tileEdgePos{ room->getTilePos(thisTileCoord).x
-						+ direction * Room::TILE_SIZE / 2.f };
-					physics.pos.x = tileEdgePos + direction * halfSize.x - aabb.offset.x;
-					isColliding = true;
-
-					// Collision was found, so there is no need to keep checking.
-					break;
-				}
+				minYTile.y = glm::min(minYTile.y + 1, maxYTile.y);
 			}
 
-			// Collision was found, so there is no need to keep checking. 
-			if (isColliding)
-				break;
+			// Set up bounds for the loop.
+			// minYTile.x == maxYTile.x should be true.
+			glm::ivec2 tileRangeToCheck{ currentTile.x, minYTile.x };
+			tileRangeToCheck.y -= direction;
 
-			currentTileX -= direction;
-		}
-
-		// If not colliding, then just apply velocity as usual.
-		if (!isColliding)
-			physics.pos.x += physics.speed.x * deltaTime;
-	}
-
-	// Reset the colliding-slope flag after checking for horizontal collisions,
-	// because we need to check it to properly transition between slopes and
-	// floor tiles.
-	col.isCollidingSlope = false;
-
-	// Check for vertical collisions.
-	if (speed.y != 0)
-	{
-		// Extend the halfsize of the entity to see how much distance it will
-		// cover this frame.
-		float distY = halfSize.y + abs(speed.y) * deltaTime;
-		glm::ivec2 currentTile{ room->getTileCoord(pos) };
-
-		// 1 = moving down, -1 = moving up.
-		int direction{ speed.y < 0 ? 1 : -1 };
-
-		// Get the horizontal tile bounds at the maximum Y-distance.
-		float maxDistY{ pos.y - direction * distY };
-		float halfSizeX{ halfSize.x - COLLISION_THRESHOLD };
-		glm::vec2 minXPos{ pos.x - halfSizeX, maxDistY };
-		glm::vec2 maxXPos{ pos.x + halfSizeX, maxDistY };
-		glm::ivec2 minXTile{ room->getTileCoord(minXPos) };
-		glm::ivec2 maxXTile{ room->getTileCoord(maxXPos) };
-
-		// Set up bounds for the loop.
-		// minXTile.y == maxXTile.y should be true.
-		glm::ivec2 tileRangeToCheck{ currentTile.y, minXTile.y };
-		tileRangeToCheck.y -= direction;
-
-		// Check all potential collisions before applying velocity.
-		// We check in order of closest to furthest tiles.
-		int currentTileY{ tileRangeToCheck.x };
-
-		// The entity's new y-position if it has a vertical collision.
-		float newYPos{ -1 };
-
-		// Flag for if the entity has almost fallen onto a slope.
-		// Since slopes are shorter than regular tlies, we need this flag to check if
-		// the entity is within the slope's tile, but not yet colliding with it.
-		bool isAlmostSlope{ false };
-
-		while (currentTileY != tileRangeToCheck.y)
-		{
-			// Check all tiles at this height.
-			for (int i = minXTile.x; i <= maxXTile.x; ++i)
+			// Check all potential collisions before applying velocity.
+			// We check in order of closest to furthest tiles.
+			bool isColliding{ false };
+			int currentTileX{ tileRangeToCheck.x };
+			while (currentTileX != tileRangeToCheck.y)
 			{
-				glm::ivec2 thisTileCoord{ i, currentTileY };
-				TileType type{ room->getTileType(thisTileCoord) };
-
-				// The edge of the tile to check entity collision against.
-				glm::vec2 thisTilePos{ room->getTilePos(thisTileCoord) };
-				const static int tileHalfSize{ Room::TILE_SIZE / 2 };
-				float tileEdgePos{ thisTilePos.y + direction * tileHalfSize };
-
-				// Check for collisions against slopes first.
-				if (Room::isSlope(type) && speed.y <= 0)
+				// Check all tiles at this height.
+				for (int i = minYTile.y; i <= maxYTile.y; ++i)
 				{
-					// Get the distance from the left edge of the tile to the entity's position.
-					float slopeRad{ atanf((float)Room::SLOPE_HEIGHT / Room::TILE_SIZE) };
-					float xDist{ physics.pos.x - (thisTilePos.x - tileHalfSize) };
-
-					// Not close enough onto the slope yet.
-					if (xDist < 0 || xDist > Room::TILE_SIZE)
-					{
-						continue;
-					}
-
-					// Adjust y-distance to displace the entity, based on the type of slope.
-					float yDist{ tanf(slopeRad) * xDist };
-
-					if (type == TILE_SLOPE_LEFT_UPPER || type == TILE_SLOPE_LEFT_LOWER)
-						yDist = Room::TILE_SIZE - yDist;
-
-					if (type == TILE_SLOPE_RIGHT_UPPER)
-						yDist += Room::SLOPE_HEIGHT;
-					else if (type == TILE_SLOPE_LEFT_LOWER)
-						yDist -= Room::SLOPE_HEIGHT;
-
-					tileEdgePos = thisTilePos.y - tileHalfSize + yDist;
-
-					// Slopes are shorter than regular tiles, so we need to check more precisely
-					// for collisions.
-					if ((physics.pos.y - halfSize.y + aabb.offset.y + speed.y * deltaTime) > tileEdgePos)
-					{
-						isAlmostSlope = true;
-						continue;
-					}
-
-					col.isCollidingSlope = true;
-
-					// Set the new y-position if it isn't set already, or if it is at a lower
-					// y-position than the current one to set.
-					float yPosToSet = tileEdgePos + halfSize.y - aabb.offset.y;
-					newYPos = newYPos == -1 ? yPosToSet : glm::min(newYPos, yPosToSet);
-				}
-				// If the tile is a wall or the entity is colliding against the
-				// top edge of a ghost platform.
-				// Unlike horizontal collisions, we don't break early here because
-				// we need to set all possible collision flags.
-				else if (type == TILE_WALL || (type == TILE_GHOST && speed.y <= 0 && 
-					(physics.pos.y - halfSize.y + aabb.offset.y) >= tileEdgePos))
-				{
-					// Set the new y-position if it isn't set already, or if it is at a lower
-					// y-position than the current one to set.
-					float yPosToSet = tileEdgePos + direction * halfSize.y - aabb.offset.y;
-					newYPos = newYPos == -1 ? yPosToSet : glm::min(newYPos, yPosToSet);
-
+					glm::ivec2 thisTileCoord{ currentTileX, i };
+					TileType type{ room->getTileType(thisTileCoord) };
 					if (type == TILE_WALL)
 					{
-						col.isCollidingFloor = true;
-					}
-					else if (type == TILE_GHOST)
-					{
-						col.isCollidingGhost = true;
+						float tileEdgePos{ room->getTilePos(thisTileCoord).x
+							+ direction * Room::TILE_SIZE / 2.f };
+						phys.pos.x = tileEdgePos + direction * halfSize.x - aabb.offset.x;
+						isColliding = true;
+
+						// Collision was found, so there is no need to keep checking.
+						break;
 					}
 				}
+
+				// Collision was found, so there is no need to keep checking. 
+				if (isColliding)
+					break;
+
+				currentTileX -= direction;
 			}
 
-			// Collision was found, so there is no need to keep checking. 
-			if ((col.isCollidingFloor || col.isCollidingGhost || col.isCollidingSlope))
+			// If not colliding, then just apply velocity as usual.
+			if (!isColliding)
+				phys.pos.x += phys.speed.x * deltaTime;
+		}
+
+		// Reset the colliding-slope flag after checking for horizontal collisions,
+		// because we need to check it to properly transition between slopes and
+		// floor tiles.
+		col.isCollidingSlope = false;
+
+		// Check for vertical collisions.
+		if (speed.y != 0)
+		{
+			// Extend the halfsize of the entity to see how much distance it will
+			// cover this frame.
+			float distY = halfSize.y + abs(speed.y) * deltaTime;
+			glm::ivec2 currentTile{ room->getTileCoord(pos) };
+
+			// 1 = moving down, -1 = moving up.
+			int direction{ speed.y < 0 ? 1 : -1 };
+
+			// Get the horizontal tile bounds at the maximum Y-distance.
+			float maxDistY{ pos.y - direction * distY };
+			float halfSizeX{ halfSize.x - COLLISION_THRESHOLD };
+			glm::vec2 minXPos{ pos.x - halfSizeX, maxDistY };
+			glm::vec2 maxXPos{ pos.x + halfSizeX, maxDistY };
+			glm::ivec2 minXTile{ room->getTileCoord(minXPos) };
+			glm::ivec2 maxXTile{ room->getTileCoord(maxXPos) };
+
+			// Set up bounds for the loop.
+			// minXTile.y == maxXTile.y should be true.
+			glm::ivec2 tileRangeToCheck{ currentTile.y, minXTile.y };
+			tileRangeToCheck.y -= direction;
+
+			// Check all potential collisions before applying velocity.
+			// We check in order of closest to furthest tiles.
+			int currentTileY{ tileRangeToCheck.x };
+
+			// The entity's new y-position if it has a vertical collision.
+			float newYPos{ -1 };
+
+			// Flag for if the entity has almost fallen onto a slope.
+			// Since slopes are shorter than regular tlies, we need this flag to check if
+			// the entity is within the slope's tile, but not yet colliding with it.
+			bool isAlmostSlope{ false };
+
+			while (currentTileY != tileRangeToCheck.y)
 			{
-				// If the entity is within a slope's tile but not yet 
-				// colliding with it, then discard any floor collisions that 
-				// would have occurred. Any floor collisions would have been 
-				// at the same tile y-position as the slope. Since slopes are 
-				// shorter than regular tiles, this would incorrectly set the 
-				// new y-position to the floor, even though it should be at the
-				// slope.
-				if (isAlmostSlope && !col.isCollidingSlope)
+				// Check all tiles at this height.
+				for (int i = minXTile.x; i <= maxXTile.x; ++i)
 				{
-					col.isCollidingFloor = false;
+					glm::ivec2 thisTileCoord{ i, currentTileY };
+					TileType type{ room->getTileType(thisTileCoord) };
+
+					// The edge of the tile to check entity collision against.
+					glm::vec2 thisTilePos{ room->getTilePos(thisTileCoord) };
+					const static int tileHalfSize{ Room::TILE_SIZE / 2 };
+					float tileEdgePos{ thisTilePos.y + direction * tileHalfSize };
+
+					// Check for collisions against slopes first.
+					if (Room::isSlope(type) && speed.y <= 0)
+					{
+						// Get the distance from the left edge of the tile to the entity's position.
+						float slopeRad{ atanf((float)Room::SLOPE_HEIGHT / Room::TILE_SIZE) };
+						float xDist{ phys.pos.x - (thisTilePos.x - tileHalfSize) };
+
+						// Not close enough onto the slope yet.
+						if (xDist < 0 || xDist > Room::TILE_SIZE)
+						{
+							continue;
+						}
+
+						// Adjust y-distance to displace the entity, based on the type of slope.
+						float yDist{ tanf(slopeRad) * xDist };
+
+						if (type == TILE_SLOPE_LEFT_UPPER || type == TILE_SLOPE_LEFT_LOWER)
+							yDist = Room::TILE_SIZE - yDist;
+
+						if (type == TILE_SLOPE_RIGHT_UPPER)
+							yDist += Room::SLOPE_HEIGHT;
+						else if (type == TILE_SLOPE_LEFT_LOWER)
+							yDist -= Room::SLOPE_HEIGHT;
+
+						tileEdgePos = thisTilePos.y - tileHalfSize + yDist;
+
+						// Slopes are shorter than regular tiles, so we need to check more precisely
+						// for collisions.
+						if ((phys.pos.y - halfSize.y + aabb.offset.y + speed.y * deltaTime) > tileEdgePos)
+						{
+							isAlmostSlope = true;
+							continue;
+						}
+
+						col.isCollidingSlope = true;
+
+						// Set the new y-position if it isn't set already, or if it is at a lower
+						// y-position than the current one to set.
+						float yPosToSet = tileEdgePos + halfSize.y - aabb.offset.y;
+						newYPos = newYPos == -1 ? yPosToSet : glm::min(newYPos, yPosToSet);
+					}
+					// If the tile is a wall or the entity is colliding against the
+					// top edge of a ghost platform.
+					// Unlike horizontal collisions, we don't break early here because
+					// we need to set all possible collision flags.
+					else if (type == TILE_WALL || (type == TILE_GHOST && speed.y <= 0 &&
+						(phys.pos.y - halfSize.y + aabb.offset.y) >= tileEdgePos))
+					{
+						// Set the new y-position if it isn't set already, or if it is at a lower
+						// y-position than the current one to set.
+						float yPosToSet = tileEdgePos + direction * halfSize.y - aabb.offset.y;
+						newYPos = newYPos == -1 ? yPosToSet : glm::min(newYPos, yPosToSet);
+
+						if (type == TILE_WALL)
+						{
+							col.isCollidingFloor = true;
+						}
+						else if (type == TILE_GHOST)
+						{
+							col.isCollidingGhost = true;
+						}
+					}
 				}
 
-				break;
+				// Collision was found, so there is no need to keep checking. 
+				if ((col.isCollidingFloor || col.isCollidingGhost || col.isCollidingSlope))
+				{
+					// If the entity is within a slope's tile but not yet 
+					// colliding with it, then discard any floor collisions that 
+					// would have occurred. Any floor collisions would have been 
+					// at the same tile y-position as the slope. Since slopes are 
+					// shorter than regular tiles, this would incorrectly set the 
+					// new y-position to the floor, even though it should be at the
+					// slope.
+					if (isAlmostSlope && !col.isCollidingSlope)
+					{
+						col.isCollidingFloor = false;
+					}
+
+					break;
+				}
+
+				currentTileY -= direction;
 			}
 
-			currentTileY -= direction;
-		}
+			// If not colliding, then just apply velocity as usual.
+			if (!col.isCollidingFloor && !col.isCollidingGhost && !col.isCollidingSlope)
+			{
+				phys.pos.y += phys.speed.y * deltaTime;
+			}
+			// Colliding against ceiling.
+			else if (col.isCollidingFloor && phys.speed.y > 0)
+			{
+				phys.speed.y = 0;
+			}
+			else
+			{
+				phys.pos.y = newYPos;
+			}
 
-		// If not colliding, then just apply velocity as usual.
-		if (!col.isCollidingFloor && !col.isCollidingGhost && !col.isCollidingSlope)
-		{
-			physics.pos.y += physics.speed.y * deltaTime;
+			// Round to two decimal places to reduce sprite artifacts.
+			phys.pos *= 100;
+			phys.pos = glm::round(phys.pos);
+			phys.pos /= 100;
 		}
-		// Colliding against ceiling.
-		else if (col.isCollidingFloor && physics.speed.y > 0)
-		{
-			physics.speed.y = 0;
-		}
-		else
-		{
-			physics.pos.y = newYPos;
-		}
-
-		// Round to two decimal places to reduce sprite artifacts.
-		physics.pos *= 100;
-		physics.pos = glm::round(physics.pos);
-		physics.pos /= 100;
 	}
-
-	return true;
 }
 
-bool GameSystem::updateWeapon(float deltaTime, SpriteRenderer *renderer,
-	glm::vec3 cameraPos, GameComponent::Sprite &sprite,
-	GameComponent::Physics &physics, GameComponent::Weapon &weapon)
+void GameSystem::updateWeapon(float deltaTime, int numEntities,
+	unsigned long(&entities)[GameEngine::MAX_ENTITIES],
+	SpriteRenderer *renderer, glm::vec3 cameraPos,
+	GameComponent::Sprite(&sprites)[GameEngine::MAX_ENTITIES],
+	GameComponent::Physics(&physics)[GameEngine::MAX_ENTITIES],
+	GameComponent::Weapon(&weapons)[GameEngine::MAX_ENTITIES])
 {
-	if (weapon.isVisible)
+	for (int i = 0; i < numEntities; i++)
 	{
-		// Create a temporary sprite component to hold the weapon 
-		// sprite's values.
-		GameComponent::Sprite weaponSprite;
-		weaponSprite.spriteSheet = weapon.spriteSheet;
-		weaponSprite.currentAnimation = weapon.currentAnimation;
-		weaponSprite.currentFrame = sprite.currentFrame;
-		weaponSprite.cameraDistance = sprite.cameraDistance;
-		weaponSprite.r = sprite.r;
-		weaponSprite.g = sprite.g;
-		weaponSprite.b = sprite.b;
-		weaponSprite.a = sprite.a;
+		unsigned long &e{ entities[i] };
+		bool hasPhysics{ GameComponent::hasComponent(e, GameComponent::COMPONENT_PHYSICS) };
+		bool hasSprite{ GameComponent::hasComponent(e, GameComponent::COMPONENT_SPRITE) };
+		bool hasWeapon{ GameComponent::hasComponent(e, GameComponent::COMPONENT_WEAPON) };
+		if (!hasPhysics || !hasSprite || !hasWeapon) continue;
 
-		// Update the renderer's array of sprites.
-		renderer->addSprite(physics, weaponSprite);
+		GameComponent::Sprite &sprite{ sprites[i] };
+		GameComponent::Physics &phys{ physics[i] };
+		GameComponent::Weapon &weapon{ weapons[i] };
+
+		if (weapon.isVisible)
+		{
+			// Create a temporary sprite component to hold the weapon 
+			// sprite's values.
+			GameComponent::Sprite weaponSprite;
+			weaponSprite.spriteSheet = weapon.spriteSheet;
+			weaponSprite.currentAnimation = weapon.currentAnimation;
+			weaponSprite.currentFrame = sprite.currentFrame;
+			weaponSprite.cameraDistance = sprite.cameraDistance;
+			weaponSprite.r = sprite.r;
+			weaponSprite.g = sprite.g;
+			weaponSprite.b = sprite.b;
+			weaponSprite.a = sprite.a;
+
+			// Update the renderer's array of sprites.
+			renderer->addSprite(phys, weaponSprite);
+		}
 	}
-
-	return true;
 }
 
 bool GameSystem::updateAttack(float deltaTIme, GameComponent::Sprite &sprite,
@@ -639,4 +691,31 @@ bool GameSystem::updateAttack(float deltaTIme, GameComponent::Sprite &sprite,
 	}
 
 	return true;
+}
+
+void GameSystem::updateDebug(int numEntities,
+	unsigned long(&entities)[GameEngine::MAX_ENTITIES],
+	GameComponent::Physics(&physics)[GameEngine::MAX_ENTITIES],
+	GameComponent::Collision(&collisions)[GameEngine::MAX_ENTITIES],
+	GameComponent::Attack(&attacks)[GameEngine::MAX_ENTITIES],
+	UIRenderer *uRenderer)
+{
+	for (int i = 0; i < numEntities; i++)
+	{
+		unsigned long &e{ entities[i] };
+		bool hasPhysics{ GameComponent::hasComponent(e, GameComponent::COMPONENT_PHYSICS) };
+		bool hasCollision{ GameComponent::hasComponent(e, GameComponent::COMPONENT_COLLISION) };
+		bool hasAttack{ GameComponent::hasComponent(e, GameComponent::COMPONENT_ATTACK) };
+		if (!hasPhysics || !hasCollision) continue;
+
+		GameComponent::Physics &phys{ physics[i] };
+		GameComponent::Collision &col{ collisions[i] };
+
+		uRenderer->addBox(phys, col.aabb, 0, 255, 0, 100);
+
+		if (!hasAttack) continue;
+
+		GameComponent::Attack &atk{ attacks[i] };
+		uRenderer->addBox(phys, atk.pattern.aabb, 0, 0, 255, 100);
+	}
 }
