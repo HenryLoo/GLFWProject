@@ -245,16 +245,18 @@ void GameEngine::update(SpriteRenderer *sRenderer, InputManager *input, UIRender
 
 	//sRenderer->updateData();
 
-
+	// Get all collisions and handle them.
 	m_broadPhase->updateAABBList(m_numEntities, m_entities, m_compCollisions, 
 		m_compAttacks, m_compPhysics);
-
 	std::vector<std::pair<AABBSource, AABBSource>> collisions;
 	m_broadPhase->generateOverlapList(collisions);
 	//std::cout << collisions.size() << std::endl;
 
+	// Process entity systems.
+	GameSystem::updateAttack(m_deltaTime, m_numEntities, m_entities,
+		collisions, m_compSprites, m_compPhysics, m_compAttacks);
 	GameSystem::updatePhysics(m_deltaTime, m_numEntities, m_entities, 
-		m_compPhysics);
+		m_compPhysics, m_compCollisions);
 	GameSystem::updateSprite(m_deltaTime, m_numEntities, m_entities, 
 		sRenderer, cameraPos, m_compSprites, m_compPhysics);
 	GameSystem::updateWeapon(m_deltaTime, m_numEntities, m_entities, 
@@ -469,10 +471,10 @@ void GameEngine::createPlayer()
 	col.aabb.offset = glm::vec2(0, -6);
 
 	GameComponent::Attack &atk = m_compAttacks[m_playerId];
-	atk.source = m_playerId;
+	atk.sourceId = m_playerId;
 
 	m_compPlayer.attackPatterns = {
-		{PlayerState::ATTACK, {glm::vec2(18, 21), glm::vec2(14, 6), glm::ivec2(2, 7), 0}},
+		{PlayerState::ATTACK, {glm::vec2(18, 21), glm::vec2(14, 6), glm::ivec2(2, 7), 0, glm::vec2(128.f, 0.f)}},
 		{PlayerState::ATTACK_AIR, {glm::vec2(22, 17), glm::vec2(6, 4), glm::ivec2(1, 6), 0}},
 		{PlayerState::ATTACK_CROUCH, {glm::vec2(22, 17), glm::vec2(7, -3), glm::ivec2(1, 6), 0}}
 	};

@@ -17,7 +17,8 @@ namespace GameSystem
 	// Update a physics component's values
 	void updatePhysics(float deltaTime, int numEntities,
 		std::vector<unsigned long> &entities,
-		std::vector<GameComponent::Physics> &physics);
+		std::vector<GameComponent::Physics> &physics,
+		std::vector<GameComponent::Collision> &collisions);
 
 	// Update a sprite component's values.
 	void updateSprite(float deltaTime, int numEntities,
@@ -50,12 +51,14 @@ namespace GameSystem
 
 	// Update an attack component's values and check for collisions against
 	// target entities.
-	bool updateAttack(float deltaTIme, GameComponent::Sprite &sprite, 
-		GameComponent::Attack &attack, GameComponent::Physics &physics,
-		int playerId, const std::vector<int> &enemyIds,
-		std::vector<GameComponent::Physics> &targetPhysics,
-		std::vector<GameComponent::Collision> &targetCols);
+	void updateAttack(float deltaTIme, int numEntities,
+		std::vector<unsigned long> &entities,
+		const std::vector<std::pair<AABBSource, AABBSource>> &collisions,
+		std::vector<GameComponent::Sprite> &sprites,
+		std::vector<GameComponent::Physics> &physics,
+		std::vector<GameComponent::Attack> &attacks);
 
+	// Prepare to draw collision and hit boxes.
 	void updateDebug(int numEntities,
 		std::vector<unsigned long> &entities, 
 		std::vector<GameComponent::Physics> &physics,

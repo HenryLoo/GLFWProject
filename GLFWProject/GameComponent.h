@@ -5,6 +5,7 @@
 #include "AttackPattern.h"
 #include "SpriteAnimation.h"
 
+#include <set>
 #include <string>
 #include <vector>
 #include <unordered_map>
@@ -131,11 +132,14 @@ namespace GameComponent
 		// Flag for if the attack is enabled.
 		bool isEnabled{ false };
 
-		// The source of the attack.
-		int source;
+		// The entity id of source of the attack.
+		int sourceId;
 
 		// This attack pattern's values.
 		AttackPattern pattern;
+
+		// Hold all ids of entities that have already been hit by this attack.
+		std::set<int> hitEntities;
 	};
 
 	struct Enemy

@@ -23,17 +23,37 @@ namespace
 
 void GameSystem::updatePhysics(float deltaTime, int numEntities,
 	std::vector<unsigned long> &entities,
-	std::vector<GameComponent::Physics> &physics)
+	std::vector<GameComponent::Physics> &physics,
+	std::vector<GameComponent::Collision> &collisions)
 {
 	for (int i = 0; i < numEntities; i++)
 	{
 		unsigned long &e{ entities[i] };
 		bool hasPhysics{ GameComponent::hasComponent(e, GameComponent::COMPONENT_PHYSICS) };
-		if (!hasPhysics) continue;
+		bool hasCollisions{ GameComponent::hasComponent(e, GameComponent::COMPONENT_COLLISION) };
+		if (!hasPhysics || !hasCollisions) continue;
+
+		GameComponent::Physics &phys{ physics[i] };
+		GameComponent::Collision &col{ collisions[i] };
 
 		// Update this component's values.
-		physics[i].speed += glm::vec3(0.0f, -256.f * deltaTime, 0.0f);
-		physics[i].speed.y = glm::max(-144.f, physics[i].speed.y);
+		phys.speed.y += (-256.f * deltaTime);
+		phys.speed.y = glm::max(-144.f, physics[i].speed.y);
+
+		// Only decelerate horizontally if on the ground.
+		if ((col.isCollidingFloor || col.isCollidingGhost || col.isCollidingSlope) &&
+			phys.speed.x != 0.f)
+		{
+			float decel{ phys.speed.x > 0 ? -256.f : 256.f };
+			phys.speed.x += (decel * deltaTime);
+
+			// Round to 0.
+			if ((phys.speed.x > 0.f && phys.speed.x < 1.f) || 
+				(phys.speed.x < 0.f && phys.speed.x > -1.f))
+			{
+				phys.speed.x = 0.f;
+			}
+		}
 	}
 }
 
@@ -365,6 +385,8 @@ void GameSystem::updatePlayer(float deltaTime, unsigned long(&playerEntity),
 		{
 			attack.pattern = {};
 		}
+
+		attack.hitEntities.clear();
 	}
 }
 
@@ -663,36 +685,60 @@ void GameSystem::updateWeapon(float deltaTime, int numEntities,
 	}
 }
 
-bool GameSystem::updateAttack(float deltaTIme, GameComponent::Sprite &sprite,
-	GameComponent::Attack &attack, GameComponent::Physics &physics,
-	int playerId, const std::vector<int> &enemyIds,
-	std::vector<GameComponent::Physics> &targetPhysics,
-	std::vector<GameComponent::Collision> &targetCols)
+void GameSystem::updateAttack(float deltaTIme, int numEntities,
+	std::vector<unsigned long> &entities,
+	const std::vector<std::pair<AABBSource, AABBSource>> &collisions,
+	std::vector<GameComponent::Sprite> &sprites,
+	std::vector<GameComponent::Physics> &physics,
+	std::vector<GameComponent::Attack> &attacks)
 {
-	attack.isEnabled = (sprite.currentFrame >= attack.pattern.frameRange.x &&
-		sprite.currentFrame <= attack.pattern.frameRange.y);
-
-	if (attack.isEnabled)
+	// Update whether attacks are enabled or not.
+	// Attacks are enabled if the current sprite frame is within the specified
+	// frame range and the frame range consists of at least 1 frame.
+	for (int i = 0; i < numEntities; ++i)
 	{
-		//glm::vec2 atkOrigin{ physics.pos.x + physics.scale.x * attack.pattern.offset.x,
-		//	physics.pos.y + physics.scale.y * attack.pattern.offset.y };
-		//float atkLeftBound{ atkOrigin.x - attack.pattern.halfSize.x };
-		//float atkRightBound{ atkOrigin.x + attack.pattern.halfSize.x };
-		//float atkBottomBound{ atkOrigin.y - attack.pattern.halfSize.y };
-		//float atkTopBound{ atkOrigin.y + attack.pattern.halfSize.y };
+		GameComponent::Attack &attack{ attacks[i] };
+		GameComponent::Sprite &sprite{ sprites[i] };
 
-		// If this was a player's attack.
-		if (attack.source == playerId)
-		{
-			// Check collisions against all existing enemies.
-			for (int enemyId : enemyIds)
-			{
-				// TODO: AABB collision testing is O(n^2)... try to find a better way to do this.
-			}
-		}
+		attack.isEnabled = ((sprite.currentFrame >= attack.pattern.frameRange.x &&
+			sprite.currentFrame <= attack.pattern.frameRange.y) && 
+			(attack.pattern.frameRange.y - attack.pattern.frameRange.x > 0));
 	}
 
-	return true;
+	// Handle collisions.
+	for (const auto &col : collisions)
+	{
+		AABBSource::Type firstType{ col.first.type };
+		AABBSource::Type secondType{ col.second.type };
+		bool isFirstAttack{ firstType == AABBSource::Type::Attack };
+		bool isSecondAttack{ secondType == AABBSource::Type::Attack };
+		int firstId{ isFirstAttack ? attacks[col.first.entityId].sourceId : col.first.entityId };
+		int secondId{ isSecondAttack ? attacks[col.second.entityId].sourceId : col.second.entityId };
+
+		// Only consider collisions between attack and collision boxes of different sources.
+		if (isFirstAttack != isSecondAttack && firstId != secondId &&
+			(isFirstAttack && attacks[col.first.entityId].isEnabled ||
+				isSecondAttack && attacks[col.second.entityId].isEnabled))
+		{
+			int targetId{ isFirstAttack ? secondId : firstId };
+			int attackId{ isFirstAttack ? firstId : secondId };
+
+			// If the target has already been hit, then skip this collision response.
+			std::set<int> &hitEntities{ attacks[attackId].hitEntities };
+			if (hitEntities.find(targetId) != hitEntities.end())
+			{
+				continue;
+			}
+
+			// Add to the list of hit entities.
+			hitEntities.insert(targetId);
+
+			// Apply knockback to target.
+			int direction{ physics[attackId].scale.x > 0 ? 1 : -1 };
+			physics[targetId].speed.x += direction * attacks[attackId].pattern.knockback.x;
+			physics[targetId].speed.y += attacks[attackId].pattern.knockback.y;
+		}
+	}
 }
 
 void GameSystem::updateDebug(int numEntities,

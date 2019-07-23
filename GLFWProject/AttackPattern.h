@@ -14,6 +14,10 @@ struct AttackPattern
 
 	// The amount of damage this attack will deal.
 	int damage;
+
+	// The amount knockback this attack will deal.
+	// Knockback will be applied to the target's speed.
+	glm::vec2 knockback;
 };
 
 #endif

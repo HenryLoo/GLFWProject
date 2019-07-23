@@ -102,11 +102,13 @@ void CollisionBroadPhase::generateOverlapList(
 		if (event.getType() == Event::Remove)
 		{
 			m_overlapsSet.erase(std::make_pair(event.getIndex1(), event.getIndex2()));
+			//std::cout << "remove " << event.getIndex1() << " " << event.getIndex2() << ", size: " << m_overlapsSet.size() << std::endl;
 		}
 		// Insert event.
 		else
 		{
 			m_overlapsSet.insert(std::make_pair(event.getIndex1(), event.getIndex2()));
+			//std::cout << "insert " << event.getIndex1() << " " << event.getIndex2() << ", size: " << m_overlapsSet.size() << std::endl;
 		}
 	}
 
@@ -158,26 +160,24 @@ void  CollisionBroadPhase::updateIntervals(std::vector<Endpoint> &endpoints,
 			if (prevPoint.getType() == Endpoint::Type::Minimum &&
 				nextPoint.getType() == Endpoint::Type::Maximum)
 			{
-				int prevIndex{ prevPoint.getAABBIndex() };
-				int nextIndex{ nextPoint.getAABBIndex() };
-				if (prevIndex != nextIndex)
+				int index1{ glm::min(prevPoint.getAABBIndex(), nextPoint.getAABBIndex()) };
+				int index2{ glm::max(prevPoint.getAABBIndex(), nextPoint.getAABBIndex()) };
+				if (index1 != index2)
 				{
-					std::cout << "remove" << std::endl;
-					m_events.push_back(Event(prevIndex, nextIndex, Event::Remove));
+					m_events.push_back(Event(index1, index2, Event::Remove));
 				}
 			}
 			// Overlap found between intervals.
 			else if (prevPoint.getType() == Endpoint::Type::Maximum &&
 				thisPoint.getType() == Endpoint::Type::Minimum)
 			{
-				int prevIndex{ prevPoint.getAABBIndex() };
-				int nextIndex{ nextPoint.getAABBIndex() };
-				if (prevIndex != nextIndex &&
-					isOverlapping(prevIndex, nextIndex, m_lookupX, m_endpointsX) &&
-					isOverlapping(prevIndex, nextIndex, m_lookupY, m_endpointsY))
+				int index1{ glm::min(prevPoint.getAABBIndex(), nextPoint.getAABBIndex()) };
+				int index2{ glm::max(prevPoint.getAABBIndex(), nextPoint.getAABBIndex()) };
+				if (index1 != index2 &&
+					isOverlapping(index1, index2, m_lookupX, m_endpointsX) &&
+					isOverlapping(index1, index2, m_lookupY, m_endpointsY))
 				{
-					std::cout << "insert" << std::endl;
-					m_events.push_back(Event(prevIndex, nextIndex, Event::Insert));
+					m_events.push_back(Event(index1, index2, Event::Insert));
 				}
 			}
 
