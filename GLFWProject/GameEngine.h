@@ -7,6 +7,11 @@
 #include "SpriteSheet.h"
 #include "Room.h"
 #include "CollisionBroadPhase.h"
+#include "GameSystem.h"
+#include "SpriteRenderer.h"
+#include "UIRenderer.h"
+#include "InputManager.h"
+#include "DebugSystem.h"
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -27,7 +32,7 @@ public:
 
 	// Start the game loop.
 	// The function will only return when the game ends.
-	void start(SpriteRenderer *renderer, InputManager *input, UIRenderer *uRenderer);
+	void start();
 
 	// Update the camera to look at a position on the screen.
 	void updateCameraLook(glm::vec2 screenPos);
@@ -42,16 +47,25 @@ public:
 	// Flag an entity for deletion.
 	void deleteEntity(int id);
 
+	// Getter functions.
+	SpriteRenderer *getSpriteRenderer() const;
+	UIRenderer *getUIRenderer() const;
+	InputManager *getInputManager() const;
+	Camera *getCamera() const;
+	Room *getCurrentRoom() const;
+	int getPlayerId() const;
+	const std::vector<std::pair<AABBSource, AABBSource>> &getCollisions() const;
+
 private:
 	// Constructor is private to prevent instantiating singleton.
 	// Handle all user inputs for the game loop's current iteration.
-	void processInput(InputManager *input);
+	void processInput();
 
 	// Update all appropriate values for the game loop's current iteration.
-	void update(SpriteRenderer *sRenderer, InputManager *input, UIRenderer *uRenderer);
+	void update();
 
 	// Render all appropriate visuals for the game loop's current iteration.
-	void render(SpriteRenderer *sRenderer, UIRenderer *uRenderer);
+	void render();
 
 	// Delete all flagged entities.
 	void deleteFlaggedEntities();
@@ -112,7 +126,15 @@ private:
 	// Flag for if debug mode is enabled.
 	bool m_isDebugMode{ false };
 
+	std::unique_ptr<SpriteRenderer> m_sRenderer;
+	std::unique_ptr<UIRenderer> m_uRenderer;
+	std::unique_ptr<InputManager> m_input;
+	std::vector<std::pair<AABBSource, AABBSource>> m_collisions;
+
 	std::unique_ptr<CollisionBroadPhase> m_broadPhase;
+
+	std::vector<std::unique_ptr<GameSystem>> m_gameSystems;
+	std::unique_ptr<DebugSystem> m_debugSystem;
 };
 
 #endif

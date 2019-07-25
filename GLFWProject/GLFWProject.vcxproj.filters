@@ -13,6 +13,12 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Header Files\GameSystems">
+      <UniqueIdentifier>{999574b1-59d5-4634-9a09-033f5e4cd342}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\GameSystems">
+      <UniqueIdentifier>{393fe6ef-6e50-4a30-b2f4-f3fd08d8f953}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="glad.c">
@@ -45,9 +51,6 @@
     <ClCompile Include="GameComponent.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="GameSystem.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="SpriteSheet.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -68,6 +71,30 @@
     </ClCompile>
     <ClCompile Include="EntityConstants.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GameSystem.cpp">
+      <Filter>Source Files\GameSystems</Filter>
+    </ClCompile>
+    <ClCompile Include="PhysicsSystem.cpp">
+      <Filter>Source Files\GameSystems</Filter>
+    </ClCompile>
+    <ClCompile Include="SpriteSystem.cpp">
+      <Filter>Source Files\GameSystems</Filter>
+    </ClCompile>
+    <ClCompile Include="RoomCollisionSystem.cpp">
+      <Filter>Source Files\GameSystems</Filter>
+    </ClCompile>
+    <ClCompile Include="PlayerSystem.cpp">
+      <Filter>Source Files\GameSystems</Filter>
+    </ClCompile>
+    <ClCompile Include="DebugSystem.cpp">
+      <Filter>Source Files\GameSystems</Filter>
+    </ClCompile>
+    <ClCompile Include="AttackSystem.cpp">
+      <Filter>Source Files\GameSystems</Filter>
+    </ClCompile>
+    <ClCompile Include="AttackCollisionSystem.cpp">
+      <Filter>Source Files\GameSystems</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -96,9 +123,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="SpriteRenderer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="GameSystem.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="GameComponent.h">
@@ -136,6 +160,30 @@
     </ClInclude>
     <ClInclude Include="EntityConstants.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GameSystem.h">
+      <Filter>Header Files\GameSystems</Filter>
+    </ClInclude>
+    <ClInclude Include="PhysicsSystem.h">
+      <Filter>Header Files\GameSystems</Filter>
+    </ClInclude>
+    <ClInclude Include="SpriteSystem.h">
+      <Filter>Header Files\GameSystems</Filter>
+    </ClInclude>
+    <ClInclude Include="RoomCollisionSystem.h">
+      <Filter>Header Files\GameSystems</Filter>
+    </ClInclude>
+    <ClInclude Include="PlayerSystem.h">
+      <Filter>Header Files\GameSystems</Filter>
+    </ClInclude>
+    <ClInclude Include="DebugSystem.h">
+      <Filter>Header Files\GameSystems</Filter>
+    </ClInclude>
+    <ClInclude Include="AttackSystem.h">
+      <Filter>Header Files\GameSystems</Filter>
+    </ClInclude>
+    <ClInclude Include="AttackCollisionSystem.h">
+      <Filter>Header Files\GameSystems</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

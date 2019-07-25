@@ -1,12 +1,16 @@
 #include "GameEngine.h"
-#include "SpriteRenderer.h"
+
 #include "Camera.h"
 #include "GameSystem.h"
-#include "InputManager.h"
 #include "Room.h"
-#include "UIRenderer.h"
 #include "CharStates.h"
 #include "EntityConstants.h"
+#include "PhysicsSystem.h"
+#include "SpriteSystem.h"
+#include "RoomCollisionSystem.h"
+#include "PlayerSystem.h"
+#include "AttackSystem.h"
+#include "AttackCollisionSystem.h"
 
 #include <algorithm>
 #include <iostream>
@@ -85,6 +89,10 @@ GameEngine::GameEngine()
 	//glfwSetCursorPosCallback(m_window, mouseCallback);
 	//glfwSetWindowUserPointer(m_window, this);
 
+	m_sRenderer = std::make_unique<SpriteRenderer>();
+	m_uRenderer = std::make_unique<UIRenderer>();
+	m_input = std::make_unique<InputManager>();
+
 	// TODO: replace these hardcoded resources.
 	createEnemy();
 	createPlayer();
@@ -92,6 +100,24 @@ GameEngine::GameEngine()
 	m_currentRoom = std::make_unique<Room>("test");
 
 	m_broadPhase = std::make_unique<CollisionBroadPhase>();
+
+	// Initialze game systems.
+	m_gameSystems.emplace_back(std::make_unique<AttackSystem>(*this,
+		m_compSprites, m_compAttacks));
+	m_gameSystems.emplace_back(std::make_unique<AttackCollisionSystem>(*this,
+		m_compPhysics, m_compAttacks));
+	m_gameSystems.emplace_back(std::make_unique<PhysicsSystem>(*this,
+		m_compPhysics, m_compCollisions));
+	m_gameSystems.emplace_back(std::make_unique<SpriteSystem>(*this, 
+		m_compPhysics, m_compSprites, m_compWeapons));
+	m_gameSystems.emplace_back(std::make_unique<RoomCollisionSystem>(*this, 
+		m_compPhysics, m_compCollisions));
+	m_gameSystems.emplace_back(std::make_unique<PlayerSystem>(*this,
+		m_compPlayer, m_compPhysics, m_compSprites, m_compWeapons, 
+		m_compCollisions, m_compAttacks));
+	
+	m_debugSystem = std::make_unique<DebugSystem>(*this,
+		m_compPhysics, m_compCollisions, m_compAttacks);
 }
 
 GameEngine::~GameEngine()
@@ -100,7 +126,7 @@ GameEngine::~GameEngine()
 	glfwTerminate();
 }
 
-void GameEngine::start(SpriteRenderer *sRenderer, InputManager *input, UIRenderer *uRenderer)
+void GameEngine::start()
 {
 	double previousTime = glfwGetTime();
 	int frameCount = 0;
@@ -131,13 +157,13 @@ void GameEngine::start(SpriteRenderer *sRenderer, InputManager *input, UIRendere
 		m_lastFrame = currentFrame;
 
 		// Handle user inputs.
-		processInput(input);
+		processInput();
 
 		// Update values.
-		update(sRenderer, input, uRenderer);
+		update();
 
 		// Call rendering functions.
-		render(sRenderer, uRenderer);
+		render();
 	}
 }
 
@@ -151,140 +177,62 @@ void GameEngine::updateRendererSize()
 	m_hasNewWindowSize = true;
 }
 
-void GameEngine::processInput(InputManager *input)
+void GameEngine::processInput()
 {
-	input->processInput(m_window);
+	m_input->processInput(m_window);
 
 	// Exit game.
-	if (input->isKeyPressed(INPUT_CANCEL))
+	if (m_input->isKeyPressed(INPUT_CANCEL))
 		glfwSetWindowShouldClose(m_window, true);
 
 	// Toggle debug mode.
-	if (input->isKeyPressed(INPUT_DEBUG))
+	if (m_input->isKeyPressed(INPUT_DEBUG))
 		m_isDebugMode = !m_isDebugMode;
 }
 
-void GameEngine::update(SpriteRenderer *sRenderer, InputManager *input, UIRenderer *uRenderer)
+void GameEngine::update()
 {
 	m_camera->update(m_deltaTime, m_compPhysics[m_playerId].pos, m_windowSize, 
 		m_currentRoom->getSize());
 
 	//createNewEntities();
 
-	sRenderer->resetNumSprites();
-	uRenderer->resetNumBoxes();
+	m_sRenderer->resetNumSprites();
+	m_uRenderer->resetNumBoxes();
 
 	// Update all entities.
 	glm::vec3 cameraPos{ m_camera->getPosition() };
-	GameComponent::Player &player{ m_compPlayer };
-	//for (int i = 0; i < m_numEntities; i++)
-	//{
-	//	unsigned long &e{ m_entities[i] };
-	//	GameComponent::Physics &phys{ m_compPhysics[i] };
-	//	GameComponent::Sprite &spr{ m_compSprites[i] };
-	//	GameComponent::Collision &col{ m_compCollisions[i] };
-	//	GameComponent::Weapon &wpn{ m_compWeapons[i] };
-	//	GameComponent::Attack &atk{ m_compAttacks[i] };
-	//	GameComponent::Enemy &en{ m_compEnemies[i] };
-	//	bool isAlive{ true };
-
-	//	// Update relevant components for this entity.
-	//	bool hasPhysics{ GameComponent::hasComponent(e, GameComponent::COMPONENT_PHYSICS) };
-	//	bool hasSprite{ GameComponent::hasComponent(e, GameComponent::COMPONENT_SPRITE) };
-	//	bool hasPlayer{ GameComponent::hasComponent(e, GameComponent::COMPONENT_PLAYER) };
-	//	bool hasAABB{ GameComponent::hasComponent(e, GameComponent::COMPONENT_COLLISION) };
-	//	bool hasWeapon{ GameComponent::hasComponent(e, GameComponent::COMPONENT_WEAPON) };
-	//	bool hasAttack{ GameComponent::hasComponent(e, GameComponent::COMPONENT_ATTACK) };
-	//	bool hasEnemy{ GameComponent::hasComponent(e, GameComponent::COMPONENT_ENEMY) };
-	//	if (isAlive && hasPhysics)
-	//	{
-	//		isAlive = isAlive && GameSystem::updatePhysics(m_deltaTime, phys);
-	//	}
-	//	if (isAlive && hasPhysics && hasAABB)
-	//	{
-	//		isAlive = isAlive && GameSystem::updateRoomCollision(m_deltaTime, 
-	//			phys, col, m_currentRoom.get());
-
-	//		// Draw hit boxes if debug mode is on.
-	//		if (m_isDebugMode)
-	//			uRenderer->addBox(phys, col.aabb, 0, 255, 0, 100);
-	//	}
-	//	if (isAlive && hasPhysics && hasAttack)
-	//	{
-	//		// Draw attack hit boxes if debug mode is on.
-	//		if (m_isDebugMode && atk.isEnabled)
-	//		{
-	//			uRenderer->addBox(phys, atk.pattern.aabb, 0, 0, 255, 100);
-	//		}
-	//	}
-	//	if (isAlive && hasPhysics && hasSprite)
-	//	{
-	//		isAlive = isAlive && GameSystem::updateSprite(m_deltaTime, sRenderer, cameraPos, spr, phys);
-
-	//		if (isAlive && hasWeapon)
-	//		{
-	//			isAlive = isAlive && GameSystem::updateWeapon(m_deltaTime, sRenderer, cameraPos, spr, phys, wpn);
-	//		}
-	//	}
-	//	if (isAlive && hasPlayer && hasPhysics && hasSprite && hasAABB)
-	//	{
-	//		isAlive = isAlive && GameSystem::updatePlayer(m_deltaTime, input, player, phys, spr, wpn, col, atk);
-	//	}
-	//	if (isAlive && hasSprite && hasAttack)
-	//	{
-	//		isAlive = isAlive && GameSystem::updateAttack(m_deltaTime, spr, atk, phys,
-	//			m_playerId, m_enemyIds, m_compPhysics, m_compCollisions);
-	//	}
-
-	//	// Flag the entity for deletion if it isn't alive anymore.
-	//	if (!isAlive)
-	//	{
-	//		deleteEntity(i);
-	//	}
-	//}
 
 	//sRenderer->updateData();
 
 	// Get all collisions and handle them.
 	m_broadPhase->updateAABBList(m_numEntities, m_entities, m_compCollisions, 
 		m_compAttacks, m_compPhysics);
-	std::vector<std::pair<AABBSource, AABBSource>> collisions;
-	m_broadPhase->generateOverlapList(collisions);
-	//std::cout << collisions.size() << std::endl;
+	m_broadPhase->generateOverlapList(m_collisions);
 
-	// Process entity systems.
-	GameSystem::updateAttack(m_deltaTime, m_numEntities, m_entities,
-		collisions, m_compSprites, m_compPhysics, m_compAttacks);
-	GameSystem::updatePhysics(m_deltaTime, m_numEntities, m_entities, 
-		m_compPhysics, m_compCollisions);
-	GameSystem::updateSprite(m_deltaTime, m_numEntities, m_entities, 
-		sRenderer, cameraPos, m_compSprites, m_compPhysics);
-	GameSystem::updateWeapon(m_deltaTime, m_numEntities, m_entities, 
-		sRenderer, cameraPos, m_compSprites, m_compPhysics, m_compWeapons);
-	GameSystem::updateRoomCollision(m_deltaTime, m_numEntities, m_entities, 
-		m_compPhysics, m_compCollisions, m_currentRoom.get());
-	GameSystem::updatePlayer(m_deltaTime, m_entities[m_playerId], 
-		input, player, 
-		m_compPhysics[m_playerId], m_compSprites[m_playerId], 
-		m_compWeapons[m_playerId], m_compCollisions[m_playerId], 
-		m_compAttacks[m_playerId]);
+	// Process all game systems.
+	for (auto &system : m_gameSystems)
+	{
+		system->update(m_deltaTime, m_numEntities, m_entities);
+	}
+
+	// Only process debug system if in debug mode.
 	if (m_isDebugMode)
 	{
-		GameSystem::updateDebug(m_numEntities, m_entities, m_compPhysics, 
-			m_compCollisions, m_compAttacks, uRenderer);
+		m_debugSystem->update(m_deltaTime, m_numEntities, m_entities);
 	}
 
 	deleteFlaggedEntities();
 }
 
-void GameEngine::render(SpriteRenderer *sRenderer, UIRenderer *uRenderer)
+void GameEngine::render()
 {
 	// Call the renderer.
-	sRenderer->render(m_camera.get(), m_windowSize, m_currentRoom.get());
+	m_sRenderer->render(m_camera.get(), m_windowSize, m_currentRoom.get());
 
 	// Draw hit boxes if debug modes is on.
 	if (m_isDebugMode)
-		uRenderer->render(m_camera.get(), m_windowSize);
+		m_uRenderer->render(m_camera.get(), m_windowSize);
 
 	// Swap the buffers to show the rendered visuals.
 	glfwSwapBuffers(m_window);
@@ -309,6 +257,41 @@ void GameEngine::deleteEntity(int id)
 {
 	// Flag the entity to be deleted at the end of the game loop.
 	m_entitiesToDelete.push_back(id);
+}
+
+SpriteRenderer *GameEngine::getSpriteRenderer() const
+{
+	return m_sRenderer.get();
+}
+
+UIRenderer *GameEngine::getUIRenderer() const
+{
+	return m_uRenderer.get();
+}
+
+InputManager *GameEngine::getInputManager() const
+{
+	return m_input.get();
+}
+
+Camera *GameEngine::getCamera() const
+{
+	return m_camera.get();
+}
+
+Room *GameEngine::getCurrentRoom() const
+{
+	return m_currentRoom.get();
+}
+
+int GameEngine::getPlayerId() const
+{
+	return m_playerId;
+}
+
+const std::vector<std::pair<AABBSource, AABBSource>> &GameEngine::getCollisions() const
+{
+	return m_collisions;
 }
 
 void GameEngine::deleteFlaggedEntities()

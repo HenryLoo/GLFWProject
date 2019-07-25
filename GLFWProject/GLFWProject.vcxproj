@@ -139,9 +139,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="AttackCollisionSystem.cpp" />
+    <ClCompile Include="AttackSystem.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="CharStates.cpp" />
     <ClCompile Include="CollisionBroadPhase.cpp" />
+    <ClCompile Include="DebugSystem.cpp" />
     <ClCompile Include="EntityConstants.cpp" />
     <ClCompile Include="GameComponent.cpp" />
     <ClCompile Include="GameEngine.cpp" />
@@ -150,33 +153,44 @@
     <ClCompile Include="InputManager.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="Mesh.cpp" />
+    <ClCompile Include="PhysicsSystem.cpp" />
+    <ClCompile Include="PlayerSystem.cpp" />
     <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="Room.cpp" />
+    <ClCompile Include="RoomCollisionSystem.cpp" />
     <ClCompile Include="Shader.cpp" />
     <ClCompile Include="SpriteRenderer.cpp" />
     <ClCompile Include="SpriteSheet.cpp" />
+    <ClCompile Include="SpriteSystem.cpp" />
     <ClCompile Include="Texture.cpp" />
     <ClCompile Include="UIRenderer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AABB.h" />
+    <ClInclude Include="AttackCollisionSystem.h" />
     <ClInclude Include="AttackPattern.h" />
+    <ClInclude Include="AttackSystem.h" />
     <ClInclude Include="Camera.h" />
     <ClInclude Include="CharStates.h" />
     <ClInclude Include="CollisionBroadPhase.h" />
     <ClInclude Include="CollisionNarrowPhase.h" />
+    <ClInclude Include="DebugSystem.h" />
     <ClInclude Include="EntityConstants.h" />
     <ClInclude Include="GameComponent.h" />
     <ClInclude Include="GameEngine.h" />
     <ClInclude Include="GameSystem.h" />
     <ClInclude Include="InputManager.h" />
     <ClInclude Include="Mesh.h" />
+    <ClInclude Include="PhysicsSystem.h" />
+    <ClInclude Include="PlayerSystem.h" />
     <ClInclude Include="Renderer.h" />
     <ClInclude Include="Room.h" />
+    <ClInclude Include="RoomCollisionSystem.h" />
     <ClInclude Include="Shader.h" />
     <ClInclude Include="SpriteAnimation.h" />
     <ClInclude Include="SpriteRenderer.h" />
     <ClInclude Include="SpriteSheet.h" />
+    <ClInclude Include="SpriteSystem.h" />
     <ClInclude Include="stb_image.h" />
     <ClInclude Include="Texture.h" />
     <ClInclude Include="UIRenderer.h" />
