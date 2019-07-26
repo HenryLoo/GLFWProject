@@ -1,13 +1,17 @@
 #include "AttackCollisionSystem.h"
 
+#include "CharStates.h"
 #include "GameEngine.h"
 
 AttackCollisionSystem::AttackCollisionSystem(GameEngine &game,
 	std::vector<GameComponent::Physics> &physics,
-	std::vector<GameComponent::Attack> &attacks) :
-	GameSystem(game, { GameComponent::COMPONENT_PHYSICS,
-		GameComponent::COMPONENT_ATTACK }),
-	m_physics(physics), m_attacks(attacks)
+	std::vector<GameComponent::Sprite> &sprites,
+	std::vector<GameComponent::Collision> &collisions,
+	std::vector<GameComponent::Attack> &attacks,
+	std::vector<GameComponent::Character> &characters) :
+	GameSystem(game, {}),
+	m_physics(physics), m_sprites(sprites), m_collisions(collisions),
+	m_attacks(attacks), m_characters(characters)
 {
 
 }
@@ -46,8 +50,27 @@ void AttackCollisionSystem::update(float deltaTime, int numEntities,
 
 			// Apply knockback to target.
 			int direction{ m_physics[attackId].scale.x > 0 ? 1 : -1 };
-			m_physics[targetId].speed.x += direction * m_attacks[attackId].pattern.knockback.x;
-			m_physics[targetId].speed.y += m_attacks[attackId].pattern.knockback.y;
+			glm::vec2 knockback{ m_attacks[attackId].pattern.knockback };
+			m_physics[targetId].speed.x += direction * knockback.x;
+			m_physics[targetId].speed.y += knockback.y;
+
+			// Change the target's state to HURT and set hit stun timer.
+			// If the target is in the air or if the attack has vertical
+			// knockback, then set the state to HURT_AIR instead.
+			std::string hurtState{ CharState::HURT };
+			float hitStun{ 1.f }; // TODO: change fixed value
+			GameComponent::Collision &collision{ m_collisions[targetId] };
+			if ((!collision.isCollidingFloor && !collision.isCollidingGhost &&
+				!collision.isCollidingSlope) || knockback.y != 0)
+			{
+				// Reset hit stun if knocked into the air.
+				hitStun = 0.f;
+				hurtState = CharState::HURT_AIR;
+			}
+
+			m_characters[targetId].nextState = hurtState;
+			m_sprites[targetId].isResetAnimation = true;
+			m_characters[targetId].hitStunTimer = hitStun;
 		}
 	}
 }

@@ -1,34 +1,26 @@
 #pragma once
-#ifndef PlayerSystem_H
-#define PlayerSystem_H
+#ifndef CharacterSystem_H
+#define CharacterSystem_H
 
 #include "GameSystem.h"
 
-class InputManager;
-
-// Update the player entity's values by handling input.
-class PlayerSystem : public GameSystem
+// Update the generic character values, such as character states.
+// Weapon and attack components are optional.
+class CharacterSystem : public GameSystem
 {
 public:
-	PlayerSystem(GameEngine &game,
-		GameComponent::Player &player,
-		std::vector<GameComponent::Physics> &physics,
+	CharacterSystem(GameEngine &game,
 		std::vector<GameComponent::Sprite> &sprites,
 		std::vector<GameComponent::Weapon> &weapons,
 		std::vector<GameComponent::Collision> &collisions,
 		std::vector<GameComponent::Attack> &attacks,
 		std::vector<GameComponent::Character> &characters);
 
-	virtual void update(float deltaTIme, int numEntities,
-		std::vector<unsigned long> &entities);
-
 private:
 	virtual void process(float deltaTime, int entityId,
 		unsigned long &entityMask);
 
 	// References to the relevant components.
-	GameComponent::Player &m_player;
-	std::vector<GameComponent::Physics> &m_physics;
 	std::vector<GameComponent::Sprite> &m_sprites;
 	std::vector<GameComponent::Weapon> &m_weapons;
 	std::vector<GameComponent::Collision> &m_collisions;

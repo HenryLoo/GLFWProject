@@ -96,6 +96,9 @@
     <ClCompile Include="AttackCollisionSystem.cpp">
       <Filter>Source Files\GameSystems</Filter>
     </ClCompile>
+    <ClCompile Include="CharacterSystem.cpp">
+      <Filter>Source Files\GameSystems</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Shader.h">
@@ -183,6 +186,9 @@
       <Filter>Header Files\GameSystems</Filter>
     </ClInclude>
     <ClInclude Include="AttackCollisionSystem.h">
+      <Filter>Header Files\GameSystems</Filter>
+    </ClInclude>
+    <ClInclude Include="CharacterSystem.h">
       <Filter>Header Files\GameSystems</Filter>
     </ClInclude>
   </ItemGroup>

@@ -107,15 +107,13 @@ private:
 	std::vector<GameComponent::Weapon> m_compWeapons;
 	std::vector<GameComponent::Attack> m_compAttacks;
 	std::vector<GameComponent::Enemy> m_compEnemies;
+	std::vector<GameComponent::Character> m_compCharacters;
 
 	// Hold the number of alive entities.
 	int m_numEntities{ 0 };
 
 	// Hold the ids of all entities to delete at the end of the game loop.
 	std::vector<int> m_entitiesToDelete;
-
-	// Hold the ids of all enemy entities.
-	std::vector<int> m_enemyIds;
 
 	// TODO: remove this later for a more flexible implementation.
 	std::unique_ptr<SpriteSheet> m_playerTexture;

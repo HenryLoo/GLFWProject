@@ -11,6 +11,7 @@
 #include "PlayerSystem.h"
 #include "AttackSystem.h"
 #include "AttackCollisionSystem.h"
+#include "CharacterSystem.h"
 
 #include <algorithm>
 #include <iostream>
@@ -80,6 +81,7 @@ GameEngine::GameEngine()
 	m_compWeapons.resize(EntityConstants::MAX_ENTITIES);
 	m_compAttacks.resize(EntityConstants::MAX_ENTITIES);
 	m_compEnemies.resize(EntityConstants::MAX_ENTITIES);
+	m_compCharacters.resize(EntityConstants::MAX_ENTITIES);
 
 	// Initialize the camera.
 	m_camera = std::make_unique<Camera>();
@@ -105,7 +107,8 @@ GameEngine::GameEngine()
 	m_gameSystems.emplace_back(std::make_unique<AttackSystem>(*this,
 		m_compSprites, m_compAttacks));
 	m_gameSystems.emplace_back(std::make_unique<AttackCollisionSystem>(*this,
-		m_compPhysics, m_compAttacks));
+		m_compPhysics, m_compSprites, m_compCollisions, m_compAttacks, 
+		m_compCharacters));
 	m_gameSystems.emplace_back(std::make_unique<PhysicsSystem>(*this,
 		m_compPhysics, m_compCollisions));
 	m_gameSystems.emplace_back(std::make_unique<SpriteSystem>(*this, 
@@ -114,7 +117,10 @@ GameEngine::GameEngine()
 		m_compPhysics, m_compCollisions));
 	m_gameSystems.emplace_back(std::make_unique<PlayerSystem>(*this,
 		m_compPlayer, m_compPhysics, m_compSprites, m_compWeapons, 
-		m_compCollisions, m_compAttacks));
+		m_compCollisions, m_compAttacks, m_compCharacters));
+	m_gameSystems.emplace_back(std::make_unique<CharacterSystem>(*this,
+		m_compSprites, m_compWeapons, m_compCollisions, m_compAttacks,
+		m_compCharacters));
 	
 	m_debugSystem = std::make_unique<DebugSystem>(*this,
 		m_compPhysics, m_compCollisions, m_compAttacks);
@@ -221,6 +227,9 @@ void GameEngine::update()
 	{
 		m_debugSystem->update(m_deltaTime, m_numEntities, m_entities);
 	}
+
+	// Reset overlaps list.
+	m_collisions.clear();
 
 	deleteFlaggedEntities();
 }
@@ -339,9 +348,11 @@ void GameEngine::deleteFlaggedEntities()
 		{
 			m_compEnemies[id] = m_compEnemies[lastIndex];
 			m_compEnemies[lastIndex] = {};
-
-			// Remove this entity's id from the list of all enemy ids.
-			m_enemyIds.erase(std::remove(m_enemyIds.begin(), m_enemyIds.end(), id), m_enemyIds.end());
+		}
+		if (GameComponent::hasComponent(lastMask, GameComponent::COMPONENT_CHARACTER))
+		{
+			m_compCharacters[id] = m_compCharacters[lastIndex];
+			m_compCharacters[lastIndex] = {};
 		}
 
 		m_numEntities--;
@@ -396,28 +407,28 @@ void GameEngine::createNewEntities()
 void GameEngine::createPlayer()
 {
 	std::unordered_map<std::string, SpriteAnimation> playerAnims{
-		{PlayerState::IDLE, { 0, 8, true, glm::vec2(0.f),  {3.f, 0.07f, 0.07f, 0.07f, 0.07f, 1.f, 0.07f, 0.07f}}},
-		{PlayerState::RUN, { 11, 10, true, glm::vec2(0.f), {0.07f} }},
-		{PlayerState::JUMP_ASCEND, { 22, 4, false, glm::vec2(0.f), {0.07f} }},
-		{PlayerState::JUMP_PEAK, { 26, 6, false, glm::vec2(0.f), {0.07f} }},
-		{PlayerState::JUMP_DESCEND, { 33, 4, true, glm::vec2(0.f), {0.07f} }},
-		{PlayerState::JUMP_LAND, { 37, 1, false, glm::vec2(0.f), {0.1f} }},
-		{PlayerState::RUN_START, { 38, 5, false, glm::vec2(0.f), {0.07f} }},
-		{PlayerState::RUN_STOP, { 44, 4, false, glm::vec2(0.f), {0.07f} }},
-		{PlayerState::ALERT, { 48, 3, false, glm::vec2(0.f), {3.f, 0.07f, 0.07f} }},
-		{PlayerState::TURN, { 51, 4, false, glm::vec2(0.f), {0.07f} }},
-		{PlayerState::CROUCH, { 55, 4, false, glm::vec2(0.f), {0.07f} }},
-		{PlayerState::CROUCH_STOP, { 59, 2, false, glm::vec2(0.f), {0.07f} }},
-		{PlayerState::ATTACK, { 61, 10, false, glm::vec2(0.f), {0.05f} }},
-		{PlayerState::ATTACK_AIR, { 71, 9, false, glm::vec2(0.f), {0.05f} }},
-		{PlayerState::ATTACK_CROUCH, { 80, 9, false, glm::vec2(0.f), {0.05f} }},
+		{CharState::IDLE, { 0, 8, true, glm::vec2(0.f),  {3.f, 0.07f, 0.07f, 0.07f, 0.07f, 1.f, 0.07f, 0.07f}}},
+		{CharState::RUN, { 11, 10, true, glm::vec2(0.f), {0.07f} }},
+		{CharState::JUMP_ASCEND, { 22, 4, false, glm::vec2(0.f), {0.07f} }},
+		{CharState::JUMP_PEAK, { 26, 6, false, glm::vec2(0.f), {0.07f} }},
+		{CharState::JUMP_DESCEND, { 33, 4, true, glm::vec2(0.f), {0.07f} }},
+		{CharState::JUMP_LAND, { 37, 1, false, glm::vec2(0.f), {0.1f} }},
+		{CharState::RUN_START, { 38, 5, false, glm::vec2(0.f), {0.07f} }},
+		{CharState::RUN_STOP, { 44, 4, false, glm::vec2(0.f), {0.07f} }},
+		{CharState::ALERT, { 48, 3, false, glm::vec2(0.f), {3.f, 0.07f, 0.07f} }},
+		{CharState::TURN, { 51, 4, false, glm::vec2(0.f), {0.07f} }},
+		{CharState::CROUCH, { 55, 4, false, glm::vec2(0.f), {0.07f} }},
+		{CharState::CROUCH_STOP, { 59, 2, false, glm::vec2(0.f), {0.07f} }},
+		{CharState::ATTACK, { 61, 10, false, glm::vec2(0.f), {0.05f} }},
+		{CharState::ATTACK_AIR, { 71, 9, false, glm::vec2(0.f), {0.05f} }},
+		{CharState::ATTACK_CROUCH, { 80, 9, false, glm::vec2(0.f), {0.05f} }},
 	};
 	m_playerTexture = std::make_unique<SpriteSheet>("serah_sheet.png", playerAnims, glm::ivec2(32, 32));
 
 	std::unordered_map<std::string, SpriteAnimation> swordAnims{
-		{PlayerState::ATTACK, { 0, 10, false, glm::vec2(8.f, 8.f), {0.05f} }},
-		{PlayerState::ATTACK_AIR, { 11, 9, false, glm::vec2(4.f, 8.f), {0.05f} }},
-		{PlayerState::ATTACK_CROUCH, { 22, 9, false, glm::vec2(5.f, 0.f), {0.05f} }},
+		{CharState::ATTACK, { 0, 10, false, glm::vec2(8.f, 8.f), {0.05f} }},
+		{CharState::ATTACK_AIR, { 11, 9, false, glm::vec2(4.f, 8.f), {0.05f} }},
+		{CharState::ATTACK_CROUCH, { 22, 9, false, glm::vec2(5.f, 0.f), {0.05f} }},
 	};
 	m_swordTexture = std::make_unique<SpriteSheet>("serah_sword.png", swordAnims, glm::ivec2(48, 48));
 
@@ -428,6 +439,7 @@ void GameEngine::createPlayer()
 		GameComponent::COMPONENT_COLLISION,
 		GameComponent::COMPONENT_WEAPON,
 		GameComponent::COMPONENT_ATTACK,
+		GameComponent::COMPONENT_CHARACTER,
 	});
 
 	GameComponent::Physics &phys = m_compPhysics[m_playerId];
@@ -444,7 +456,7 @@ void GameEngine::createPlayer()
 
 	// TODO: replace hard-coded frames.
 	spr.spriteSheet = m_playerTexture.get();
-	spr.spriteSheet->setAnimation(PlayerState::IDLE, spr);
+	spr.spriteSheet->setAnimation(CharState::IDLE, spr);
 
 	GameComponent::Weapon &wp = m_compWeapons[m_playerId];
 	wp.spriteSheet = m_swordTexture.get();
@@ -456,23 +468,23 @@ void GameEngine::createPlayer()
 	GameComponent::Attack &atk = m_compAttacks[m_playerId];
 	atk.sourceId = m_playerId;
 
-	m_compPlayer.attackPatterns = {
-		{PlayerState::ATTACK, {glm::vec2(18, 21), glm::vec2(14, 6), glm::ivec2(2, 7), 0, glm::vec2(128.f, 0.f)}},
-		{PlayerState::ATTACK_AIR, {glm::vec2(22, 17), glm::vec2(6, 4), glm::ivec2(1, 6), 0}},
-		{PlayerState::ATTACK_CROUCH, {glm::vec2(22, 17), glm::vec2(7, -3), glm::ivec2(1, 6), 0}}
+	m_compCharacters[m_playerId].attackPatterns = {
+		{CharState::ATTACK, {glm::vec2(18, 21), glm::vec2(14, 6), glm::ivec2(2, 7), 0, glm::vec2(96.f, 0.f)}},
+		{CharState::ATTACK_AIR, {glm::vec2(22, 17), glm::vec2(6, 4), glm::ivec2(1, 6), 0, glm::vec2(96.f, 256.f)}},
+		{CharState::ATTACK_CROUCH, {glm::vec2(22, 17), glm::vec2(7, -3), glm::ivec2(1, 6), 0, glm::vec2(96.f, 0.f)}}
 	};
 }
 
 void GameEngine::createEnemy()
 {
 	std::unordered_map<std::string, SpriteAnimation> enemyAnims{
-		{EnemyState::IDLE, { 0, 1, false, glm::vec2(0.f),  {1.f}}},
-		{EnemyState::RUN, { 4, 4, true, glm::vec2(0.f), {0.07f} }},
-		{EnemyState::ALERT, { 8, 1, false, glm::vec2(0.f), {1.f} }},
-		{EnemyState::HURT, { 12, 2, false, glm::vec2(0.f), {0.07f} }},
-		{EnemyState::HURT_AIR, { 16, 3, false, glm::vec2(0.f), {0.07f} }},
-		{EnemyState::FALLEN, { 20, 1, false, glm::vec2(0.f), {1.f} }},
-		{EnemyState::ATTACK, { 24, 4, false, glm::vec2(0.f), {0.05f} }},
+		{CharState::IDLE, { 0, 1, false, glm::vec2(0.f),  {1.f}}},
+		{CharState::RUN, { 4, 4, true, glm::vec2(0.f), {0.07f} }},
+		{CharState::ALERT, { 8, 1, false, glm::vec2(0.f), {1.f} }},
+		{CharState::HURT, { 12, 2, false, glm::vec2(0.f), {0.07f} }},
+		{CharState::HURT_AIR, { 16, 3, false, glm::vec2(0.f), {0.07f} }},
+		{CharState::FALLEN, { 20, 1, false, glm::vec2(0.f), {1.f} }},
+		{CharState::ATTACK, { 24, 4, false, glm::vec2(0.f), {0.05f} }},
 	};
 	m_enemyTexture = std::make_unique<SpriteSheet>("clamper_sheet.png", enemyAnims, glm::ivec2(32, 32));
 
@@ -480,6 +492,7 @@ void GameEngine::createEnemy()
 		GameComponent::COMPONENT_PHYSICS,
 		GameComponent::COMPONENT_SPRITE,
 		GameComponent::COMPONENT_COLLISION,
+		GameComponent::COMPONENT_CHARACTER,
 	});
 
 	GameComponent::Physics &phys = m_compPhysics[enemyId];
@@ -496,12 +509,9 @@ void GameEngine::createEnemy()
 
 	// TODO: replace hard-coded frames.
 	spr.spriteSheet = m_enemyTexture.get();
-	spr.spriteSheet->setAnimation(EnemyState::IDLE, spr);
+	spr.spriteSheet->setAnimation(CharState::IDLE, spr);
 
 	GameComponent::Collision &col = m_compCollisions[enemyId];
 	col.aabb.halfSize = glm::vec2(8, 10);
 	col.aabb.offset = glm::vec2(0, -6);
-
-	// Add this enemy's id to the list of all enemy ids.
-	m_enemyIds.push_back(enemyId);
 }

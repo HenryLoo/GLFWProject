@@ -25,6 +25,7 @@ namespace GameComponent
 		COMPONENT_WEAPON = 16,
 		COMPONENT_ATTACK = 32,
 		COMPONENT_ENEMY = 64,
+		COMPONENT_CHARACTER = 128,
 	};
 
 	struct Physics
@@ -61,6 +62,9 @@ namespace GameComponent
 		// Distance from the sprite to the camera.
 		float cameraDistance{ -1 };
 
+		// Flag for if the animation should be reset.
+		bool isResetAnimation{ false };
+
 		bool operator<(const Sprite &that) const
 		{
 			// Sort in reverse order, so that far particles are drawn first.
@@ -70,11 +74,6 @@ namespace GameComponent
 
 	struct Player
 	{
-		// Hold the player state's label.
-		// This label is used as a key for the spritesheet's animations.
-		std::string previousState;
-		std::string currentState;
-
 		// The maximum number of jumps that the player can perform.
 		int numMaxJumps{ 1 };
 
@@ -86,9 +85,6 @@ namespace GameComponent
 		// An illusion jump refers to jumping during the short period of time
 		// after walking off a ledge. This allows for more forgiving jumps.
 		float illusionJumpTimer{ 0.f };
-
-		// Map all player states to their appropriate attack patterns.
-		std::unordered_map<std::string, AttackPattern> attackPatterns;
 	};
 
 	struct Collision
@@ -145,6 +141,26 @@ namespace GameComponent
 	struct Enemy
 	{
 
+	};
+
+	struct Character
+	{
+		// Hold the character state's label.
+		// This label is used as a key for the spritesheet's animations.
+		std::string previousState;
+		std::string currentState;
+		std::string nextState;
+
+		// Map all player states to their appropriate attack patterns.
+		std::unordered_map<std::string, AttackPattern> attackPatterns;
+
+		// The remaining duration of time in seconds for the character to remain
+		// in a hurt state.
+		float hitStunTimer{ 0.f };
+
+		// The remaining duration of time in seconds for the character to remain
+		// in a fallen state.
+		float fallenTimer{ 0.f };
 	};
 
 	// Check if an entity has a component.

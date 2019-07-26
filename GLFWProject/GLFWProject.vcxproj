@@ -142,6 +142,7 @@
     <ClCompile Include="AttackCollisionSystem.cpp" />
     <ClCompile Include="AttackSystem.cpp" />
     <ClCompile Include="Camera.cpp" />
+    <ClCompile Include="CharacterSystem.cpp" />
     <ClCompile Include="CharStates.cpp" />
     <ClCompile Include="CollisionBroadPhase.cpp" />
     <ClCompile Include="DebugSystem.cpp" />
@@ -171,6 +172,7 @@
     <ClInclude Include="AttackPattern.h" />
     <ClInclude Include="AttackSystem.h" />
     <ClInclude Include="Camera.h" />
+    <ClInclude Include="CharacterSystem.h" />
     <ClInclude Include="CharStates.h" />
     <ClInclude Include="CollisionBroadPhase.h" />
     <ClInclude Include="CollisionNarrowPhase.h" />

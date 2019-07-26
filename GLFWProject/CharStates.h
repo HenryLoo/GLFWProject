@@ -4,7 +4,7 @@
 
 #include <string>
 
-namespace PlayerState
+namespace CharState
 {
 	extern const std::string IDLE;
 	extern const std::string RUN;
@@ -21,17 +21,9 @@ namespace PlayerState
 	extern const std::string ATTACK;
 	extern const std::string ATTACK_AIR;
 	extern const std::string ATTACK_CROUCH;
-}
-
-namespace EnemyState
-{
-	extern const std::string IDLE;
-	extern const std::string RUN;
-	extern const std::string ALERT;
 	extern const std::string HURT;
 	extern const std::string HURT_AIR;
 	extern const std::string FALLEN;
-	extern const std::string ATTACK;
 }
 
 #endif
