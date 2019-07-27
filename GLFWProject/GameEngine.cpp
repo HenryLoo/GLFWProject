@@ -419,9 +419,9 @@ void GameEngine::createPlayer()
 		{CharState::TURN, { 51, 4, false, glm::vec2(0.f), {0.07f} }},
 		{CharState::CROUCH, { 55, 4, false, glm::vec2(0.f), {0.07f} }},
 		{CharState::CROUCH_STOP, { 59, 2, false, glm::vec2(0.f), {0.07f} }},
-		{CharState::ATTACK, { 61, 10, false, glm::vec2(0.f), {0.05f} }},
-		{CharState::ATTACK_AIR, { 71, 9, false, glm::vec2(0.f), {0.05f} }},
-		{CharState::ATTACK_CROUCH, { 80, 9, false, glm::vec2(0.f), {0.05f} }},
+		{CharState::ATTACK, { 61, 10, false, glm::vec2(0.f), {0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.1f} }},
+		{CharState::ATTACK_AIR, { 71, 9, false, glm::vec2(0.f), {0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.08f} }},
+		{CharState::ATTACK_CROUCH, { 80, 9, false, glm::vec2(0.f), {0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.08f} }},
 	};
 	m_playerTexture = std::make_unique<SpriteSheet>("serah_sheet.png", playerAnims, glm::ivec2(32, 32));
 
@@ -470,8 +470,8 @@ void GameEngine::createPlayer()
 
 	m_compCharacters[m_playerId].attackPatterns = {
 		{CharState::ATTACK, {glm::vec2(18, 21), glm::vec2(14, 6), glm::ivec2(2, 7), 0, glm::vec2(96.f, 0.f)}},
-		{CharState::ATTACK_AIR, {glm::vec2(22, 17), glm::vec2(6, 4), glm::ivec2(1, 6), 0, glm::vec2(96.f, 256.f)}},
-		{CharState::ATTACK_CROUCH, {glm::vec2(22, 17), glm::vec2(7, -3), glm::ivec2(1, 6), 0, glm::vec2(96.f, 0.f)}}
+		{CharState::ATTACK_AIR, {glm::vec2(22, 17), glm::vec2(6, 4), glm::ivec2(2, 6), 0, glm::vec2(96.f, 64.f)}},
+		{CharState::ATTACK_CROUCH, {glm::vec2(22, 17), glm::vec2(7, -3), glm::ivec2(2, 6), 0, glm::vec2(96.f, 0.f)}}
 	};
 }
 

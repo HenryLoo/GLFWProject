@@ -29,5 +29,8 @@ void DebugSystem::process(float deltaTime, int entityId,
 	}
 
 	GameComponent::Attack &attack{ m_attacks[entityId] };
-	renderer->addBox(phys, attack.pattern.aabb, 0, 0, 255, 100);
+	if (attack.isEnabled)
+	{
+		renderer->addBox(phys, attack.pattern.aabb, 0, 0, 255, 100);
+	}
 }

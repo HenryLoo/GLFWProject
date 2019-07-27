@@ -194,7 +194,7 @@ void PlayerSystem::process(float deltaTime, int entityId,
 		// Regular jump.
 		else
 		{
-			physics.speed.y = 192.f;
+			physics.speed.y = 256.f;
 		}
 	}
 

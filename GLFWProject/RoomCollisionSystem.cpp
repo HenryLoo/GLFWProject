@@ -260,8 +260,8 @@ void RoomCollisionSystem::process(float deltaTime, int entityId,
 		}
 	
 		// Round to two decimal places to reduce sprite artifacts.
-		phys.pos *= 100;
+		phys.pos *= 100.f;
 		phys.pos = glm::round(phys.pos);
-		phys.pos /= 100;
+		phys.pos /= 100.f;
 	}
 }

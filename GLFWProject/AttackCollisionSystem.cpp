@@ -52,7 +52,7 @@ void AttackCollisionSystem::update(float deltaTime, int numEntities,
 			int direction{ m_physics[attackId].scale.x > 0 ? 1 : -1 };
 			glm::vec2 knockback{ m_attacks[attackId].pattern.knockback };
 			m_physics[targetId].speed.x += direction * knockback.x;
-			m_physics[targetId].speed.y += knockback.y;
+			m_physics[targetId].speed.y = knockback.y;
 
 			// Change the target's state to HURT and set hit stun timer.
 			// If the target is in the air or if the attack has vertical
