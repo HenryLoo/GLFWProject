@@ -13,11 +13,11 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="Header Files\GameSystems">
-      <UniqueIdentifier>{999574b1-59d5-4634-9a09-033f5e4cd342}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Source Files\GameSystems">
       <UniqueIdentifier>{393fe6ef-6e50-4a30-b2f4-f3fd08d8f953}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Game Systems">
+      <UniqueIdentifier>{999574b1-59d5-4634-9a09-033f5e4cd342}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -99,6 +99,9 @@
     <ClCompile Include="CharacterSystem.cpp">
       <Filter>Source Files\GameSystems</Filter>
     </ClCompile>
+    <ClCompile Include="StateMachine.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Shader.h">
@@ -165,31 +168,34 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="GameSystem.h">
-      <Filter>Header Files\GameSystems</Filter>
+      <Filter>Header Files\Game Systems</Filter>
     </ClInclude>
     <ClInclude Include="PhysicsSystem.h">
-      <Filter>Header Files\GameSystems</Filter>
+      <Filter>Header Files\Game Systems</Filter>
     </ClInclude>
     <ClInclude Include="SpriteSystem.h">
-      <Filter>Header Files\GameSystems</Filter>
+      <Filter>Header Files\Game Systems</Filter>
     </ClInclude>
     <ClInclude Include="RoomCollisionSystem.h">
-      <Filter>Header Files\GameSystems</Filter>
+      <Filter>Header Files\Game Systems</Filter>
     </ClInclude>
     <ClInclude Include="PlayerSystem.h">
-      <Filter>Header Files\GameSystems</Filter>
+      <Filter>Header Files\Game Systems</Filter>
     </ClInclude>
     <ClInclude Include="DebugSystem.h">
-      <Filter>Header Files\GameSystems</Filter>
+      <Filter>Header Files\Game Systems</Filter>
     </ClInclude>
     <ClInclude Include="AttackSystem.h">
-      <Filter>Header Files\GameSystems</Filter>
+      <Filter>Header Files\Game Systems</Filter>
     </ClInclude>
     <ClInclude Include="AttackCollisionSystem.h">
-      <Filter>Header Files\GameSystems</Filter>
+      <Filter>Header Files\Game Systems</Filter>
     </ClInclude>
     <ClInclude Include="CharacterSystem.h">
-      <Filter>Header Files\GameSystems</Filter>
+      <Filter>Header Files\Game Systems</Filter>
+    </ClInclude>
+    <ClInclude Include="StateMachine.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

@@ -6,18 +6,14 @@
 
 class InputManager;
 
-// Update the player entity's values by handling input.
+// Update the player entity's values.
 class PlayerSystem : public GameSystem
 {
 public:
 	PlayerSystem(GameEngine &game,
 		GameComponent::Player &player,
 		std::vector<GameComponent::Physics> &physics,
-		std::vector<GameComponent::Sprite> &sprites,
-		std::vector<GameComponent::Weapon> &weapons,
-		std::vector<GameComponent::Collision> &collisions,
-		std::vector<GameComponent::Attack> &attacks,
-		std::vector<GameComponent::Character> &characters);
+		std::vector<GameComponent::Collision> &collisions);
 
 	virtual void update(float deltaTIme, int numEntities,
 		std::vector<unsigned long> &entities);
@@ -29,11 +25,7 @@ private:
 	// References to the relevant components.
 	GameComponent::Player &m_player;
 	std::vector<GameComponent::Physics> &m_physics;
-	std::vector<GameComponent::Sprite> &m_sprites;
-	std::vector<GameComponent::Weapon> &m_weapons;
 	std::vector<GameComponent::Collision> &m_collisions;
-	std::vector<GameComponent::Attack> &m_attacks;
-	std::vector<GameComponent::Character> &m_characters;
 };
 
 #endif

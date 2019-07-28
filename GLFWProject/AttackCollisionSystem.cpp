@@ -3,6 +3,13 @@
 #include "CharStates.h"
 #include "GameEngine.h"
 
+namespace
+{
+	// A minimal amount of hit stun for when hurt while in the air.
+	// This is just for the state machine to detect HURT_AIR's edge condition.
+	const float MIN_HIT_STUN{ 0.1f };
+}
+
 AttackCollisionSystem::AttackCollisionSystem(GameEngine &game,
 	std::vector<GameComponent::Physics> &physics,
 	std::vector<GameComponent::Sprite> &sprites,
@@ -54,21 +61,16 @@ void AttackCollisionSystem::update(float deltaTime, int numEntities,
 			m_physics[targetId].speed.x += direction * knockback.x;
 			m_physics[targetId].speed.y = knockback.y;
 
-			// Change the target's state to HURT and set hit stun timer.
-			// If the target is in the air or if the attack has vertical
-			// knockback, then set the state to HURT_AIR instead.
-			std::string hurtState{ CharState::HURT };
+			// Set the hit stun timer.
 			float hitStun{ 1.f }; // TODO: change fixed value
 			GameComponent::Collision &collision{ m_collisions[targetId] };
 			if ((!collision.isCollidingFloor && !collision.isCollidingGhost &&
 				!collision.isCollidingSlope) || knockback.y != 0)
 			{
 				// Reset hit stun if knocked into the air.
-				hitStun = 0.f;
-				hurtState = CharState::HURT_AIR;
+				hitStun = MIN_HIT_STUN;
 			}
 
-			m_characters[targetId].nextState = hurtState;
 			m_sprites[targetId].isResetAnimation = true;
 			m_characters[targetId].hitStunTimer = hitStun;
 		}

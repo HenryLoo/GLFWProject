@@ -15,6 +15,7 @@ namespace CharState
 	extern const std::string RUN_START;
 	extern const std::string RUN_STOP;
 	extern const std::string ALERT;
+	extern const std::string ALERT_STOP;
 	extern const std::string TURN;
 	extern const std::string CROUCH;
 	extern const std::string CROUCH_STOP;
@@ -24,6 +25,11 @@ namespace CharState
 	extern const std::string HURT;
 	extern const std::string HURT_AIR;
 	extern const std::string FALLEN;
+	extern const std::string EVADE_START;
+	extern const std::string EVADE;
+	extern const std::string ATTACK2;
+	extern const std::string ATTACK3;
+	extern const std::string SKILL1;
 }
 
 #endif

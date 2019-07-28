@@ -33,34 +33,16 @@ void CharacterSystem::process(float deltaTime, int entityId,
 	GameComponent::Attack &attack{ m_attacks[entityId] };
 	GameComponent::Character &character{ m_characters[entityId] };
 
-	// Handle common sprite transitions.
-	// If the current frame is over and the animation is a non-looping one 
-	// at its last frame.
-	float frameDuration{ GameComponent::getFrameDuration(sprite) };
-	if (sprite.currentFrameTime >= frameDuration &&
-		(!sprite.currentAnimation.isLooping && sprite.currentFrame == sprite.currentAnimation.numSprites - 1))
-	{
-		const std::string &currentState{ character.currentState };
-		if ((currentState == CharState::HURT && character.hitStunTimer == 0.f) ||
-			(currentState == CharState::FALLEN && character.fallenTimer == 0.f))
-		{
-			character.nextState = CharState::IDLE;
-		}
-		else if (currentState == CharState::HURT_AIR &&
-			(collision.isCollidingFloor || collision.isCollidingGhost || collision.isCollidingSlope))
-		{
-			character.nextState = CharState::FALLEN;
-			character.fallenTimer = FALLEN_DURATION;
-		}
-	}
+	// Update the character's state machine.
+	character.states.update();
 
 	// Change the sprite's state if it is a different one or the animation
 	// is being reset.
-	if (character.currentState != character.nextState || sprite.isResetAnimation)
+	const std::string &currentState{ character.states.getState() };
+	if (currentState != character.previousState || sprite.isResetAnimation)
 	{
-		character.currentState = character.nextState;
 		sprite.isResetAnimation = false;
-		sprite.spriteSheet->setAnimation(character.currentState, sprite);
+		sprite.spriteSheet->setAnimation(currentState, sprite);
 
 		// Weapon component is optional.
 		if (GameComponent::hasComponent(entityMask, GameComponent::COMPONENT_WEAPON))
@@ -69,7 +51,7 @@ void CharacterSystem::process(float deltaTime, int entityId,
 			// sprite animation. Set the animation if it exists.
 			GameComponent::Weapon &weapon{ m_weapons[entityId] };
 			GameComponent::Sprite weaponSprite;
-			weapon.isVisible = weapon.spriteSheet->setAnimation(character.currentState, weaponSprite);
+			weapon.isVisible = weapon.spriteSheet->setAnimation(currentState, weaponSprite);
 			if (weapon.isVisible)
 			{
 				weapon.currentAnimation = weaponSprite.currentAnimation;
@@ -80,7 +62,7 @@ void CharacterSystem::process(float deltaTime, int entityId,
 		if (GameComponent::hasComponent(entityMask, GameComponent::COMPONENT_ATTACK))
 		{
 			// Set the attack pattern for this state if it exists.
-			auto it{ character.attackPatterns.find(character.currentState) };
+			auto it{ character.attackPatterns.find(currentState) };
 			if (it != character.attackPatterns.end())
 			{
 				attack.pattern = it->second;
@@ -107,4 +89,8 @@ void CharacterSystem::process(float deltaTime, int entityId,
 		character.fallenTimer -= deltaTime;
 		character.fallenTimer = glm::max(0.f, character.fallenTimer);
 	}
+
+	// Update the previous state, so that it will be ready for the next 
+	// iteration.
+	character.previousState = currentState;
 }

@@ -163,6 +163,7 @@
     <ClCompile Include="SpriteRenderer.cpp" />
     <ClCompile Include="SpriteSheet.cpp" />
     <ClCompile Include="SpriteSystem.cpp" />
+    <ClCompile Include="StateMachine.cpp" />
     <ClCompile Include="Texture.cpp" />
     <ClCompile Include="UIRenderer.cpp" />
   </ItemGroup>
@@ -193,6 +194,7 @@
     <ClInclude Include="SpriteRenderer.h" />
     <ClInclude Include="SpriteSheet.h" />
     <ClInclude Include="SpriteSystem.h" />
+    <ClInclude Include="StateMachine.h" />
     <ClInclude Include="stb_image.h" />
     <ClInclude Include="Texture.h" />
     <ClInclude Include="UIRenderer.h" />

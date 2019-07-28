@@ -4,6 +4,7 @@
 
 #include "AttackPattern.h"
 #include "SpriteAnimation.h"
+#include "StateMachine.h"
 
 #include <set>
 #include <string>
@@ -39,6 +40,9 @@ namespace GameComponent
 		// This entity's physical attributes.
 		float rotation, weight;
 		glm::vec2 scale;
+
+		// Flag for if the entity is being affected by friction.
+		bool hasFriction{ true };
 	};
 
 	struct Sprite
@@ -97,6 +101,11 @@ namespace GameComponent
 		bool isCollidingGhost{ false };
 		bool isCollidingSlope{ false };
 		bool wasOnGround{ false };
+
+		bool isOnGround() const
+		{
+			return (isCollidingFloor || isCollidingGhost || isCollidingSlope);
+		}
 	};
 
 	struct Weapon
@@ -148,8 +157,7 @@ namespace GameComponent
 		// Hold the character state's label.
 		// This label is used as a key for the spritesheet's animations.
 		std::string previousState;
-		std::string currentState;
-		std::string nextState;
+		StateMachine states;
 
 		// Map all player states to their appropriate attack patterns.
 		std::unordered_map<std::string, AttackPattern> attackPatterns;
@@ -161,6 +169,15 @@ namespace GameComponent
 		// The remaining duration of time in seconds for the character to remain
 		// in a fallen state.
 		float fallenTimer{ 0.f };
+
+		// The character's horizontal speed in pixels per second.
+		float movementSpeed{ 128.f };
+
+		// The character's vertical speed in pixels per second.
+		float jumpSpeed{ 256.f };
+
+		// Character stats.
+		int health, resource, power, agility, endurance, focus;
 	};
 
 	// Check if an entity has a component.

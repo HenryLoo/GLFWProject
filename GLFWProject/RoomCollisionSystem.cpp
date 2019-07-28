@@ -28,7 +28,7 @@ void RoomCollisionSystem::process(float deltaTime, int entityId,
 	Room *room{ m_game.getCurrentRoom() };
 	
 	// Reset collision flags.
-	col.wasOnGround = col.isCollidingFloor || col.isCollidingGhost || col.isCollidingSlope;
+	col.wasOnGround = col.isOnGround();
 	col.isCollidingFloor = false;
 	col.isCollidingGhost = false;
 	

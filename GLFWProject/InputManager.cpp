@@ -32,6 +32,7 @@ void InputManager::processInput(GLFWwindow *window)
 	m_inputStates[INPUT_CANCEL] = glfwGetKey(window, GLFW_KEY_ESCAPE);
 	m_inputStates[INPUT_ATTACK] = glfwGetKey(window, GLFW_KEY_X);
 	m_inputStates[INPUT_JUMP] = glfwGetKey(window, GLFW_KEY_C);
+	m_inputStates[INPUT_EVADE] = glfwGetKey(window, GLFW_KEY_SPACE);
 	m_inputStates[INPUT_DEBUG] = glfwGetKey(window, GLFW_KEY_F1);
 }
 
