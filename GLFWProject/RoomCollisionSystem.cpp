@@ -28,7 +28,7 @@ void RoomCollisionSystem::process(float deltaTime, int entityId,
 	Room *room{ m_game.getCurrentRoom() };
 	
 	// Reset collision flags.
-	col.wasOnGround = col.isOnGround();
+	col.wasOnGround = col.isColliding() && phys.speed.y < 0.f;
 	col.isCollidingFloor = false;
 	col.isCollidingGhost = false;
 	
@@ -224,7 +224,7 @@ void RoomCollisionSystem::process(float deltaTime, int entityId,
 			}
 	
 			// Collision was found, so there is no need to keep checking. 
-			if ((col.isCollidingFloor || col.isCollidingGhost || col.isCollidingSlope))
+			if (col.isColliding())
 			{
 				// If the entity is within a slope's tile but not yet 
 				// colliding with it, then discard any floor collisions that 
@@ -245,7 +245,7 @@ void RoomCollisionSystem::process(float deltaTime, int entityId,
 		}
 	
 		// If not colliding, then just apply velocity as usual.
-		if (!col.isCollidingFloor && !col.isCollidingGhost && !col.isCollidingSlope)
+		if (!col.isColliding())
 		{
 			phys.pos.y += phys.speed.y * deltaTime;
 		}

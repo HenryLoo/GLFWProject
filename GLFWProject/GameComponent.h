@@ -43,6 +43,9 @@ namespace GameComponent
 
 		// Flag for if the entity is being affected by friction.
 		bool hasFriction{ true };
+
+		// Flag for if the entity is being affected by gravity.
+		bool hasGravity{ true };
 	};
 
 	struct Sprite
@@ -85,10 +88,22 @@ namespace GameComponent
 		// This value is reset to numMaxJumps when landing on the ground.
 		int numRemainingJumps{ 0 };
 
+		// The maximum number of evades that the player can perform.
+		int numMaxEvades{ 1 };
+
+		// The number of evades that the player can still perform.
+		// This value is reset to numMaxEvades when landing on the ground.
+		int numRemainingEvades{ 0 };
+
 		// The remaining duration in seconds allowing for illusion jumps.
 		// An illusion jump refers to jumping during the short period of time
 		// after walking off a ledge. This allows for more forgiving jumps.
 		float illusionJumpTimer{ 0.f };
+
+		// The remaining duration in seconds for the player remaining in
+		// the evade state.
+		float evadeTimer{ 0.f };
+		float evadeDuration{ 0.f };
 	};
 
 	struct Collision
@@ -102,7 +117,7 @@ namespace GameComponent
 		bool isCollidingSlope{ false };
 		bool wasOnGround{ false };
 
-		bool isOnGround() const
+		bool isColliding() const
 		{
 			return (isCollidingFloor || isCollidingGhost || isCollidingSlope);
 		}

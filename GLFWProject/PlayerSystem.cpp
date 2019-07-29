@@ -38,10 +38,11 @@ void PlayerSystem::process(float deltaTime, int entityId,
 	GameComponent::Collision &col{ m_collisions[entityId] };
 
 	// While on the ground.
-	if (col.isOnGround())
+	if (col.isColliding() && physics.speed.y < 0.f)
 	{
-		// If the player landed on the ground, reset the remaining jumps.
+		// If the player landed on the ground, reset the remaining jumps and evades.
 		m_player.numRemainingJumps = m_player.numMaxJumps;
+		m_player.numRemainingEvades = m_player.numMaxEvades;
 
 		// Reset illusion jump timer.
 		m_player.illusionJumpTimer = 0.f;
@@ -66,5 +67,12 @@ void PlayerSystem::process(float deltaTime, int entityId,
 		{
 			physics.speed.y = 0.f;
 		}
+	}
+
+	// Update evade timer.
+	if (m_player.evadeTimer > 0)
+	{
+		m_player.evadeTimer -= deltaTime;
+		m_player.evadeTimer = glm::max(0.f, m_player.evadeTimer);
 	}
 }

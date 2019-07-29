@@ -472,6 +472,8 @@ void GameEngine::createPlayer()
 
 	GameComponent::Attack &atk = m_compAttacks[m_playerId];
 	atk.sourceId = m_playerId;
+	
+	m_compPlayer.evadeDuration = 0.25f;
 
 	GameComponent::Character &character = m_compCharacters[m_playerId];
 	character.attackPatterns = {
@@ -521,12 +523,12 @@ void GameEngine::createPlayer()
 	states.addEdge(CharState::ALERT_STOP, CharState::IDLE, isAnimationEnd);
 	states.addEdge(CharState::ATTACK, CharState::ALERT_STOP, isAnimationEnd);
 	states.addEdge(CharState::ATTACK_CROUCH, CharState::CROUCH, isAnimationEnd);
-	states.addEdge(CharState::ATTACK_AIR, CharState::JUMP_ASCEND, isAnimationEnd);
+	states.addEdge(CharState::EVADE_START, CharState::EVADE, isAnimationEnd);
 
 	// Falling.
 	auto isFalling{ [&phys, &col, &character]() -> bool
 	{
-		return (phys.speed.y < 0 && !col.isOnGround() &&
+		return (phys.speed.y < 0 && !col.isColliding() &&
 			character.states.getState() != CharState::JUMP_DESCEND);
 	} };
 	states.addEdge(CharState::IDLE, CharState::JUMP_PEAK, isFalling);
@@ -538,7 +540,7 @@ void GameEngine::createPlayer()
 	// Landing.
 	auto isLanding{ [&phys, &col]() -> bool
 	{
-		return col.isOnGround() && phys.speed.y < 0;
+		return col.isColliding() && phys.speed.y < 0;
 	} };
 	states.addEdge(CharState::JUMP_PEAK, CharState::JUMP_LAND, isLanding);
 	states.addEdge(CharState::JUMP_DESCEND, CharState::JUMP_LAND, isLanding);
@@ -568,6 +570,18 @@ void GameEngine::createPlayer()
 	states.addEdge(CharState::JUMP_PEAK, CharState::ATTACK_AIR, isAttacking);
 	states.addEdge(CharState::JUMP_DESCEND, CharState::ATTACK_AIR, isAttacking);
 
+	// Attacking air chain.
+	auto isAttackingAir{ [this]() -> bool
+	{
+		bool isAttacking{ m_input->isKeyPressed(INPUT_ATTACK) };
+		return isAttacking;
+	} };
+	auto attackAirAction{ [&spr]()
+	{
+		spr.isResetAnimation = true;
+	} };
+	states.addEdge(CharState::ATTACK_AIR, CharState::ATTACK_AIR, isAttackingAir, attackAirAction);
+
 	// Jumping.
 	auto isJumping{ [this]() -> bool
 	{
@@ -576,6 +590,7 @@ void GameEngine::createPlayer()
 	} };
 	auto jumpAction{ [&phys, &spr, &col, &character, this]()
 	{
+		phys.hasGravity = true;
 		spr.isResetAnimation = true;
 		m_compPlayer.numRemainingJumps--;
 		phys.speed.y = character.jumpSpeed;
@@ -593,6 +608,83 @@ void GameEngine::createPlayer()
 	states.addEdge(CharState::JUMP_PEAK, CharState::JUMP_ASCEND, isJumping, jumpAction);
 	states.addEdge(CharState::JUMP_DESCEND, CharState::JUMP_ASCEND, isJumping, jumpAction);
 	states.addEdge(CharState::ATTACK, CharState::JUMP_ASCEND, isJumping, jumpAction);
+	/*states.addEdge(CharState::EVADE_START, CharState::JUMP_ASCEND, isJumping, jumpAction);
+	states.addEdge(CharState::EVADE, CharState::JUMP_ASCEND, isJumping, jumpAction);*/
+
+	// Drop down.
+	auto isDroppingDown{ [&col, this]() -> bool
+	{
+		bool isCrouching{ m_input->isKeyPressing(INPUT_DOWN) };
+		bool isJumping{ m_input->isKeyPressed(INPUT_JUMP) };
+		return (isCrouching && isJumping && col.isCollidingGhost && 
+			!col.isCollidingFloor && !col.isCollidingSlope);
+	} };
+	auto dropDownAction{ [&phys, &spr, &col, &character, this]()
+	{
+		spr.isResetAnimation = true;
+		m_compPlayer.numRemainingJumps--;
+		phys.speed.y = 0.f;
+		phys.pos.y--;
+	} };
+	states.addEdge(CharState::CROUCH, CharState::JUMP_PEAK, isDroppingDown, dropDownAction);
+
+	// Evading.
+	auto isEvading{ [this]() -> bool 
+	{
+		bool isEvading{ m_input->isKeyPressed(INPUT_EVADE) };
+		return (isEvading && m_compPlayer.numRemainingEvades > 0);
+	} };
+	auto evadeAction{ [&phys, &character, this]() 
+	{
+		float dir{ phys.scale.x > 0 ? 1.f : -1.f };
+		m_compPlayer.numRemainingEvades--;
+		phys.speed.x = dir * 2.f * character.movementSpeed;
+		phys.hasFriction = false;
+
+		// Set the evade timer.
+		m_compPlayer.evadeTimer = m_compPlayer.evadeDuration;
+	} };
+	states.addEdge(CharState::IDLE, CharState::EVADE_START, isEvading, evadeAction);
+	states.addEdge(CharState::ALERT, CharState::EVADE_START, isEvading, evadeAction);
+	states.addEdge(CharState::ALERT_STOP, CharState::EVADE_START, isEvading, evadeAction);
+	states.addEdge(CharState::RUN_START, CharState::EVADE_START, isEvading, evadeAction);
+	states.addEdge(CharState::RUN, CharState::EVADE_START, isEvading, evadeAction);
+	states.addEdge(CharState::RUN_STOP, CharState::EVADE_START, isEvading, evadeAction);
+	states.addEdge(CharState::TURN, CharState::EVADE_START, isEvading, evadeAction);
+	states.addEdge(CharState::CROUCH_STOP, CharState::EVADE_START, isEvading, evadeAction);
+	states.addEdge(CharState::JUMP_LAND, CharState::EVADE_START, isEvading, evadeAction);
+	states.addEdge(CharState::CROUCH, CharState::EVADE_START, isEvading, evadeAction);
+	states.addEdge(CharState::ATTACK, CharState::EVADE_START, isEvading, evadeAction);
+	states.addEdge(CharState::ATTACK_CROUCH, CharState::EVADE_START, isEvading, evadeAction);
+	states.addEdge(CharState::JUMP_ASCEND, CharState::EVADE_START, isEvading, evadeAction);
+	states.addEdge(CharState::JUMP_PEAK, CharState::EVADE_START, isEvading, evadeAction);
+	states.addEdge(CharState::JUMP_DESCEND, CharState::EVADE_START, isEvading, evadeAction);
+	states.addEdge(CharState::ATTACK_AIR, CharState::EVADE_START, isEvading, evadeAction);
+
+	// Stop evading.
+	auto isEvadeTimerEnd{ [this]() -> bool 
+	{
+		return m_compPlayer.evadeTimer == 0.f;
+	} };
+	auto evadeStopAction{ [&phys, &character]()
+	{
+		phys.hasGravity = true;
+	} };
+	states.addEdge(CharState::EVADE_START, CharState::RUN, isEvadeTimerEnd, evadeStopAction);
+	states.addEdge(CharState::EVADE, CharState::RUN, isEvadeTimerEnd, evadeStopAction);
+
+	// Evading in the air.
+	auto isEvadingAir{ [&phys, &col]() -> bool 
+	{
+		return !col.isColliding();
+	} };
+	auto evadeAirAction{ [&phys, &character]()
+	{
+		phys.speed.y = 0.f;
+		phys.hasGravity = false;
+	} };
+	states.addEdge(CharState::EVADE_START, CharState::EVADE_START, isEvadingAir, evadeAirAction);
+	states.addEdge(CharState::EVADE, CharState::EVADE, isEvadingAir, evadeAirAction);
 
 	// Crouching.
 	auto isCrouching{ [this]() -> bool
@@ -633,7 +725,8 @@ void GameEngine::createPlayer()
 		bool isRunningRight{ m_input->isKeyPressing(INPUT_RIGHT) };
 
 		// Maintain maximum horizontal speed.
-		float xSpeed = glm::max(glm::abs(phys.speed.x), character.movementSpeed);
+		//float xSpeed = glm::max(glm::abs(phys.speed.x), character.movementSpeed);
+		float xSpeed = character.movementSpeed;
 		float dir = phys.scale.x;
 
 		if (isRunningLeft)
@@ -647,8 +740,10 @@ void GameEngine::createPlayer()
 		}
 
 		phys.speed.x = xSpeed;
-		phys.scale.x = dir;
 		phys.hasFriction = false;
+
+		if (character.states.getState() != CharState::ATTACK_AIR)
+			phys.scale.x = dir;
 	} };
 	auto isTurning{ [&phys, this]() -> bool
 	{
@@ -662,6 +757,7 @@ void GameEngine::createPlayer()
 			((phys.scale.x < 0 && isRunningRight) || (phys.scale.x > 0 && isRunningLeft));
 	} };
 	states.addEdge(CharState::IDLE, CharState::TURN, isTurning, runAction);
+	states.addEdge(CharState::RUN, CharState::TURN, isTurning, runAction);
 	states.addEdge(CharState::RUN_STOP, CharState::TURN, isTurning, runAction);
 	states.addEdge(CharState::ALERT, CharState::TURN, isTurning, runAction);
 	states.addEdge(CharState::ALERT_STOP, CharState::TURN, isTurning, runAction);
@@ -669,6 +765,7 @@ void GameEngine::createPlayer()
 	states.addEdge(CharState::JUMP_LAND, CharState::TURN, isTurning, runAction);
 
 	states.addEdge(CharState::IDLE, CharState::RUN_START, isStartRunning, runAction);
+	states.addEdge(CharState::RUN, CharState::RUN, isStartRunning, runAction);
 	states.addEdge(CharState::RUN_STOP, CharState::RUN_START, isStartRunning, runAction);
 	states.addEdge(CharState::ALERT, CharState::RUN_START, isStartRunning, runAction);
 	states.addEdge(CharState::ALERT_STOP, CharState::RUN_START, isStartRunning, runAction);
@@ -753,9 +850,9 @@ void GameEngine::createEnemy()
 	states.addState(CharState::FALLEN);
 
 	// Hurt while on ground.
-	auto isHurting{ [&character, &col]() -> bool
+	auto isHurting{ [&character, &col, &phys]() -> bool
 	{
-		return (character.hitStunTimer > 0.f && col.isOnGround());
+		return (character.hitStunTimer > 0.f && col.isColliding() && phys.speed.y < 0);
 	} };
 	states.addEdge(CharState::IDLE, CharState::HURT, isHurting);
 
@@ -767,16 +864,16 @@ void GameEngine::createEnemy()
 	states.addEdge(CharState::HURT, CharState::IDLE, isStopHurting);
 
 	// Hurt while in the air.
-	auto isHurtingAir{ [&character, &col]() -> bool
+	auto isHurtingAir{ [&character, &col, &phys]() -> bool
 	{
-		return (character.hitStunTimer > 0.f && !col.isOnGround());
+		return (character.hitStunTimer > 0.f && !(col.isColliding() && phys.speed.y < 0));
 	} };
 	states.addEdge(CharState::IDLE, CharState::HURT_AIR, isHurtingAir);
 
 	// Fallen.
-	auto isFallen{ [&character, &col]() -> bool
+	auto isFallen{ [&character, &col, &phys]() -> bool
 	{
-		return col.isOnGround();
+		return (col.isColliding() && phys.speed.y < 0.f);
 	} };
 	auto fallenAction{ [&character]()
 	{

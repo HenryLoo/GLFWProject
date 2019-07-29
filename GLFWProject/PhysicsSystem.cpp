@@ -25,11 +25,15 @@ void PhysicsSystem::process(float deltaTime, int entityId,
 	GameComponent::Collision &col{ m_collisions[entityId] };
 	
 	// Update this component's values.
-	phys.speed.y += (GRAVITY * deltaTime);
-	phys.speed.y = glm::max(GRAVITY / 3.f, phys.speed.y);
+	if (phys.hasGravity)
+	{
+		phys.speed.y += (GRAVITY * deltaTime);
+		phys.speed.y = glm::max(GRAVITY / 3.f, phys.speed.y);
+	}
 	
 	// Only decelerate horizontally if on the ground.
-	if (phys.hasFriction && col.isOnGround() && phys.speed.x != 0.f)
+	if (phys.hasFriction && col.isColliding() && phys.speed.y < 0.f &&
+		phys.speed.x != 0.f)
 	{
 		float decel{ phys.speed.x > 0 ? FRICTION : -FRICTION };
 		phys.speed.x += (decel * deltaTime);
