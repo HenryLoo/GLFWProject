@@ -31,6 +31,7 @@ void RoomCollisionSystem::process(float deltaTime, int entityId,
 	col.wasOnGround = col.isColliding() && phys.speed.y < 0.f;
 	col.isCollidingFloor = false;
 	col.isCollidingGhost = false;
+	col.isCollidingHorizontal = false;
 	
 	const AABB &aabb{ col.aabb };
 	glm::vec2 speed{ phys.speed };
@@ -72,7 +73,6 @@ void RoomCollisionSystem::process(float deltaTime, int entityId,
 	
 		// Check all potential collisions before applying velocity.
 		// We check in order of closest to furthest tiles.
-		bool isColliding{ false };
 		int currentTileX{ tileRangeToCheck.x };
 		while (currentTileX != tileRangeToCheck.y)
 		{
@@ -86,7 +86,7 @@ void RoomCollisionSystem::process(float deltaTime, int entityId,
 					float tileEdgePos{ room->getTilePos(thisTileCoord).x
 						+ direction * Room::TILE_SIZE / 2.f };
 					phys.pos.x = tileEdgePos + direction * halfSize.x - aabb.offset.x;
-					isColliding = true;
+					col.isCollidingHorizontal = true;
 	
 					// Collision was found, so there is no need to keep checking.
 					break;
@@ -94,14 +94,14 @@ void RoomCollisionSystem::process(float deltaTime, int entityId,
 			}
 	
 			// Collision was found, so there is no need to keep checking. 
-			if (isColliding)
+			if (col.isCollidingHorizontal)
 				break;
 	
 			currentTileX -= direction;
 		}
 	
 		// If not colliding, then just apply velocity as usual.
-		if (!isColliding)
+		if (!col.isCollidingHorizontal)
 			phys.pos.x += phys.speed.x * deltaTime;
 	}
 	
@@ -111,7 +111,7 @@ void RoomCollisionSystem::process(float deltaTime, int entityId,
 	col.isCollidingSlope = false;
 	
 	// Check for vertical collisions.
-	if (speed.y != 0)
+	if (speed.y != 0 || !phys.hasGravity)
 	{
 		// Extend the halfsize of the entity to see how much distance it will
 		// cover this frame.
@@ -119,7 +119,7 @@ void RoomCollisionSystem::process(float deltaTime, int entityId,
 		glm::ivec2 currentTile{ room->getTileCoord(pos) };
 	
 		// 1 = moving down, -1 = moving up.
-		int direction{ speed.y < 0 ? 1 : -1 };
+		int direction{ speed.y <= 0 ? 1 : -1 };
 	
 		// Get the horizontal tile bounds at the maximum Y-distance.
 		float maxDistY{ pos.y - direction * distY };

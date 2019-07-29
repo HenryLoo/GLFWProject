@@ -422,8 +422,8 @@ void GameEngine::createPlayer()
 		{CharState::ATTACK, { 61, 10, false, glm::vec2(0.f), {0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.1f} }},
 		{CharState::ATTACK_AIR, { 71, 9, false, glm::vec2(0.f), {0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.08f} }},
 		{CharState::ATTACK_CROUCH, { 80, 9, false, glm::vec2(0.f), {0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.08f} }},
-		{CharState::EVADE_START, { 89, 2, false, glm::vec2(0.f), {0.07f} }},
-		{CharState::EVADE, { 91, 4, true, glm::vec2(0.f), {0.07f} }},
+		{CharState::EVADE_START, { 89, 2, false, glm::vec2(0.f), {0.05f} }},
+		{CharState::EVADE, { 91, 4, true, glm::vec2(0.f), {0.05f} }},
 		{CharState::ATTACK2, { 95, 10, true, glm::vec2(0.f), {0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.1f} }},
 		{CharState::ATTACK3, { 105, 11, true, glm::vec2(0.f), {0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.2f} }},
 		{CharState::SKILL1, { 116, 8, true, glm::vec2(0.f), {0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.2f} }},
@@ -473,7 +473,7 @@ void GameEngine::createPlayer()
 	GameComponent::Attack &atk = m_compAttacks[m_playerId];
 	atk.sourceId = m_playerId;
 	
-	m_compPlayer.evadeDuration = 0.25f;
+	m_compPlayer.evadeDuration = 0.2f;
 
 	GameComponent::Character &character = m_compCharacters[m_playerId];
 	character.attackPatterns = {
@@ -554,7 +554,7 @@ void GameEngine::createPlayer()
 	} };
 	auto stopAction{ [&phys]()
 	{
-		phys.speed.x = 0.f;
+		phys.hasFriction = true;
 	} };
 	states.addEdge(CharState::IDLE, CharState::ATTACK, isAttacking, stopAction);
 	states.addEdge(CharState::ALERT, CharState::ATTACK, isAttacking, stopAction);
@@ -608,8 +608,8 @@ void GameEngine::createPlayer()
 	states.addEdge(CharState::JUMP_PEAK, CharState::JUMP_ASCEND, isJumping, jumpAction);
 	states.addEdge(CharState::JUMP_DESCEND, CharState::JUMP_ASCEND, isJumping, jumpAction);
 	states.addEdge(CharState::ATTACK, CharState::JUMP_ASCEND, isJumping, jumpAction);
-	/*states.addEdge(CharState::EVADE_START, CharState::JUMP_ASCEND, isJumping, jumpAction);
-	states.addEdge(CharState::EVADE, CharState::JUMP_ASCEND, isJumping, jumpAction);*/
+	states.addEdge(CharState::EVADE_START, CharState::JUMP_ASCEND, isJumping, jumpAction);
+	states.addEdge(CharState::EVADE, CharState::JUMP_ASCEND, isJumping, jumpAction);
 
 	// Drop down.
 	auto isDroppingDown{ [&col, this]() -> bool
@@ -638,7 +638,7 @@ void GameEngine::createPlayer()
 	{
 		float dir{ phys.scale.x > 0 ? 1.f : -1.f };
 		m_compPlayer.numRemainingEvades--;
-		phys.speed.x = dir * 2.f * character.movementSpeed;
+		phys.speed.x = dir * 1.7f * character.movementSpeed;
 		phys.hasFriction = false;
 
 		// Set the evade timer.
@@ -666,7 +666,7 @@ void GameEngine::createPlayer()
 	{
 		return m_compPlayer.evadeTimer == 0.f;
 	} };
-	auto evadeStopAction{ [&phys, &character]()
+	auto evadeStopAction{ [&phys, &character, &col]()
 	{
 		phys.hasGravity = true;
 	} };
@@ -719,28 +719,32 @@ void GameEngine::createPlayer()
 
 		return isRunning;
 	} };
-	auto runAction{ [&phys, &character, this]() 
+	auto runAction{ [&phys, &character, this]()
 	{
 		bool isRunningLeft{ m_input->isKeyPressing(INPUT_LEFT) };
 		bool isRunningRight{ m_input->isKeyPressing(INPUT_RIGHT) };
 
-		// Maintain maximum horizontal speed.
-		//float xSpeed = glm::max(glm::abs(phys.speed.x), character.movementSpeed);
-		float xSpeed = character.movementSpeed;
-		float dir = phys.scale.x;
+		// If current speed is greater than the character's movement speed,
+		// start applying friction to gradually bring it back down to
+		// the character's movement speed.
+		float currentSpeed{ glm::abs(phys.speed.x) };
+		phys.hasFriction = (currentSpeed > character.movementSpeed);
 
+		// Maintain maximum horizontal speed.
+		float maxSpeed{ glm::max(character.movementSpeed, currentSpeed) };
+
+		float dir{ phys.scale.x };
 		if (isRunningLeft)
 		{
-			xSpeed *= -1;
-			dir = -glm::abs(dir);
+			dir = -1;
 		}
 		else if (isRunningRight)
 		{
-			dir = glm::abs(dir);
+			dir = 1;
 		}
 
-		phys.speed.x = xSpeed;
-		phys.hasFriction = false;
+		phys.speed.x += (dir * character.movementSpeed / 0.1f * m_deltaTime);
+		phys.speed.x = glm::clamp(phys.speed.x, -maxSpeed, maxSpeed);
 
 		if (character.states.getState() != CharState::ATTACK_AIR)
 			phys.scale.x = dir;
@@ -756,21 +760,24 @@ void GameEngine::createPlayer()
 		return isRunning && 
 			((phys.scale.x < 0 && isRunningRight) || (phys.scale.x > 0 && isRunningLeft));
 	} };
-	states.addEdge(CharState::IDLE, CharState::TURN, isTurning, runAction);
-	states.addEdge(CharState::RUN, CharState::TURN, isTurning, runAction);
-	states.addEdge(CharState::RUN_STOP, CharState::TURN, isTurning, runAction);
-	states.addEdge(CharState::ALERT, CharState::TURN, isTurning, runAction);
-	states.addEdge(CharState::ALERT_STOP, CharState::TURN, isTurning, runAction);
-	states.addEdge(CharState::CROUCH_STOP, CharState::TURN, isTurning, runAction);
-	states.addEdge(CharState::JUMP_LAND, CharState::TURN, isTurning, runAction);
+	states.addEdge(CharState::IDLE, CharState::TURN, isTurning);
+	states.addEdge(CharState::RUN, CharState::TURN, isTurning);
+	states.addEdge(CharState::RUN_STOP, CharState::TURN, isTurning);
+	states.addEdge(CharState::ALERT, CharState::TURN, isTurning);
+	states.addEdge(CharState::ALERT_STOP, CharState::TURN, isTurning);
+	states.addEdge(CharState::CROUCH_STOP, CharState::TURN, isTurning);
+	states.addEdge(CharState::JUMP_LAND, CharState::TURN, isTurning);
 
-	states.addEdge(CharState::IDLE, CharState::RUN_START, isStartRunning, runAction);
+	states.addEdge(CharState::IDLE, CharState::RUN_START, isStartRunning);
+	states.addEdge(CharState::RUN_STOP, CharState::RUN_START, isStartRunning);
+	states.addEdge(CharState::ALERT, CharState::RUN_START, isStartRunning);
+	states.addEdge(CharState::ALERT_STOP, CharState::RUN_START, isStartRunning);
+	states.addEdge(CharState::CROUCH_STOP, CharState::RUN_START, isStartRunning);
+	states.addEdge(CharState::JUMP_LAND, CharState::RUN_START, isStartRunning);
+
+	states.addEdge(CharState::RUN_START, CharState::RUN_START, isStartRunning, runAction);
 	states.addEdge(CharState::RUN, CharState::RUN, isStartRunning, runAction);
-	states.addEdge(CharState::RUN_STOP, CharState::RUN_START, isStartRunning, runAction);
-	states.addEdge(CharState::ALERT, CharState::RUN_START, isStartRunning, runAction);
-	states.addEdge(CharState::ALERT_STOP, CharState::RUN_START, isStartRunning, runAction);
-	states.addEdge(CharState::CROUCH_STOP, CharState::RUN_START, isStartRunning, runAction);
-	states.addEdge(CharState::JUMP_LAND, CharState::RUN_START, isStartRunning, runAction);
+	states.addEdge(CharState::TURN, CharState::TURN, isStartRunning, runAction);
 	states.addEdge(CharState::JUMP_ASCEND, CharState::JUMP_ASCEND, isStartRunning, runAction);
 	states.addEdge(CharState::JUMP_PEAK, CharState::JUMP_PEAK, isStartRunning, runAction);
 	states.addEdge(CharState::JUMP_DESCEND, CharState::JUMP_DESCEND, isStartRunning, runAction);
@@ -789,7 +796,6 @@ void GameEngine::createPlayer()
 	} };
 	auto stopRunAction{ [&phys]() 
 	{
-		phys.speed.x = 0.f;
 		phys.hasFriction = true;
 	} };
 	states.addEdge(CharState::RUN, CharState::RUN_STOP, isStopRunning, stopRunAction);

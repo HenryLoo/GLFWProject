@@ -5,7 +5,7 @@
 namespace
 {
 	const float GRAVITY{ -480.f };
-	const float FRICTION{ -480.f };
+	const float FRICTION{ -640.f };
 }
 
 PhysicsSystem::PhysicsSystem(GameEngine &game, 
@@ -31,9 +31,10 @@ void PhysicsSystem::process(float deltaTime, int entityId,
 		phys.speed.y = glm::max(GRAVITY / 3.f, phys.speed.y);
 	}
 	
-	// Only decelerate horizontally if on the ground.
-	if (phys.hasFriction && col.isColliding() && phys.speed.y < 0.f &&
-		phys.speed.x != 0.f)
+	// Only decelerate horizontally if on the ground or if a horizontal
+	// collision occurs.
+	if ((phys.hasFriction && col.isColliding() && phys.speed.y < 0.f &&
+		phys.speed.x != 0.f) || col.isCollidingHorizontal)
 	{
 		float decel{ phys.speed.x > 0 ? FRICTION : -FRICTION };
 		phys.speed.x += (decel * deltaTime);

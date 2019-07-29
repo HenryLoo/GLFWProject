@@ -112,6 +112,7 @@ namespace GameComponent
 		AABB aabb;
 
 		// Flag for if the box has collided from the bottom during this frame.
+		bool isCollidingHorizontal{ false };
 		bool isCollidingFloor{ false };
 		bool isCollidingGhost{ false };
 		bool isCollidingSlope{ false };
