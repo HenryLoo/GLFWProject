@@ -55,21 +55,21 @@ void AttackCollisionSystem::update(float deltaTime, int numEntities,
 			// Add to the list of hit entities.
 			hitEntities.insert(targetId);
 
-			// Apply knockback to target.
-			int direction{ m_physics[attackId].scale.x > 0 ? 1 : -1 };
-			glm::vec2 knockback{ m_attacks[attackId].pattern.knockback };
-			m_physics[targetId].speed.x += direction * knockback.x;
-			m_physics[targetId].speed.y = knockback.y;
-
 			// Set the hit stun timer.
+			glm::vec2 knockback{ m_attacks[attackId].pattern.knockback };
 			float hitStun{ 1.f }; // TODO: change fixed value
 			GameComponent::Collision &collision{ m_collisions[targetId] };
-			if ((!collision.isCollidingFloor && !collision.isCollidingGhost &&
-				!collision.isCollidingSlope) || knockback.y != 0)
+			if ((!collision.isColliding() || (collision.isColliding() && m_physics[targetId].speed.y == 0.f)) ||
+				knockback.y != 0)
 			{
 				// Reset hit stun if knocked into the air.
 				hitStun = MIN_HIT_STUN;
 			}
+
+			// Apply knockback to target.
+			int direction{ m_physics[attackId].scale.x > 0 ? 1 : -1 };
+			m_physics[targetId].speed.x += direction * knockback.x;
+			m_physics[targetId].speed.y = knockback.y;
 
 			m_sprites[targetId].isResetAnimation = true;
 			m_characters[targetId].hitStunTimer = hitStun;

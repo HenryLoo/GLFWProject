@@ -186,8 +186,8 @@ void RoomCollisionSystem::process(float deltaTime, int entityId,
 					tileEdgePos = thisTilePos.y - tileHalfSize + yDist;
 	
 					// Slopes are shorter than regular tiles, so we need to check more precisely
-					// for collisions.
-					if ((phys.pos.y - halfSize.y + aabb.offset.y + speed.y * deltaTime) > tileEdgePos)
+					// for collisions. The -1 helps with 1-pixel off errors.
+					if (((phys.pos.y - halfSize.y + aabb.offset.y + speed.y * deltaTime) - 1.f) > tileEdgePos)
 					{
 						isAlmostSlope = true;
 						continue;

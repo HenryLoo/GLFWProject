@@ -424,16 +424,20 @@ void GameEngine::createPlayer()
 		{CharState::ATTACK_CROUCH, { 80, 9, false, glm::vec2(0.f), {0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.08f} }},
 		{CharState::EVADE_START, { 89, 2, false, glm::vec2(0.f), {0.05f} }},
 		{CharState::EVADE, { 91, 4, true, glm::vec2(0.f), {0.05f} }},
-		{CharState::ATTACK2, { 95, 10, true, glm::vec2(0.f), {0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.1f} }},
-		{CharState::ATTACK3, { 105, 11, true, glm::vec2(0.f), {0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.2f} }},
-		{CharState::SKILL1, { 116, 8, true, glm::vec2(0.f), {0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.2f} }},
+		{CharState::ATTACK2, { 95, 10, false, glm::vec2(0.f), {0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.1f} }},
+		{CharState::ATTACK3, { 105, 11, false, glm::vec2(0.f), {0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.2f} }},
+		{CharState::SKILL1, { 116, 8, false, glm::vec2(0.f), {0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.2f} }},
+		{CharState::ATTACK_EVADE, { 124, 10, false, glm::vec2(0.f), {0.05f} }},
 	};
 	m_playerTexture = std::make_unique<SpriteSheet>("serah_sheet.png", playerAnims, glm::ivec2(32, 32));
 
 	std::unordered_map<std::string, SpriteAnimation> swordAnims{
-		{CharState::ATTACK, { 0, 10, false, glm::vec2(8.f, 8.f), {0.05f} }},
-		{CharState::ATTACK_AIR, { 11, 9, false, glm::vec2(4.f, 8.f), {0.05f} }},
-		{CharState::ATTACK_CROUCH, { 22, 9, false, glm::vec2(5.f, 0.f), {0.05f} }},
+		{CharState::ATTACK, { 0, 10, false, glm::vec2(8.f, 8.f) }},
+		{CharState::ATTACK_AIR, { 11, 9, false, glm::vec2(4.f, 8.f) }},
+		{CharState::ATTACK_CROUCH, { 22, 9, false, glm::vec2(5.f, 0.f) }},
+		{CharState::ATTACK_EVADE, { 33, 10, false, glm::vec2(10.f, -3.f) }},
+		{CharState::ATTACK2, { 55, 10, false, glm::vec2(5.f, 8.f) }},
+		{CharState::ATTACK3, { 66, 11, false, glm::vec2(10.f, 8.f) }},
 	};
 	m_swordTexture = std::make_unique<SpriteSheet>("serah_sword.png", swordAnims, glm::ivec2(48, 48));
 
@@ -479,7 +483,10 @@ void GameEngine::createPlayer()
 	character.attackPatterns = {
 		{CharState::ATTACK, {glm::vec2(18, 21), glm::vec2(14, 6), glm::ivec2(2, 7), 0, glm::vec2(96.f, 0.f)}},
 		{CharState::ATTACK_AIR, {glm::vec2(22, 17), glm::vec2(6, 4), glm::ivec2(2, 6), 0, glm::vec2(96.f, 64.f)}},
-		{CharState::ATTACK_CROUCH, {glm::vec2(22, 17), glm::vec2(7, -3), glm::ivec2(2, 6), 0, glm::vec2(96.f, 0.f)}}
+		{CharState::ATTACK_CROUCH, {glm::vec2(22, 17), glm::vec2(7, -3), glm::ivec2(2, 6), 0, glm::vec2(96.f, 0.f)}},
+		{CharState::ATTACK_EVADE, {glm::vec2(18, 21), glm::vec2(14, 6), glm::ivec2(2, 7), 0, glm::vec2(96.f, 0.f)}},
+		{CharState::ATTACK2, {glm::vec2(18, 21), glm::vec2(14, 6), glm::ivec2(2, 7), 0, glm::vec2(96.f, 0.f)}},
+		{CharState::ATTACK3, {glm::vec2(18, 21), glm::vec2(14, 6), glm::ivec2(2, 7), 0, glm::vec2(96.f, 0.f)}},
 	};
 
 	// Set up state machine.
@@ -500,6 +507,7 @@ void GameEngine::createPlayer()
 	states.addState(CharState::ATTACK);
 	states.addState(CharState::ATTACK_AIR);
 	states.addState(CharState::ATTACK_CROUCH);
+	states.addState(CharState::ATTACK_EVADE);
 	states.addState(CharState::EVADE_START);
 	states.addState(CharState::EVADE);
 	states.addState(CharState::ATTACK2);
@@ -522,8 +530,11 @@ void GameEngine::createPlayer()
 	states.addEdge(CharState::ALERT, CharState::ALERT_STOP, isAnimationEnd);
 	states.addEdge(CharState::ALERT_STOP, CharState::IDLE, isAnimationEnd);
 	states.addEdge(CharState::ATTACK, CharState::ALERT_STOP, isAnimationEnd);
+	states.addEdge(CharState::ATTACK2, CharState::ALERT_STOP, isAnimationEnd);
+	states.addEdge(CharState::ATTACK3, CharState::ALERT_STOP, isAnimationEnd);
 	states.addEdge(CharState::ATTACK_CROUCH, CharState::CROUCH, isAnimationEnd);
 	states.addEdge(CharState::EVADE_START, CharState::EVADE, isAnimationEnd);
+	states.addEdge(CharState::ATTACK_AIR, CharState::JUMP_ASCEND, isAnimationEnd);
 
 	// Falling.
 	auto isFalling{ [&phys, &col, &character]() -> bool
@@ -536,6 +547,12 @@ void GameEngine::createPlayer()
 	states.addEdge(CharState::RUN_START, CharState::JUMP_PEAK, isFalling);
 	states.addEdge(CharState::RUN, CharState::JUMP_PEAK, isFalling);
 	states.addEdge(CharState::RUN_STOP, CharState::JUMP_PEAK, isFalling);
+	states.addEdge(CharState::CROUCH, CharState::JUMP_PEAK, isFalling);
+	states.addEdge(CharState::CROUCH_STOP, CharState::JUMP_PEAK, isFalling);
+	states.addEdge(CharState::ATTACK, CharState::JUMP_PEAK, isFalling);
+	states.addEdge(CharState::ATTACK_CROUCH, CharState::JUMP_PEAK, isFalling);
+	states.addEdge(CharState::ATTACK2, CharState::JUMP_PEAK, isFalling);
+	states.addEdge(CharState::ATTACK3, CharState::JUMP_PEAK, isFalling);
 
 	// Landing.
 	auto isLanding{ [&phys, &col]() -> bool
@@ -569,18 +586,30 @@ void GameEngine::createPlayer()
 	states.addEdge(CharState::JUMP_ASCEND, CharState::ATTACK_AIR, isAttacking);
 	states.addEdge(CharState::JUMP_PEAK, CharState::ATTACK_AIR, isAttacking);
 	states.addEdge(CharState::JUMP_DESCEND, CharState::ATTACK_AIR, isAttacking);
+	states.addEdge(CharState::ATTACK, CharState::ATTACK2, isAttacking, stopAction);
+	states.addEdge(CharState::ATTACK2, CharState::ATTACK3, isAttacking, stopAction);
 
-	// Attacking air chain.
-	auto isAttackingAir{ [this]() -> bool
+	auto isAirAttacking{ [&phys, &col, this]() -> bool
 	{
 		bool isAttacking{ m_input->isKeyPressed(INPUT_ATTACK) };
-		return isAttacking;
+		bool isColliding{ col.isColliding() };
+		return (isAttacking && (!isColliding || (isColliding && phys.speed.y == 0.f)));
 	} };
-	auto attackAirAction{ [&spr]()
+	auto evadeStopAction{ [&phys, &character, &col]()
 	{
-		spr.isResetAnimation = true;
+		phys.hasGravity = true;
 	} };
-	states.addEdge(CharState::ATTACK_AIR, CharState::ATTACK_AIR, isAttackingAir, attackAirAction);
+	states.addEdge(CharState::EVADE, CharState::ATTACK_AIR, isAirAttacking, evadeStopAction);
+	states.addEdge(CharState::EVADE_START, CharState::ATTACK_AIR, isAirAttacking, evadeStopAction);
+	states.addEdge(CharState::EVADE, CharState::ATTACK, isAttacking, stopAction);
+	states.addEdge(CharState::EVADE_START, CharState::ATTACK, isAttacking, stopAction);
+
+	// Attacking air chain.
+	//auto attackAirAction{ [&spr]()
+	//{
+	//	spr.isResetAnimation = true;
+	//} };
+	//states.addEdge(CharState::ATTACK_AIR, CharState::ATTACK_AIR, isAttacking, attackAirAction);
 
 	// Jumping.
 	auto isJumping{ [this]() -> bool
@@ -608,6 +637,8 @@ void GameEngine::createPlayer()
 	states.addEdge(CharState::JUMP_PEAK, CharState::JUMP_ASCEND, isJumping, jumpAction);
 	states.addEdge(CharState::JUMP_DESCEND, CharState::JUMP_ASCEND, isJumping, jumpAction);
 	states.addEdge(CharState::ATTACK, CharState::JUMP_ASCEND, isJumping, jumpAction);
+	states.addEdge(CharState::ATTACK2, CharState::JUMP_ASCEND, isJumping, jumpAction);
+	states.addEdge(CharState::ATTACK3, CharState::JUMP_ASCEND, isJumping, jumpAction);
 	states.addEdge(CharState::EVADE_START, CharState::JUMP_ASCEND, isJumping, jumpAction);
 	states.addEdge(CharState::EVADE, CharState::JUMP_ASCEND, isJumping, jumpAction);
 
@@ -653,9 +684,9 @@ void GameEngine::createPlayer()
 	states.addEdge(CharState::TURN, CharState::EVADE_START, isEvading, evadeAction);
 	states.addEdge(CharState::CROUCH_STOP, CharState::EVADE_START, isEvading, evadeAction);
 	states.addEdge(CharState::JUMP_LAND, CharState::EVADE_START, isEvading, evadeAction);
-	states.addEdge(CharState::CROUCH, CharState::EVADE_START, isEvading, evadeAction);
 	states.addEdge(CharState::ATTACK, CharState::EVADE_START, isEvading, evadeAction);
-	states.addEdge(CharState::ATTACK_CROUCH, CharState::EVADE_START, isEvading, evadeAction);
+	states.addEdge(CharState::ATTACK2, CharState::EVADE_START, isEvading, evadeAction);
+	states.addEdge(CharState::ATTACK3, CharState::EVADE_START, isEvading, evadeAction);
 	states.addEdge(CharState::JUMP_ASCEND, CharState::EVADE_START, isEvading, evadeAction);
 	states.addEdge(CharState::JUMP_PEAK, CharState::EVADE_START, isEvading, evadeAction);
 	states.addEdge(CharState::JUMP_DESCEND, CharState::EVADE_START, isEvading, evadeAction);
@@ -666,17 +697,14 @@ void GameEngine::createPlayer()
 	{
 		return m_compPlayer.evadeTimer == 0.f;
 	} };
-	auto evadeStopAction{ [&phys, &character, &col]()
-	{
-		phys.hasGravity = true;
-	} };
 	states.addEdge(CharState::EVADE_START, CharState::RUN, isEvadeTimerEnd, evadeStopAction);
 	states.addEdge(CharState::EVADE, CharState::RUN, isEvadeTimerEnd, evadeStopAction);
 
 	// Evading in the air.
 	auto isEvadingAir{ [&phys, &col]() -> bool 
 	{
-		return !col.isColliding();
+		bool isColliding{ col.isColliding() };
+		return (!isColliding || (isColliding && phys.speed.y == 0.f));
 	} };
 	auto evadeAirAction{ [&phys, &character]()
 	{
@@ -872,7 +900,9 @@ void GameEngine::createEnemy()
 	// Hurt while in the air.
 	auto isHurtingAir{ [&character, &col, &phys]() -> bool
 	{
-		return (character.hitStunTimer > 0.f && !(col.isColliding() && phys.speed.y < 0));
+		bool isColliding{ col.isColliding() };
+		return (character.hitStunTimer > 0.f && 
+			(!isColliding || (isColliding && phys.speed.y == 0.f)));
 	} };
 	states.addEdge(CharState::IDLE, CharState::HURT_AIR, isHurtingAir);
 
