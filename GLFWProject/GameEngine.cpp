@@ -438,6 +438,7 @@ void GameEngine::createPlayer()
 		{CharState::ATTACK_EVADE, { 33, 10, false, glm::vec2(10.f, -3.f) }},
 		{CharState::ATTACK2, { 55, 10, false, glm::vec2(5.f, 8.f) }},
 		{CharState::ATTACK3, { 66, 11, false, glm::vec2(10.f, 8.f) }},
+		{CharState::SKILL1, { 44, 8, false, glm::vec2(0.f, 8.f) }},
 	};
 	m_swordTexture = std::make_unique<SpriteSheet>("serah_sword.png", swordAnims, glm::ivec2(48, 48));
 
@@ -485,7 +486,8 @@ void GameEngine::createPlayer()
 		{CharState::ATTACK_AIR, {glm::vec2(22, 17), glm::vec2(6, 4), glm::ivec2(2, 6), -1, 0, glm::vec2(96.f, 64.f)}},
 		{CharState::ATTACK_CROUCH, {glm::vec2(22, 17), glm::vec2(7, -3), glm::ivec2(2, 6), -1, 0, glm::vec2(96.f, 0.f)}},
 		{CharState::ATTACK2, {glm::vec2(18, 21), glm::vec2(14, 6), glm::ivec2(2, 7), 3, 0, glm::vec2(96.f, 0.f)}},
-		{CharState::ATTACK3, {glm::vec2(19, 21), glm::vec2(15, 6), glm::ivec2(2, 7), -1, 0, glm::vec2(128.f, 0.f)}},
+		{CharState::ATTACK3, {glm::vec2(19, 21), glm::vec2(15, 6), glm::ivec2(2, 8), -1, 0, glm::vec2(128.f, 0.f)}},
+		{CharState::SKILL1, {glm::vec2(14, 23), glm::vec2(10, 9), glm::ivec2(2, 6), -1, 0, glm::vec2(96.f, 256.f)}},
 	};
 
 	// Set up state machine.
@@ -623,6 +625,31 @@ void GameEngine::createPlayer()
 		phys.hasFriction = true;
 	} };
 
+	auto skill1EnterAction{ [&phys]()
+	{
+		phys.speed.x = 0.f;
+		phys.speed.y = 0.f;
+		phys.hasGravity = false;
+	} };
+
+	auto skill1ExitAction{ [&phys]()
+	{
+		phys.hasGravity = true;
+	} };
+
+	auto skill1UpdateAction{ [&spr, &phys, &atk]()
+	{
+		float frameDuration{ GameComponent::getFrameDuration(spr) };
+		if (spr.currentFrame == atk.pattern.frameRange.x && !phys.hasGravity)
+		{
+			float dir{ phys.scale.x > 0 ? 1.f : -1.f };
+			phys.speed.x = dir * 32.f;
+			phys.speed.y = 256.f;
+			phys.isLockedDirection = true;
+			phys.hasGravity = true;
+		}
+	} };
+
 	states.addState(CharState::IDLE);
 	states.addState(CharState::RUN, runUpdateAction);
 	states.addState(CharState::JUMP_ASCEND, runUpdateAction, jumpEnterAction);
@@ -643,7 +670,7 @@ void GameEngine::createPlayer()
 	states.addState(CharState::ATTACK_CROUCH);
 	states.addState(CharState::EVADE_START, evadeUpdateAction, evadeEnterAction, enableGravity);
 	states.addState(CharState::EVADE, evadeUpdateAction, []() {}, enableGravity);
-	states.addState(CharState::SKILL1);
+	states.addState(CharState::SKILL1, skill1UpdateAction, skill1EnterAction, skill1ExitAction);
 
 	// Animation end transitions.
 	auto isAnimationEnd{ [&spr]() -> bool
@@ -694,6 +721,36 @@ void GameEngine::createPlayer()
 	states.addEdge(CharState::JUMP_PEAK, CharState::JUMP_LAND, isLanding);
 	states.addEdge(CharState::JUMP_DESCEND, CharState::JUMP_LAND, isLanding);
 	states.addEdge(CharState::ATTACK_AIR, CharState::JUMP_LAND, isLanding);
+
+	// Skill 1.
+	auto isSkill1{ [this]() -> bool
+	{
+		bool isSkill1 { m_input->isKeyPressed(INPUT_SKILL1) };
+		return isSkill1;
+	} };
+	states.addEdge(CharState::IDLE, CharState::SKILL1, isSkill1);
+	states.addEdge(CharState::ALERT, CharState::SKILL1, isSkill1);
+	states.addEdge(CharState::ALERT_STOP, CharState::SKILL1, isSkill1);
+	states.addEdge(CharState::RUN_START, CharState::SKILL1, isSkill1);
+	states.addEdge(CharState::RUN, CharState::SKILL1, isSkill1);
+	states.addEdge(CharState::RUN_STOP, CharState::SKILL1, isSkill1);
+	states.addEdge(CharState::TURN, CharState::SKILL1, isSkill1);
+	states.addEdge(CharState::CROUCH_STOP, CharState::SKILL1, isSkill1);
+	states.addEdge(CharState::JUMP_LAND, CharState::SKILL1, isSkill1);
+	states.addEdge(CharState::JUMP_ASCEND, CharState::SKILL1, isSkill1);
+	states.addEdge(CharState::JUMP_PEAK, CharState::SKILL1, isSkill1);
+	states.addEdge(CharState::JUMP_DESCEND, CharState::SKILL1, isSkill1);
+	states.addEdge(CharState::ATTACK, CharState::SKILL1, isSkill1);
+	states.addEdge(CharState::ATTACK2, CharState::SKILL1, isSkill1);
+	states.addEdge(CharState::ATTACK3, CharState::SKILL1, isSkill1);
+	states.addEdge(CharState::ATTACK_AIR, CharState::SKILL1, isSkill1);
+
+	auto isSkill1End{ [&spr, &phys, &atk]() -> bool
+	{
+		return (phys.speed.y < 0.f && 
+			spr.currentFrame > atk.pattern.frameRange.x);
+	} };
+	states.addEdge(CharState::SKILL1, CharState::JUMP_ASCEND, isSkill1End);
 
 	// Attacking.
 	auto isAttacking{ [this]() -> bool
