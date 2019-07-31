@@ -481,12 +481,11 @@ void GameEngine::createPlayer()
 
 	GameComponent::Character &character = m_compCharacters[m_playerId];
 	character.attackPatterns = {
-		{CharState::ATTACK, {glm::vec2(18, 21), glm::vec2(14, 6), glm::ivec2(2, 7), 0, glm::vec2(96.f, 0.f)}},
-		{CharState::ATTACK_AIR, {glm::vec2(22, 17), glm::vec2(6, 4), glm::ivec2(2, 6), 0, glm::vec2(96.f, 64.f)}},
-		{CharState::ATTACK_CROUCH, {glm::vec2(22, 17), glm::vec2(7, -3), glm::ivec2(2, 6), 0, glm::vec2(96.f, 0.f)}},
-		{CharState::ATTACK_EVADE, {glm::vec2(18, 21), glm::vec2(14, 6), glm::ivec2(2, 7), 0, glm::vec2(96.f, 0.f)}},
-		{CharState::ATTACK2, {glm::vec2(18, 21), glm::vec2(14, 6), glm::ivec2(2, 7), 0, glm::vec2(96.f, 0.f)}},
-		{CharState::ATTACK3, {glm::vec2(18, 21), glm::vec2(14, 6), glm::ivec2(2, 7), 0, glm::vec2(96.f, 0.f)}},
+		{CharState::ATTACK, {glm::vec2(18, 21), glm::vec2(14, 6), glm::ivec2(2, 7), 3, 0, glm::vec2(96.f, 0.f)}},
+		{CharState::ATTACK_AIR, {glm::vec2(22, 17), glm::vec2(6, 4), glm::ivec2(2, 6), -1, 0, glm::vec2(96.f, 64.f)}},
+		{CharState::ATTACK_CROUCH, {glm::vec2(22, 17), glm::vec2(7, -3), glm::ivec2(2, 6), -1, 0, glm::vec2(96.f, 0.f)}},
+		{CharState::ATTACK2, {glm::vec2(18, 21), glm::vec2(14, 6), glm::ivec2(2, 7), 3, 0, glm::vec2(96.f, 0.f)}},
+		{CharState::ATTACK3, {glm::vec2(19, 21), glm::vec2(15, 6), glm::ivec2(2, 7), -1, 0, glm::vec2(128.f, 0.f)}},
 	};
 
 	// Set up state machine.
@@ -512,6 +511,15 @@ void GameEngine::createPlayer()
 			spr.isResetAnimation = true;
 			m_compPlayer.numRemainingJumps--;
 			phys.speed.y = character.jumpSpeed;
+
+			// Don't allow for free evade if jumping from an evade.
+			std::string prevState{ character.previousState };
+			if (prevState == CharState::EVADE_START ||
+				prevState == CharState::EVADE)
+			{
+				m_compPlayer.numRemainingEvades = glm::min(
+					m_compPlayer.numRemainingEvades, m_compPlayer.numMaxEvades - 1);
+			}
 		}
 	} };
 
@@ -706,8 +714,14 @@ void GameEngine::createPlayer()
 	states.addEdge(CharState::JUMP_ASCEND, CharState::ATTACK_AIR, isAttacking);
 	states.addEdge(CharState::JUMP_PEAK, CharState::ATTACK_AIR, isAttacking);
 	states.addEdge(CharState::JUMP_DESCEND, CharState::ATTACK_AIR, isAttacking);
-	states.addEdge(CharState::ATTACK, CharState::ATTACK2, isAttacking);
-	states.addEdge(CharState::ATTACK2, CharState::ATTACK3, isAttacking);
+
+	auto isAttackCombo{ [&spr, &atk, this]() -> bool
+	{
+		bool isAttacking{ m_input->isKeyPressed(INPUT_ATTACK) };
+		return (isAttacking && spr.currentFrame > atk.pattern.comboFrame);
+	} };
+	states.addEdge(CharState::ATTACK, CharState::ATTACK2, isAttackCombo);
+	states.addEdge(CharState::ATTACK2, CharState::ATTACK3, isAttackCombo);
 
 	auto isAirAttacking{ [&phys, &col, this]() -> bool
 	{

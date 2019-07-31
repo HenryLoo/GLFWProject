@@ -12,6 +12,9 @@ struct AttackPattern
 	// The start and end frame index bounds for which this attack is enabled.
 	glm::ivec2 frameRange;
 
+	// The minimum frame index to allow for an additional attack.
+	int comboFrame;
+
 	// The amount of damage this attack will deal.
 	int damage;
 
