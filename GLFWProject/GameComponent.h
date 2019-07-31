@@ -46,6 +46,9 @@ namespace GameComponent
 
 		// Flag for if the entity is being affected by gravity.
 		bool hasGravity{ true };
+
+		// Flag for if the entity's horizontal direction is locked.
+		bool isLockedDirection{ false };
 	};
 
 	struct Sprite

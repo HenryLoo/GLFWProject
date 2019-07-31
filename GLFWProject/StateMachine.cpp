@@ -5,8 +5,11 @@ void StateMachine::update()
 	if (m_currentState == nullptr)
 		return;
 
+	// Call update action.
+	m_currentState->updateAction();
+
 	// Edge is defined by {state label, condition function}.
-	for (const Edge &e : *m_currentState)
+	for (const Edge &e : m_currentState->edges)
 	{
 		// Call the edge's condition function to see if it has been satisfied.
 		bool isTraversing{ e.condition() };
@@ -17,11 +20,14 @@ void StateMachine::update()
 			if (it == m_states.end())
 				continue;
 
+			// Call exit action.
+			m_currentState->exitAction();
+
 			m_currentLabel = it->first;
 			m_currentState = &(it->second);
 
-			// Call the update action.
-			e.updateAction();
+			// Call enter action.
+			m_currentState->enterAction();
 
 			// Stop checking edges.
 			break;
@@ -34,12 +40,16 @@ const std::string &StateMachine::getState() const
 	return m_currentLabel;
 }
 
-void StateMachine::addState(const std::string &label)
+void StateMachine::addState(const std::string &label,
+	std::function<void()> updateAction,
+	std::function<void()> enterAction,
+	std::function<void()> exitAction)
 {
 	// Add an empty state.
 	// Nothing happens if the state already exists.
 	std::pair<std::unordered_map<std::string, State>::iterator, bool> result;
-	result = m_states.insert(std::pair<std::string, State>(label, {}));
+	result = m_states.insert(std::pair<std::string, State>(label, 
+		{ {}, updateAction, enterAction, exitAction }));
 
 	// If this is the first state added, then set it
 	// as the current state.
@@ -47,18 +57,14 @@ void StateMachine::addState(const std::string &label)
 	{
 		m_currentLabel = label;
 		m_currentState = &(result.first->second);
+		m_currentState->updateAction = updateAction;
+		m_currentState->enterAction = enterAction;
+		m_currentState->exitAction = exitAction;
 	}
 }
 
-void StateMachine::addEdge(const std::string &srcLabel, 
-	const std::string &destLabel, std::function<bool()> condition)
-{
-	addEdge(srcLabel, destLabel, condition, []() {});
-}
-
 void StateMachine::addEdge(const std::string &srcLabel,
-	const std::string &destLabel, std::function<bool()> condition,
-	std::function<void()> updateAction)
+	const std::string &destLabel, std::function<bool()> condition)
 {
 	auto it{ m_states.find(srcLabel) };
 
@@ -67,5 +73,5 @@ void StateMachine::addEdge(const std::string &srcLabel,
 		return;
 
 	// Otherwise, insert the edge to the state.
-	it->second.push_back({ destLabel, condition, updateAction });
+	it->second.edges.push_back({ destLabel, condition });
 }

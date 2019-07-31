@@ -14,13 +14,22 @@ struct Edge
 
 	// Condition to check whether to traverse this edge.
 	std::function<bool()> condition;
-
-	// Function to call when this edge is traversed.
-	std::function<void()> updateAction;
 };
 
-// A state is defined as a collection of edges.
-typedef std::vector<Edge> State;
+struct State
+{
+	// All the edges connected to this state.
+	std::vector<Edge> edges;
+
+	// Function to call at update.
+	std::function<void()> updateAction;
+
+	// Function to call when the state machine enters this state.
+	std::function<void()> enterAction;
+
+	// Function to call when the state machine leaves this state.
+	std::function<void()> exitAction;
+};
 
 class StateMachine
 {
@@ -32,13 +41,14 @@ public:
 	const std::string &getState() const;
 
 	// Add a state to the machine.
-	void addState(const std::string &label);
+	void addState(const std::string &label,
+		std::function<void()> updateAction = []() {},
+		std::function<void()> enterAction = []() {},
+		std::function<void()> exitAction = []() {});
 
 	// Add a transition edge between two existing states in the machine.
 	void addEdge(const std::string &srcLabel, const std::string &destLabel,
 		std::function<bool()> condition);
-	void addEdge(const std::string &srcLabel, const std::string &destLabel,
-		std::function<bool()> condition, std::function<void()> updateAction);
 
 private:
 	// Map state labels to their respective states.
