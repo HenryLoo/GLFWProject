@@ -1,7 +1,6 @@
 #include "RoomCollisionSystem.h"
 
 #include "GameEngine.h"
-#include "Room.h"
 
 namespace
 {
@@ -10,10 +9,10 @@ namespace
 	const float COLLISION_THRESHOLD{ 1.f };
 }
 
-RoomCollisionSystem::RoomCollisionSystem(GameEngine &game, 
+RoomCollisionSystem::RoomCollisionSystem(EntityManager &manager,
 	std::vector<GameComponent::Physics> &physics,
 	std::vector<GameComponent::Collision> &collisions) :
-	GameSystem(game, { GameComponent::COMPONENT_PHYSICS,
+	GameSystem(manager, { GameComponent::COMPONENT_PHYSICS,
 		GameComponent::COMPONENT_COLLISION }),
 	m_physics(physics), m_collisions(collisions)
 {
@@ -25,7 +24,7 @@ void RoomCollisionSystem::process(float deltaTime, int entityId,
 {
 	GameComponent::Physics &phys{ m_physics[entityId] };
 	GameComponent::Collision &col{ m_collisions[entityId] };
-	Room *room{ m_game.getCurrentRoom() };
+	Room *room{ m_manager.getGameEngine().getCurrentRoom() };
 	
 	// Reset collision flags.
 	col.wasOnGround = col.isColliding() && phys.speed.y < 0.f;

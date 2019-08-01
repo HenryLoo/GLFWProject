@@ -141,18 +141,6 @@ SpriteRenderer::~SpriteRenderer()
 void SpriteRenderer::addSprite(const GameComponent::Physics &physics, 
 	const GameComponent::Sprite &sprite)
 {
-	//Sprite &spr{ m_sprites[m_numSprites] };
-	//spr.pos = physics.pos;
-	//spr.scale = physics.scale;
-	//spr.rotation = physics.rotation;
-	//spr.r = sprite.r;
-	//spr.g = sprite.g;
-	//spr.b = sprite.b;
-	//spr.a = sprite.a;
-	//spr.cameraDistance = sprite.cameraDistance;
-	//spr.spriteSheet = sprite.spriteSheet;
-	//spr.frameIndex = sprite.currentAnimation.sheetIndex + sprite.currentFrame;
-
 	const std::string spriteName{ sprite.spriteSheet->getFilePath() };
 	auto it{ m_spriteData.find(spriteName) };
 	if (it == m_spriteData.end())

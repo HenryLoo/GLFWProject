@@ -8,7 +8,7 @@
 class DebugSystem : public GameSystem
 {
 public:
-	DebugSystem(GameEngine &game,
+	DebugSystem(EntityManager &manager,
 		std::vector<GameComponent::Physics> &physics,
 		std::vector<GameComponent::Collision> &collisions,
 		std::vector<GameComponent::Attack> &attacks);

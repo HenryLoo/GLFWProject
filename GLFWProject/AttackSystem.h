@@ -8,7 +8,7 @@
 class AttackSystem : public GameSystem
 {
 public:
-	AttackSystem(GameEngine &game,
+	AttackSystem(EntityManager &manager,
 		std::vector<GameComponent::Sprite> &sprites,
 		std::vector<GameComponent::Attack> &attacks);
 

@@ -10,7 +10,7 @@ class InputManager;
 class PlayerSystem : public GameSystem
 {
 public:
-	PlayerSystem(GameEngine &game,
+	PlayerSystem(EntityManager &manager,
 		GameComponent::Player &player,
 		std::vector<GameComponent::Physics> &physics,
 		std::vector<GameComponent::Collision> &collisions);

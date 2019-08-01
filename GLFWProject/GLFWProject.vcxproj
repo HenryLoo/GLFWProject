@@ -146,7 +146,9 @@
     <ClCompile Include="CharStates.cpp" />
     <ClCompile Include="CollisionBroadPhase.cpp" />
     <ClCompile Include="DebugSystem.cpp" />
+    <ClCompile Include="EffectTypes.cpp" />
     <ClCompile Include="EntityConstants.cpp" />
+    <ClCompile Include="EntityManager.cpp" />
     <ClCompile Include="GameComponent.cpp" />
     <ClCompile Include="GameEngine.cpp" />
     <ClCompile Include="GameSystem.cpp" />
@@ -178,7 +180,9 @@
     <ClInclude Include="CollisionBroadPhase.h" />
     <ClInclude Include="CollisionNarrowPhase.h" />
     <ClInclude Include="DebugSystem.h" />
+    <ClInclude Include="EffectTypes.h" />
     <ClInclude Include="EntityConstants.h" />
+    <ClInclude Include="EntityManager.h" />
     <ClInclude Include="GameComponent.h" />
     <ClInclude Include="GameEngine.h" />
     <ClInclude Include="GameSystem.h" />

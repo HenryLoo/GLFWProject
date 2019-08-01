@@ -1,9 +1,9 @@
 #include "AttackSystem.h"
 
-AttackSystem::AttackSystem(GameEngine &game,
+AttackSystem::AttackSystem(EntityManager &manager,
 	std::vector<GameComponent::Sprite> &sprites,
 	std::vector<GameComponent::Attack> &attacks) :
-	GameSystem(game, { GameComponent::COMPONENT_SPRITE,
+	GameSystem(manager, { GameComponent::COMPONENT_SPRITE,
 		GameComponent::COMPONENT_ATTACK }),
 	m_sprites(sprites), m_attacks(attacks)
 {

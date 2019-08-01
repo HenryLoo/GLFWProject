@@ -12,7 +12,7 @@ class Camera;
 class SpriteSystem : public GameSystem
 {
 public:
-	SpriteSystem(GameEngine &game, 
+	SpriteSystem(EntityManager &manager,
 		std::vector<GameComponent::Physics> &physics,
 		std::vector<GameComponent::Sprite> &sprites,
 		std::vector<GameComponent::Weapon> &weapons);

@@ -57,12 +57,17 @@ namespace GameComponent
 		SpriteSheet *spriteSheet;
 
 		// This sprite's colour.
-		unsigned char r, g, b, a;
+		unsigned char r{ 255 }, g{ 255 }, b{ 255 }, a{ 255 };
 
-		// Determines how long this sprite has left to live, in seconds.
-		// If the value is < 0, then this sprite is dead.
-		float duration{ -1 };
-		bool hasDuration{ true };
+		// Flag for whether the sprite should be alive after playing its
+		// animation.
+		// If false, then the entity is deleted after the last frame.
+		bool isPersistent{ true };
+
+		// Flag for if the sprite is dead.
+		// If true, then the sprite will fade out. Once completely
+		// faded, the entity is deleted.
+		bool isDead{ false };
 
 		// Hold all frames for this sprite.
 		SpriteAnimation currentAnimation;

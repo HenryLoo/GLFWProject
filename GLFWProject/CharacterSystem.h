@@ -9,7 +9,7 @@
 class CharacterSystem : public GameSystem
 {
 public:
-	CharacterSystem(GameEngine &game,
+	CharacterSystem(EntityManager &manager,
 		std::vector<GameComponent::Sprite> &sprites,
 		std::vector<GameComponent::Weapon> &weapons,
 		std::vector<GameComponent::Collision> &collisions,

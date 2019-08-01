@@ -4,12 +4,12 @@
 
 #include "GameComponent.h"
 
-class GameEngine;
+class EntityManager;
 
 class GameSystem
 {
 public:
-	GameSystem(GameEngine &game, 
+	GameSystem(EntityManager &manager, 
 		const std::set<GameComponent::ComponentType> &components);
 
 	// Perform this system's updates.
@@ -18,7 +18,7 @@ public:
 		std::vector<unsigned long> &entities);
 
 protected:
-	GameEngine &m_game;
+	EntityManager &m_manager;
 
 	// Hold all relevant component types that this system will use.
 	std::set<GameComponent::ComponentType> m_components;

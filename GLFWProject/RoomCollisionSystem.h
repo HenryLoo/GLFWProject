@@ -10,7 +10,7 @@ class Room;
 class RoomCollisionSystem : public GameSystem
 {
 public:
-	RoomCollisionSystem(GameEngine &game, 
+	RoomCollisionSystem(EntityManager &manager,
 		std::vector<GameComponent::Physics> &physics,
 		std::vector<GameComponent::Collision> &collisions);
 

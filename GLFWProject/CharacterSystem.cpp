@@ -11,13 +11,13 @@ namespace
 	const float FALLEN_DURATION{ 3.f };
 }
 
-CharacterSystem::CharacterSystem(GameEngine &game,
+CharacterSystem::CharacterSystem(EntityManager &manager,
 	std::vector<GameComponent::Sprite> &sprites,
 	std::vector<GameComponent::Weapon> &weapons,
 	std::vector<GameComponent::Collision> &collisions,
 	std::vector<GameComponent::Attack> &attacks,
 	std::vector<GameComponent::Character> &characters) :
-	GameSystem(game, { GameComponent::COMPONENT_SPRITE,
+	GameSystem(manager, { GameComponent::COMPONENT_SPRITE,
 		GameComponent::COMPONENT_CHARACTER }),
 	m_sprites(sprites), m_weapons(weapons), m_collisions(collisions),
 	m_attacks(attacks), m_characters(characters)

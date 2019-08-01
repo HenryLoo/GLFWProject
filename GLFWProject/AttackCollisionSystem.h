@@ -8,7 +8,7 @@
 class AttackCollisionSystem : public GameSystem
 {
 public:
-	AttackCollisionSystem(GameEngine &game,
+	AttackCollisionSystem(EntityManager &manager,
 		std::vector<GameComponent::Physics> &physics,
 		std::vector<GameComponent::Sprite> &sprites,
 		std::vector<GameComponent::Collision> &collisions,

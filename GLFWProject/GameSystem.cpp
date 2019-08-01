@@ -1,8 +1,8 @@
 #include "GameSystem.h"
 
-GameSystem::GameSystem(GameEngine &game,
+GameSystem::GameSystem(EntityManager &manager,
 	const std::set<GameComponent::ComponentType> &components) :
-	m_game(game), m_components(components)
+	m_manager(manager), m_components(components)
 {
 
 }

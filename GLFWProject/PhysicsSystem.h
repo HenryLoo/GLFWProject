@@ -8,7 +8,7 @@
 class PhysicsSystem : public GameSystem
 {
 public:
-	PhysicsSystem(GameEngine &game, 
+	PhysicsSystem(EntityManager &manager,
 		std::vector<GameComponent::Physics> &physics,
 		std::vector<GameComponent::Collision> &collisions);
 

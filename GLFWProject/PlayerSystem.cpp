@@ -9,11 +9,11 @@ namespace
 	const float ILLUSION_JUMP_DURATION{ 0.1f };
 }
 
-PlayerSystem::PlayerSystem(GameEngine &game,
+PlayerSystem::PlayerSystem(EntityManager &manager,
 	GameComponent::Player &player,
 	std::vector<GameComponent::Physics> &physics,
 	std::vector<GameComponent::Collision> &collisions) :
-	GameSystem(game, { GameComponent::COMPONENT_PLAYER,
+	GameSystem(manager, { GameComponent::COMPONENT_PLAYER,
 		GameComponent::COMPONENT_PHYSICS,
 		GameComponent::COMPONENT_COLLISION }),
 	m_player(player), m_physics(physics), m_collisions(collisions)
@@ -24,7 +24,7 @@ PlayerSystem::PlayerSystem(GameEngine &game,
 void PlayerSystem::update(float deltaTime, int numEntities,
 	std::vector<unsigned long> &entities)
 {
-	int playerId{ m_game.getPlayerId() };
+	int playerId{ m_manager.getPlayerId() };
 	unsigned long &e{ entities[playerId] };
 	if (!hasComponents(e)) return;
 

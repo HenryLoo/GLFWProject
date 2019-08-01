@@ -1,7 +1,8 @@
 #include "AttackCollisionSystem.h"
 
 #include "CharStates.h"
-#include "GameEngine.h"
+#include "EffectTypes.h"
+#include "EntityManager.h"
 
 namespace
 {
@@ -10,13 +11,13 @@ namespace
 	const float MIN_HIT_STUN{ 0.1f };
 }
 
-AttackCollisionSystem::AttackCollisionSystem(GameEngine &game,
+AttackCollisionSystem::AttackCollisionSystem(EntityManager &manager,
 	std::vector<GameComponent::Physics> &physics,
 	std::vector<GameComponent::Sprite> &sprites,
 	std::vector<GameComponent::Collision> &collisions,
 	std::vector<GameComponent::Attack> &attacks,
 	std::vector<GameComponent::Character> &characters) :
-	GameSystem(game, {}),
+	GameSystem(manager, {}),
 	m_physics(physics), m_sprites(sprites), m_collisions(collisions),
 	m_attacks(attacks), m_characters(characters)
 {
@@ -27,7 +28,7 @@ void AttackCollisionSystem::update(float deltaTime, int numEntities,
 	std::vector<unsigned long> &entities)
 {
 	// Handle collisions.
-	const std::vector<std::pair<AABBSource, AABBSource>> &collisions{ m_game.getCollisions() };
+	const std::vector<std::pair<AABBSource, AABBSource>> &collisions{ m_manager.getCollisions() };
 	for (const auto &col : collisions)
 	{
 		AABBSource::Type firstType{ col.first.type };
@@ -68,11 +69,16 @@ void AttackCollisionSystem::update(float deltaTime, int numEntities,
 
 			// Apply knockback to target.
 			int direction{ m_physics[attackId].scale.x > 0 ? 1 : -1 };
-			m_physics[targetId].speed.x += direction * knockback.x;
-			m_physics[targetId].speed.y = knockback.y;
+			GameComponent::Physics &phys{ m_physics[targetId] };
+			phys.speed.x += direction * knockback.x;
+			phys.speed.y = knockback.y;
 
 			m_sprites[targetId].isResetAnimation = true;
 			m_characters[targetId].hitStunTimer = hitStun;
+
+			// Create hit spark effect.
+			m_manager.createEffect(EffectType::HIT_SPARK, phys.pos, glm::vec2(1.f),
+				255, 255, 255, 255);
 		}
 	}
 }

@@ -8,10 +8,10 @@ namespace
 	const float FRICTION{ -640.f };
 }
 
-PhysicsSystem::PhysicsSystem(GameEngine &game, 
+PhysicsSystem::PhysicsSystem(EntityManager &manager,
 	std::vector<GameComponent::Physics> &physics,
 	std::vector<GameComponent::Collision> &collisions) :
-	GameSystem(game, { GameComponent::COMPONENT_PHYSICS, 
+	GameSystem(manager, { GameComponent::COMPONENT_PHYSICS, 
 		GameComponent::COMPONENT_COLLISION }), 
 	m_physics(physics), m_collisions(collisions)
 {
