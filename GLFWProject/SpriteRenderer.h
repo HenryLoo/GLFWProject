@@ -39,10 +39,9 @@ struct SpriteData
 	int numSprites{ 0 };
 
 	// Data to send to the GPU.
-	std::vector<GLfloat> positions;
 	std::vector<GLubyte> colours;
 	std::vector<GLfloat> texCoords;
-	std::vector<GLfloat> transforms;
+	std::vector<glm::mat4> modelViews;
 };
 
 class Camera;
@@ -69,21 +68,23 @@ public:
 	// populate the data buffers with their values for the GPU.
 	//void updateData();
 
+	// Update the view matrix.
+	void update(const glm::mat4 &viewMatrix);
+
 	// Render the current room and all queued sprites.
-	void render(Camera *camera, glm::ivec2 windowSize, Room *room);
+	void render(glm::ivec2 windowSize, Room *room);
 
 private:
 	// Add vertex values to SpriteData.
-	static void addSpriteData(SpriteData &data, const GameComponent::Physics &physics,
-		const GameComponent::Sprite &sprite);
+	void addSpriteData(SpriteData &data, const GameComponent::Physics &physics,
+		const GameComponent::Sprite &sprite) const;
 
 	// Shaders to render with.
 	std::unique_ptr<Shader> m_spriteShader;
 	std::unique_ptr<Shader> m_roomShader;
 
 	// The vertex array object and vertex buffer object for sprite instances.
-	GLuint m_VAO, m_verticesVBO, m_positionVBO, m_colourVBO, 
-		m_texCoordsVBO, m_transformVBO;
+	GLuint m_VAO, m_verticesVBO, m_colourVBO, m_texCoordsVBO, m_modelViewsVBO;
 
 	// The vertex array object and vertex buffer object for the room.
 	GLuint m_roomVAO, m_roomVertsVBO;
@@ -98,6 +99,9 @@ private:
 
 	// Holds texture names, in order of insertion into m_spriteData.
 	std::vector<std::string> m_spriteOrder;
+
+	// Hold the camera's view matrix.
+	glm::mat4 m_viewMatrix;
 };
 
 #endif

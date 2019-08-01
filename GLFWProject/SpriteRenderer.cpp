@@ -57,18 +57,6 @@ SpriteRenderer::SpriteRenderer()
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void *)0);
 	glVertexAttribDivisor(0, 0);
 
-	// Create the VBO for instance positions.
-	// Each vertex holds 3 values: x, y, z.
-	// Initialize with an empty buffer and update its values in the game loop.
-	glGenBuffers(1, &m_positionVBO);
-	glBindBuffer(GL_ARRAY_BUFFER, m_positionVBO);
-	glBufferData(GL_ARRAY_BUFFER, EntityConstants::MAX_ENTITIES * 3 * sizeof(GLfloat), NULL, GL_STREAM_DRAW);
-
-	// Set attribute for instance positions.
-	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, (void *)0);
-	glVertexAttribDivisor(1, 1);
-
 	// Create the VBO for instance colours.
 	// Each vertex holds 4 values: r, g, b, a.
 	// Initialize with an empty buffer and update its values in the game loop.
@@ -77,9 +65,9 @@ SpriteRenderer::SpriteRenderer()
 	glBufferData(GL_ARRAY_BUFFER, EntityConstants::MAX_ENTITIES * 4 * sizeof(GLubyte), NULL, GL_STREAM_DRAW);
 
 	// Set attribute for instance colours.
-	glEnableVertexAttribArray(2);
-	glVertexAttribPointer(2, 4, GL_UNSIGNED_BYTE, GL_TRUE, 0, (void *)0);
-	glVertexAttribDivisor(2, 1);
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 4, GL_UNSIGNED_BYTE, GL_TRUE, 0, (void *)0);
+	glVertexAttribDivisor(1, 1);
 
 	// Create the VBO for instance texture coordinates.
 	// Each vertex holds 4 values: u, v of the top-left texture point, 
@@ -90,22 +78,33 @@ SpriteRenderer::SpriteRenderer()
 	glBufferData(GL_ARRAY_BUFFER, EntityConstants::MAX_ENTITIES * 4 * sizeof(GLfloat), NULL, GL_STREAM_DRAW);
 
 	// Set attribute for instance texture coordinates.
+	glEnableVertexAttribArray(2);
+	glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, 0, (void *)0);
+	glVertexAttribDivisor(2, 1);
+
+	// Create the VBO for instance model view matrices.
+	// Initialize with an empty buffer and update its values in the game loop.
+	glGenBuffers(1, &m_modelViewsVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, m_modelViewsVBO);
+	glBufferData(GL_ARRAY_BUFFER, EntityConstants::MAX_ENTITIES * sizeof(glm::mat4), NULL, GL_STREAM_DRAW);
+
+	// Set attributes for instance model view matrices.
+	// A mat4 is equivalent to 4 vec4's.
 	glEnableVertexAttribArray(3);
-	glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, 0, (void *)0);
+	glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void *)0);
 	glVertexAttribDivisor(3, 1);
 
-	// Create the VBO for instance transforms.
-	// Each vertex holds 3 values: scaleX, scaleY, rotation.
-	// The scale values are in absolute pixels.
-	// Initialize with an empty buffer and update its values in the game loop.
-	glGenBuffers(1, &m_transformVBO);
-	glBindBuffer(GL_ARRAY_BUFFER, m_transformVBO);
-	glBufferData(GL_ARRAY_BUFFER, EntityConstants::MAX_ENTITIES * 3 * sizeof(GLfloat), NULL, GL_STREAM_DRAW);
-
-	// Set attribute for instance transforms.
 	glEnableVertexAttribArray(4);
-	glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, 0, (void *)0);
+	glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void *)(sizeof(glm::vec4)));
 	glVertexAttribDivisor(4, 1);
+
+	glEnableVertexAttribArray(5);
+	glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void *)(2 * sizeof(glm::vec4)));
+	glVertexAttribDivisor(5, 1);
+
+	glEnableVertexAttribArray(6);
+	glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void *)(3 * sizeof(glm::vec4)));
+	glVertexAttribDivisor(6, 1);
 
 	// Create the vertex array object and bind to it.
 	// All subsequent VBO configurations will be saved for this VAO.
@@ -127,11 +126,10 @@ SpriteRenderer::SpriteRenderer()
 
 SpriteRenderer::~SpriteRenderer()
 {
-	glDeleteBuffers(1, &m_colourVBO);
-	glDeleteBuffers(1, &m_positionVBO);
-	glDeleteBuffers(1, &m_texCoordsVBO);
-	glDeleteBuffers(1, &m_transformVBO);
 	glDeleteBuffers(1, &m_verticesVBO);
+	glDeleteBuffers(1, &m_colourVBO);
+	glDeleteBuffers(1, &m_texCoordsVBO);
+	glDeleteBuffers(1, &m_modelViewsVBO);
 	glDeleteVertexArrays(1, &m_VAO);
 
 	glDeleteBuffers(1, &m_roomVertsVBO);
@@ -152,7 +150,7 @@ void SpriteRenderer::addSprite(const GameComponent::Physics &physics,
 		// Insert new sprite data for this sprite sheet.
 		SpriteData data;
 		data.spriteSheet = sprite.spriteSheet;
-		SpriteRenderer::addSpriteData(data, physics, sprite);
+		addSpriteData(data, physics, sprite);
 		m_spriteData.insert({ spriteName, data });
 	}
 	else
@@ -160,17 +158,13 @@ void SpriteRenderer::addSprite(const GameComponent::Physics &physics,
 		// Sprite sheet was already added, so just push the vertex data for
 		// this instance.
 		SpriteData &data{ it->second };
-		SpriteRenderer::addSpriteData(data, physics, sprite);
+		addSpriteData(data, physics, sprite);
 	}
 }
 
 void SpriteRenderer::addSpriteData(SpriteData &data, const GameComponent::Physics &physics,
-	const GameComponent::Sprite &sprite)
+	const GameComponent::Sprite &sprite) const
 {
-	data.positions.push_back(physics.pos.x + physics.scale.x * sprite.currentAnimation.offset.x);
-	data.positions.push_back(physics.pos.y + physics.scale.y * sprite.currentAnimation.offset.y);
-	data.positions.push_back(physics.pos.z);
-
 	data.colours.push_back(sprite.r);
 	data.colours.push_back(sprite.g);
 	data.colours.push_back(sprite.b);
@@ -187,10 +181,33 @@ void SpriteRenderer::addSpriteData(SpriteData &data, const GameComponent::Physic
 	data.texCoords.push_back(clipSize.x / texSize.x);
 	data.texCoords.push_back(clipSize.y / texSize.y);
 
-	data.transforms.push_back(physics.scale.x * clipSize.x);
-	data.transforms.push_back(physics.scale.y * clipSize.y);
-	data.transforms.push_back(physics.rotation);
+	// Construct model view matrix for this sprite.
+	glm::mat4 modelMatrix = glm::mat4(1.0f);
 
+	// Apply translation.
+	glm::vec3 translation{
+		physics.pos.x + physics.scale.x * sprite.currentAnimation.offset.x,
+		physics.pos.y + physics.scale.y * sprite.currentAnimation.offset.y,
+		physics.pos.z
+	};
+	modelMatrix = glm::translate(modelMatrix, translation);
+
+	// Apply scaling.
+	glm::vec3 scale{
+		physics.scale.x *clipSize.x,
+		physics.scale.y *clipSize.y,
+		1.f
+	};
+	modelMatrix = glm::scale(modelMatrix, scale);
+
+	// Apply rotation.
+	modelMatrix = glm::rotate(modelMatrix, physics.rotation, glm::vec3(0.f, 0.f, 1.f));
+
+	// Left-multiply by view matrix to get model view matrix.
+	glm::mat4 modelViewMatrix{ m_viewMatrix * modelMatrix };
+
+	data.modelViews.push_back(modelViewMatrix);
+	
 	data.numSprites++;
 }
 
@@ -240,7 +257,12 @@ void SpriteRenderer::resetNumSprites()
 //	}
 //}
 
-void SpriteRenderer::render(Camera *camera, glm::ivec2 windowSize, Room *room = nullptr)
+void SpriteRenderer::update(const glm::mat4 &viewMatrix)
+{
+	m_viewMatrix = viewMatrix;
+}
+
+void SpriteRenderer::render(glm::ivec2 windowSize, Room *room = nullptr)
 {
 	// Clear the screen
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -256,8 +278,7 @@ void SpriteRenderer::render(Camera *camera, glm::ivec2 windowSize, Room *room = 
 		-halfScreenSize.x / zoom, halfScreenSize.x / zoom,
 		-halfScreenSize.y / zoom, halfScreenSize.y / zoom,
 		-1000.0f, 1000.0f) };
-	glm::mat4 viewMatrix{ camera->getViewMatrix() };
-	glm::mat4 viewProjectionMatrix{ projectionMatrix * viewMatrix };
+	glm::mat4 viewProjectionMatrix{ projectionMatrix * m_viewMatrix };
 
 	// Render the background room tiles first.
 	// This should only render the tiles that are visible in the camera.
@@ -281,8 +302,8 @@ void SpriteRenderer::render(Camera *camera, glm::ivec2 windowSize, Room *room = 
 		m_roomShader->setVec2("mapSizeInTiles", room->getSize());
 
 		// Set the camera uniforms.
-		m_roomShader->setVec3("cameraWorldRight", viewMatrix[0][0], viewMatrix[1][0], viewMatrix[2][0]);
-		m_roomShader->setVec3("cameraWorldUp", viewMatrix[0][1], viewMatrix[1][1], viewMatrix[2][1]);
+		m_roomShader->setVec3("cameraWorldRight", m_viewMatrix[0][0], m_viewMatrix[1][0], m_viewMatrix[2][0]);
+		m_roomShader->setVec3("cameraWorldUp", m_viewMatrix[0][1], m_viewMatrix[1][1], m_viewMatrix[2][1]);
 		m_roomShader->setMat4("viewProjection", viewProjectionMatrix);
 
 		// Draw the room.
@@ -293,17 +314,14 @@ void SpriteRenderer::render(Camera *camera, glm::ivec2 windowSize, Room *room = 
 	glBindVertexArray(m_VAO);
 
 	// Update the instance buffers.
-	glBindBuffer(GL_ARRAY_BUFFER, m_positionVBO);
-	glBufferData(GL_ARRAY_BUFFER, EntityConstants::MAX_ENTITIES * 3 * sizeof(GLfloat), NULL, GL_STREAM_DRAW);
-
 	glBindBuffer(GL_ARRAY_BUFFER, m_colourVBO);
 	glBufferData(GL_ARRAY_BUFFER, EntityConstants::MAX_ENTITIES * 4 * sizeof(GLubyte), NULL, GL_STREAM_DRAW);
 
 	glBindBuffer(GL_ARRAY_BUFFER, m_texCoordsVBO);
 	glBufferData(GL_ARRAY_BUFFER, EntityConstants::MAX_ENTITIES * 4 * sizeof(GLfloat), NULL, GL_STREAM_DRAW);
 
-	glBindBuffer(GL_ARRAY_BUFFER, m_transformVBO);
-	glBufferData(GL_ARRAY_BUFFER, EntityConstants::MAX_ENTITIES * 3 * sizeof(GLfloat), NULL, GL_STREAM_DRAW);
+	glBindBuffer(GL_ARRAY_BUFFER, m_modelViewsVBO);
+	glBufferData(GL_ARRAY_BUFFER, EntityConstants::MAX_ENTITIES * sizeof(glm::mat4), NULL, GL_STREAM_DRAW);
 
 	// Use the shader.
 	m_spriteShader->use();
@@ -313,9 +331,7 @@ void SpriteRenderer::render(Camera *camera, glm::ivec2 windowSize, Room *room = 
 	m_spriteShader->setInt("textureSampler", 1);
 
 	// Set the camera uniforms.
-	m_spriteShader->setVec3("cameraWorldRight", viewMatrix[0][0], viewMatrix[1][0], viewMatrix[2][0]);
-	m_spriteShader->setVec3("cameraWorldUp", viewMatrix[0][1], viewMatrix[1][1], viewMatrix[2][1]);
-	m_spriteShader->setMat4("viewProjection", viewProjectionMatrix);
+	m_spriteShader->setMat4("projection", projectionMatrix);
 
 	// Iterate through each spritesheet type in order of their insertion.
 	// Bind to the spritesheet texture, and then call draw.
@@ -326,17 +342,14 @@ void SpriteRenderer::render(Camera *camera, glm::ivec2 windowSize, Room *room = 
 		{
 			SpriteData &data{ it->second };
 
-			glBindBuffer(GL_ARRAY_BUFFER, m_positionVBO);
-			glBufferSubData(GL_ARRAY_BUFFER, 0, data.numSprites * sizeof(GLfloat) * 3, &data.positions[0]);
-
 			glBindBuffer(GL_ARRAY_BUFFER, m_colourVBO);
 			glBufferSubData(GL_ARRAY_BUFFER, 0, data.numSprites * sizeof(GLubyte) * 4, &data.colours[0]);
 
 			glBindBuffer(GL_ARRAY_BUFFER, m_texCoordsVBO);
 			glBufferSubData(GL_ARRAY_BUFFER, 0, data.numSprites * sizeof(GLfloat) * 4, &data.texCoords[0]);
 
-			glBindBuffer(GL_ARRAY_BUFFER, m_transformVBO);
-			glBufferSubData(GL_ARRAY_BUFFER, 0, data.numSprites * sizeof(GLfloat) * 3, &data.transforms[0]);
+			glBindBuffer(GL_ARRAY_BUFFER, m_modelViewsVBO);
+			glBufferSubData(GL_ARRAY_BUFFER, 0, data.numSprites * sizeof(glm::mat4), &data.modelViews[0]);
 
 			// Draw the instances.
 			data.spriteSheet->bind();

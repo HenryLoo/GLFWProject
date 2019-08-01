@@ -158,6 +158,8 @@ void GameEngine::update()
 		m_currentRoom->getSize());
 
 	m_sRenderer->resetNumSprites();
+	m_sRenderer->update(m_camera->getViewMatrix());
+
 	m_uRenderer->resetNumBoxes();
 
 	// Update all entities.
@@ -167,7 +169,7 @@ void GameEngine::update()
 void GameEngine::render()
 {
 	// Call the renderer.
-	m_sRenderer->render(m_camera.get(), m_windowSize, m_currentRoom.get());
+	m_sRenderer->render(m_windowSize, m_currentRoom.get());
 
 	// Draw hit boxes if debug modes is on.
 	if (m_isDebugMode)

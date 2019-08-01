@@ -9,6 +9,9 @@ namespace
 	// A minimal amount of hit stun for when hurt while in the air.
 	// This is just for the state machine to detect HURT_AIR's edge condition.
 	const float MIN_HIT_STUN{ 0.1f };
+
+	// Max angle in degrees for rotations.
+	const float MAX_ROTATION{ 360.f };
 }
 
 AttackCollisionSystem::AttackCollisionSystem(EntityManager &manager,
@@ -77,8 +80,9 @@ void AttackCollisionSystem::update(float deltaTime, int numEntities,
 			m_characters[targetId].hitStunTimer = hitStun;
 
 			// Create hit spark effect.
+			float rotation{ static_cast<float>(rand()) / (static_cast<float>(RAND_MAX / MAX_ROTATION)) };
 			m_manager.createEffect(EffectType::HIT_SPARK, phys.pos, glm::vec2(1.f),
-				255, 255, 255, 255);
+				255, 255, 255, 255, rotation);
 		}
 	}
 }
