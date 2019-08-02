@@ -15,8 +15,7 @@ public:
 	SpriteSystem(EntityManager &manager,
 		std::vector<GameComponent::Physics> &physics,
 		std::vector<GameComponent::Sprite> &sprites,
-		std::vector<GameComponent::Weapon> &weapons,
-		std::vector<GameComponent::Character> &characters);
+		std::vector<GameComponent::Weapon> &weapons);
 
 private:
 	virtual void process(float deltaTime, int entityId,
@@ -26,7 +25,6 @@ private:
 	std::vector<GameComponent::Physics> &m_physics;
 	std::vector<GameComponent::Sprite> &m_sprites;
 	std::vector<GameComponent::Weapon> &m_weapons;
-	std::vector<GameComponent::Character> &m_characters;
 };
 
 #endif

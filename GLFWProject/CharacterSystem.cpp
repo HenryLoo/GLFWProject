@@ -28,10 +28,21 @@ CharacterSystem::CharacterSystem(EntityManager &manager,
 void CharacterSystem::process(float deltaTime, int entityId,
 	unsigned long &entityMask)
 {
+	// Update the hit stop timer.
+	GameComponent::Character &character{ m_characters[entityId] };
+	if (character.hitStopTimer > 0.f)
+	{
+		character.hitStopTimer -= deltaTime;
+		character.hitStopTimer = glm::max(0.f, character.hitStopTimer);
+	}
+
+	// If hit stopped, then skip this.
+	if (character.hasHitStop(entityMask))
+		return;
+
 	GameComponent::Sprite &sprite{ m_sprites[entityId] };
 	GameComponent::Collision &collision{ m_collisions[entityId] };
 	GameComponent::Attack &attack{ m_attacks[entityId] };
-	GameComponent::Character &character{ m_characters[entityId] };
 
 	// Update the character's state machine.
 	character.states.update();
@@ -88,13 +99,6 @@ void CharacterSystem::process(float deltaTime, int entityId,
 	{
 		character.fallenTimer -= deltaTime;
 		character.fallenTimer = glm::max(0.f, character.fallenTimer);
-	}
-
-	// Update the hit stop timer.
-	if (character.hitStopTimer > 0.f)
-	{
-		character.hitStopTimer -= deltaTime;
-		character.hitStopTimer = glm::max(0.f, character.hitStopTimer);
 	}
 
 	// Update the previous state, so that it will be ready for the next 
