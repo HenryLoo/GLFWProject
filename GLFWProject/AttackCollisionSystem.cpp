@@ -81,7 +81,7 @@ void AttackCollisionSystem::update(float deltaTime, int numEntities,
 
 			// Create hit spark effect.
 			float rotation{ static_cast<float>(rand()) / (static_cast<float>(RAND_MAX / MAX_ROTATION)) };
-			m_manager.createEffect(EffectType::HIT_SPARK, phys.pos, glm::vec2(1.f),
+			m_manager.createEffect(EffectType::HIT_SPARK, phys.pos, glm::vec2(1.5f),
 				255, 255, 255, 255, rotation);
 		}
 	}

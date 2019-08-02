@@ -59,9 +59,9 @@ EntityManager::EntityManager(GameEngine &game) :
 	// TODO: Initialize effects. Remove this later for more flexible approach.
 	std::unordered_map<std::string, SpriteAnimation> effectAnims{
 		{EffectType::EVADE_SMOKE, { 0, 9, false, glm::vec2(0.f), {0.05f}}},
-		{EffectType::HIT_SPARK, { 9, 5, false, glm::vec2(0.f), {0.05f}}},
+		{EffectType::HIT_SPARK, { 9, 4, false, glm::vec2(0.f), {0.05f}}},
 	};
-	m_effectsTexture = std::make_unique<SpriteSheet>("effects.png", effectAnims, glm::ivec2(32, 32));
+	m_effectsTexture = std::make_unique<SpriteSheet>("effects.png", effectAnims, glm::ivec2(64, 64));
 }
 
 void EntityManager::update(float deltaTime, bool isDebugMode)
