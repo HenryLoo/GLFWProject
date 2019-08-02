@@ -5,15 +5,16 @@
 namespace
 {
 	const float GRAVITY{ -480.f };
-	const float FRICTION{ -640.f };
+	const float FRICTION{ -720.f };
 }
 
 PhysicsSystem::PhysicsSystem(EntityManager &manager,
 	std::vector<GameComponent::Physics> &physics,
-	std::vector<GameComponent::Collision> &collisions) :
+	std::vector<GameComponent::Collision> &collisions,
+	std::vector<GameComponent::Character> &characters) :
 	GameSystem(manager, { GameComponent::COMPONENT_PHYSICS, 
 		GameComponent::COMPONENT_COLLISION }), 
-	m_physics(physics), m_collisions(collisions)
+	m_physics(physics), m_collisions(collisions), m_characters(characters)
 {
 
 }
@@ -21,9 +22,14 @@ PhysicsSystem::PhysicsSystem(EntityManager &manager,
 void PhysicsSystem::process(float deltaTime, int entityId,
 	unsigned long &entityMask)
 {
+	// Skip this if the entity is hit stopped.
+	GameComponent::Character &character{ m_characters[entityId] };
+	if (character.hasHitStop(entityMask))
+		return;
+
 	GameComponent::Physics &phys{ m_physics[entityId] };
 	GameComponent::Collision &col{ m_collisions[entityId] };
-	
+
 	// Update this component's values.
 	if (phys.hasGravity)
 	{
@@ -33,7 +39,7 @@ void PhysicsSystem::process(float deltaTime, int entityId,
 	
 	// Only decelerate horizontally if on the ground or if a horizontal
 	// collision occurs.
-	if ((phys.hasFriction && col.isColliding() && phys.speed.y < 0.f &&
+	if ((phys.hasFriction && col.isOnGround(phys) &&
 		phys.speed.x != 0.f) || col.isCollidingHorizontal)
 	{
 		float decel{ phys.speed.x > 0 ? FRICTION : -FRICTION };

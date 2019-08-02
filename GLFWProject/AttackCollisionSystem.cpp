@@ -12,6 +12,13 @@ namespace
 
 	// Max angle in degrees for rotations.
 	const float MAX_ROTATION{ 360.f };
+
+	// The minimum amount of vertical knockback against airborne targets.
+	const float MIN_KNOCKBACK_Y{ 32.f };
+
+	// The constant to multiply knockback by, to get its hit stop 
+	// duration in seconds.
+	const float HIT_STOP_MULTIPLIER{ 0.001f };
 }
 
 AttackCollisionSystem::AttackCollisionSystem(EntityManager &manager,
@@ -34,6 +41,7 @@ void AttackCollisionSystem::update(float deltaTime, int numEntities,
 	const std::vector<std::pair<AABBSource, AABBSource>> &collisions{ m_manager.getCollisions() };
 	for (const auto &col : collisions)
 	{
+		// Determine which entity of the collision pair is the attacker.
 		AABBSource::Type firstType{ col.first.type };
 		AABBSource::Type secondType{ col.second.type };
 		bool isFirstAttack{ firstType == AABBSource::Type::Attack };
@@ -50,7 +58,8 @@ void AttackCollisionSystem::update(float deltaTime, int numEntities,
 			int attackId{ isFirstAttack ? firstId : secondId };
 
 			// If the target has already been hit, then skip this collision response.
-			std::set<int> &hitEntities{ m_attacks[attackId].hitEntities };
+			GameComponent::Attack &attack{ m_attacks[attackId] };
+			std::set<int> &hitEntities{ attack.hitEntities };
 			if (hitEntities.find(targetId) != hitEntities.end())
 			{
 				continue;
@@ -59,29 +68,44 @@ void AttackCollisionSystem::update(float deltaTime, int numEntities,
 			// Add to the list of hit entities.
 			hitEntities.insert(targetId);
 
+			// If the target is airborne, apply a minimum vertical knockback.
+			GameComponent::Collision &col{ m_collisions[targetId] };
+			GameComponent::Physics &phys{ m_physics[targetId] };
+			glm::vec2 knockback{ attack.pattern.knockback };
+			if (col.isInAir(phys))
+			{
+				knockback.y = glm::max(knockback.y, MIN_KNOCKBACK_Y);
+			}
+
+			// Apply hit stop to the attacker and target if the attack launches.
+			// The duration of hit stop depends on the strength of the knockback.
+			GameComponent::Character &character{ m_characters[targetId] };
+			float hitStopDuration{ knockback.y * HIT_STOP_MULTIPLIER };
+			if (knockback.y > 0.f)
+			{
+				character.hitStopTimer = hitStopDuration;
+				m_characters[attackId].hitStopTimer = hitStopDuration;
+			}
+
 			// Set the hit stun timer.
-			glm::vec2 knockback{ m_attacks[attackId].pattern.knockback };
 			float hitStun{ 1.f }; // TODO: change fixed value
-			GameComponent::Collision &collision{ m_collisions[targetId] };
-			if ((!collision.isColliding() || (collision.isColliding() && m_physics[targetId].speed.y == 0.f)) ||
-				knockback.y != 0)
+			if (col.isInAir(phys) || knockback.y != 0)
 			{
 				// Reset hit stun if knocked into the air.
-				hitStun = MIN_HIT_STUN;
+				hitStun = hitStopDuration + MIN_HIT_STUN;
 			}
+
+			m_sprites[targetId].isResetAnimation = true;
+			character.hitStunTimer = hitStun;
 
 			// Apply knockback to target.
 			int direction{ m_physics[attackId].scale.x > 0 ? 1 : -1 };
-			GameComponent::Physics &phys{ m_physics[targetId] };
-			phys.speed.x += direction * knockback.x;
+			phys.speed.x = direction * knockback.x;
 			phys.speed.y = knockback.y;
-
-			m_sprites[targetId].isResetAnimation = true;
-			m_characters[targetId].hitStunTimer = hitStun;
 
 			// Create hit spark effect.
 			float rotation{ static_cast<float>(rand()) / (static_cast<float>(RAND_MAX / MAX_ROTATION)) };
-			m_manager.createEffect(EffectType::HIT_SPARK, phys.pos, glm::vec2(1.5f),
+			m_manager.createEffect(EffectType::HIT_SPARK, phys.pos, glm::vec2(1.2f),
 				255, 255, 255, 255, rotation);
 		}
 	}

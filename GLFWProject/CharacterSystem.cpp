@@ -90,6 +90,13 @@ void CharacterSystem::process(float deltaTime, int entityId,
 		character.fallenTimer = glm::max(0.f, character.fallenTimer);
 	}
 
+	// Update the hit stop timer.
+	if (character.hitStopTimer > 0.f)
+	{
+		character.hitStopTimer -= deltaTime;
+		character.hitStopTimer = glm::max(0.f, character.hitStopTimer);
+	}
+
 	// Update the previous state, so that it will be ready for the next 
 	// iteration.
 	character.previousState = currentState;

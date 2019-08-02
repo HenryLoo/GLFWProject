@@ -42,11 +42,11 @@ EntityManager::EntityManager(GameEngine &game) :
 		m_compPhysics, m_compSprites, m_compCollisions, m_compAttacks,
 		m_compCharacters));
 	m_gameSystems.emplace_back(std::make_unique<PhysicsSystem>(*this,
-		m_compPhysics, m_compCollisions));
+		m_compPhysics, m_compCollisions, m_compCharacters));
 	m_gameSystems.emplace_back(std::make_unique<SpriteSystem>(*this,
-		m_compPhysics, m_compSprites, m_compWeapons));
+		m_compPhysics, m_compSprites, m_compWeapons, m_compCharacters));
 	m_gameSystems.emplace_back(std::make_unique<RoomCollisionSystem>(*this,
-		m_compPhysics, m_compCollisions));
+		m_compPhysics, m_compCollisions, m_compCharacters));
 	m_gameSystems.emplace_back(std::make_unique<PlayerSystem>(*this,
 		m_compPlayer, m_compPhysics, m_compCollisions));
 	m_gameSystems.emplace_back(std::make_unique<CharacterSystem>(*this,
@@ -234,8 +234,8 @@ void EntityManager::createPlayer()
 		{CharState::CROUCH, { 55, 4, false, glm::vec2(0.f), {0.07f} }},
 		{CharState::CROUCH_STOP, { 59, 2, false, glm::vec2(0.f), {0.07f} }},
 		{CharState::ATTACK, { 61, 10, false, glm::vec2(0.f), {0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.1f} }},
-		{CharState::ATTACK_AIR, { 71, 9, false, glm::vec2(0.f), {0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.08f} }},
-		{CharState::ATTACK_CROUCH, { 80, 9, false, glm::vec2(0.f), {0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.08f} }},
+		{CharState::ATTACK_AIR, { 71, 9, false, glm::vec2(0.f), {0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.07f} }},
+		{CharState::ATTACK_CROUCH, { 80, 9, false, glm::vec2(0.f), {0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.07f} }},
 		{CharState::EVADE_START, { 89, 2, false, glm::vec2(0.f), {0.05f} }},
 		{CharState::EVADE, { 91, 4, true, glm::vec2(0.f), {0.05f} }},
 		{CharState::ATTACK2, { 95, 10, false, glm::vec2(0.f), {0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.1f} }},
@@ -296,7 +296,7 @@ void EntityManager::createPlayer()
 		{CharState::ATTACK_CROUCH, {glm::vec2(22, 17), glm::vec2(7, -3), glm::ivec2(2, 6), -1, 0, glm::vec2(96.f, 0.f)}},
 		{CharState::ATTACK2, {glm::vec2(18, 21), glm::vec2(14, 6), glm::ivec2(2, 7), 3, 0, glm::vec2(96.f, 0.f)}},
 		{CharState::ATTACK3, {glm::vec2(19, 21), glm::vec2(15, 6), glm::ivec2(2, 8), -1, 0, glm::vec2(128.f, 0.f)}},
-		{CharState::SKILL1, {glm::vec2(14, 23), glm::vec2(10, 9), glm::ivec2(2, 6), -1, 0, glm::vec2(96.f, 256.f)}},
+		{CharState::SKILL1, {glm::vec2(14, 23), glm::vec2(10, 9), glm::ivec2(2, 6), -1, 0, glm::vec2(96.f, 288.f)}},
 	};
 
 	// Set up state machine.
@@ -337,9 +337,8 @@ void EntityManager::createPlayer()
 
 	auto evadeUpdateAction{ [&phys, &col]()
 	{
-		bool isColliding{ col.isColliding() };
 		// If in the air, reset vertical speed and disable gravity.
-		if (!isColliding || (isColliding && phys.speed.y == 0.f))
+		if (col.isInAir(phys))
 		{
 			phys.speed.y = 0.f;
 			phys.hasGravity = false;
@@ -460,8 +459,8 @@ void EntityManager::createPlayer()
 		if (spr.currentFrame == atk.pattern.frameRange.x && !phys.hasGravity)
 		{
 			float dir{ phys.scale.x > 0 ? 1.f : -1.f };
-			phys.speed.x = dir * 32.f;
-			phys.speed.y = 256.f;
+			phys.speed.x = dir * 16.f;
+			phys.speed.y = atk.pattern.knockback.y - 16.f;
 			phys.isLockedDirection = true;
 			phys.hasGravity = true;
 		}
@@ -514,7 +513,7 @@ void EntityManager::createPlayer()
 	// Falling.
 	auto isFalling{ [&phys, &col, &character]() -> bool
 	{
-		return (phys.speed.y < 0 && !col.isColliding() &&
+		return (phys.speed.y < 0 && col.isInAir(phys) &&
 			character.states.getState() != CharState::JUMP_DESCEND);
 	} };
 	states.addEdge(CharState::IDLE, CharState::JUMP_PEAK, isFalling);
@@ -533,7 +532,7 @@ void EntityManager::createPlayer()
 	// Landing.
 	auto isLanding{ [&phys, &col]() -> bool
 	{
-		return col.isColliding() && phys.speed.y < 0;
+		return col.isOnGround(phys);
 	} };
 	states.addEdge(CharState::JUMP_PEAK, CharState::JUMP_LAND, isLanding);
 	states.addEdge(CharState::JUMP_DESCEND, CharState::JUMP_LAND, isLanding);
@@ -604,8 +603,7 @@ void EntityManager::createPlayer()
 	{
 		InputManager *input{ m_game.getInputManager()};
 		bool isAttacking{ input->isKeyPressed(INPUT_ATTACK) };
-		bool isColliding{ col.isColliding() };
-		return (isAttacking && (!isColliding || (isColliding && phys.speed.y == 0.f)));
+		return (isAttacking && col.isInAir(phys));
 	} };
 	states.addEdge(CharState::EVADE, CharState::ATTACK_AIR, isAirAttacking);
 	states.addEdge(CharState::EVADE_START, CharState::ATTACK_AIR, isAirAttacking);
@@ -806,8 +804,8 @@ void EntityManager::createEnemy()
 	spr.spriteSheet->setAnimation(CharState::IDLE, spr);
 
 	GameComponent::Collision &col = m_compCollisions[enemyId];
-	col.aabb.halfSize = glm::vec2(8, 10);
-	col.aabb.offset = glm::vec2(0, -6);
+	col.aabb.halfSize = glm::vec2(14, 9);
+	col.aabb.offset = glm::vec2(0, -7);
 
 	// Set up state machine.
 	GameComponent::Character &character{ m_compCharacters[enemyId] };
@@ -818,7 +816,18 @@ void EntityManager::createEnemy()
 		character.fallenTimer = 3.f;
 	} };
 
+	auto runUpdateAction{ [&spr, &col, &phys]()
+	{
+		// If in the air, fix the frame to the last running frame.
+		if (col.isInAir(phys))
+		{
+			spr.currentFrame = spr.currentAnimation.numSprites - 1;
+			spr.currentFrameTime = 0.f;
+		}
+	} };
+
 	states.addState(CharState::IDLE);
+	states.addState(CharState::RUN, runUpdateAction);
 	states.addState(CharState::HURT);
 	states.addState(CharState::HURT_AIR);
 	states.addState(CharState::FALLEN, []() {}, fallenEnterAction);
@@ -826,9 +835,10 @@ void EntityManager::createEnemy()
 	// Hurt while on ground.
 	auto isHurting{ [&character, &col, &phys]() -> bool
 	{
-		return (character.hitStunTimer > 0.f && col.isColliding() && phys.speed.y < 0);
+		return (character.hitStunTimer > 0.f && col.isOnGround(phys));
 	} };
 	states.addEdge(CharState::IDLE, CharState::HURT, isHurting);
+	states.addEdge(CharState::RUN, CharState::HURT, isHurting);
 
 	// Stop hurting.
 	auto isStopHurting{ [&character, &col]() -> bool
@@ -840,17 +850,17 @@ void EntityManager::createEnemy()
 	// Hurt while in the air.
 	auto isHurtingAir{ [&character, &col, &phys]() -> bool
 	{
-		bool isColliding{ col.isColliding() };
-		return (character.hitStunTimer > 0.f &&
-			(!isColliding || (isColliding && phys.speed.y == 0.f)));
+		return (character.hitStunTimer > 0.f && col.isInAir(phys));
 	} };
 	states.addEdge(CharState::IDLE, CharState::HURT_AIR, isHurtingAir);
+	states.addEdge(CharState::RUN, CharState::HURT_AIR, isHurtingAir);
 	states.addEdge(CharState::HURT, CharState::HURT_AIR, isHurtingAir);
+	states.addEdge(CharState::FALLEN, CharState::HURT_AIR, isHurtingAir);
 
 	// Fallen.
-	auto isFallen{ [&character, &col, &phys]() -> bool
+	auto isFallen{ [&col, &phys]() -> bool
 	{
-		return (col.isColliding() && phys.speed.y < 0.f);
+		return col.isOnGround(phys);
 	} };
 	states.addEdge(CharState::HURT_AIR, CharState::FALLEN, isFallen);
 
@@ -860,6 +870,21 @@ void EntityManager::createEnemy()
 		return character.fallenTimer == 0.f;
 	} };
 	states.addEdge(CharState::FALLEN, CharState::IDLE, isStopFallen);
+
+	// Moving.
+	auto isMoving{ [&character, &col, &phys]() -> bool
+	{
+		return (character.hitStunTimer == 0.f &&
+			(phys.speed.x != 0.f || col.isInAir(phys)));
+	} };
+	states.addEdge(CharState::IDLE, CharState::RUN, isMoving);
+
+	// Stop moving.
+	auto isStopMoving{ [&col, &phys]() -> bool
+	{
+		return (col.isOnGround(phys) && phys.speed.x == 0.f);
+	} };
+	states.addEdge(CharState::RUN, CharState::IDLE, isStopMoving);
 }
 
 //void GameEngine::createNewEntities()

@@ -34,11 +34,11 @@ void PlayerSystem::update(float deltaTime, int numEntities,
 void PlayerSystem::process(float deltaTime, int entityId,
 	unsigned long &entityMask)
 {
-	GameComponent::Physics &physics{ m_physics[entityId] };
+	GameComponent::Physics &phys{ m_physics[entityId] };
 	GameComponent::Collision &col{ m_collisions[entityId] };
 
 	// While on the ground.
-	if (col.isColliding() && physics.speed.y < 0.f)
+	if (col.isOnGround(phys))
 	{
 		// If the player landed on the ground, reset the remaining jumps and evades.
 		m_player.numRemainingJumps = m_player.numMaxJumps;
@@ -63,9 +63,9 @@ void PlayerSystem::process(float deltaTime, int entityId,
 		}
 
 		// Reset fall speed if walking off a ledge.
-		if (col.wasOnGround && physics.speed.y < 0)
+		if (col.wasOnGround && phys.speed.y < 0)
 		{
-			physics.speed.y = 0.f;
+			phys.speed.y = 0.f;
 		}
 	}
 

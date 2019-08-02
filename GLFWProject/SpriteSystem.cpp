@@ -12,10 +12,12 @@ namespace
 SpriteSystem::SpriteSystem(EntityManager &manager,
 	std::vector<GameComponent::Physics> &physics,
 	std::vector<GameComponent::Sprite> &sprites,
-	std::vector<GameComponent::Weapon> &weapons) :
+	std::vector<GameComponent::Weapon> &weapons,
+	std::vector<GameComponent::Character> &characters) :
 	GameSystem(manager, { GameComponent::COMPONENT_PHYSICS,
 		GameComponent::COMPONENT_SPRITE }),
-	m_physics(physics), m_sprites(sprites), m_weapons(weapons)
+	m_physics(physics), m_sprites(sprites), m_weapons(weapons),
+	m_characters(characters)
 {
 
 }
@@ -36,11 +38,18 @@ void SpriteSystem::process(float deltaTime, int entityId,
 		// Update this sprite's animation.
 		sprite.currentFrameTime += deltaTime;
 		float frameDuration{ GameComponent::getFrameDuration(sprite) };
+
+		// Stall the end of the animation if the entity is hit stopped.
+		GameComponent::Character &character{ m_characters[entityId] };
+		bool isLastFrame{ sprite.currentFrame == sprite.currentAnimation.numSprites - 1 };
+		if (character.hasHitStop(entityMask) && isLastFrame)
+		{
+			sprite.currentFrameTime = glm::min(sprite.currentFrameTime, frameDuration - 1);
+		}
 	
 		// Process the next frame if the current frame is over and the 
 		// animation is not a non-looping one at its last frame.
 		bool isFrameEnded{ sprite.currentFrameTime >= frameDuration };
-		bool isLastFrame{ sprite.currentFrame == sprite.currentAnimation.numSprites - 1 };
 		if (isFrameEnded &&
 			!(!sprite.currentAnimation.isLooping && isLastFrame))
 		{

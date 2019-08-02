@@ -29,6 +29,16 @@ namespace GameComponent
 		COMPONENT_CHARACTER = 128,
 	};
 
+	// Check if an entity has a component.
+	bool hasComponent(unsigned long entityCompMask, ComponentType comp);
+
+	// Add a component to an entity.
+	void addComponent(unsigned long &entityCompMask, ComponentType comp);
+
+	// Get the duration of the current sprite frame.
+	struct Sprite;
+	float getFrameDuration(const Sprite &sprite);
+
 	struct Physics
 	{
 		// This entity's position.
@@ -130,6 +140,18 @@ namespace GameComponent
 		{
 			return (isCollidingFloor || isCollidingGhost || isCollidingSlope);
 		}
+
+		bool isInAir(const Physics &phys) const
+		{
+			bool isCollide{ isColliding() };
+			return (!isCollide || (isCollide && phys.speed.y == 0.f));
+		}
+		
+		bool isOnGround(const Physics &phys) const
+		{
+			bool isCollide{ isColliding() };
+			return (isCollide && phys.speed.y < 0.f);
+		}
 	};
 
 	struct Weapon
@@ -194,6 +216,13 @@ namespace GameComponent
 		// in a fallen state.
 		float fallenTimer{ 0.f };
 
+		// The remaining duration of time in seconds for the character to remain
+		// hit stopped. Hit stop refers to the period of time immediately after 
+		// taking or inflicting a large attack, where both the attacker and the
+		// target are briefly frozen in place to emphasize the strength of the
+		// attack.
+		float hitStopTimer{ 0.f };
+
 		// The character's horizontal speed in pixels per second.
 		float movementSpeed{ 128.f };
 
@@ -202,16 +231,18 @@ namespace GameComponent
 
 		// Character stats.
 		int health, resource, power, agility, endurance, focus;
+
+		bool hasHitStop(unsigned long &entityMask)
+		{
+			bool hasHitStop{ false };
+			if (GameComponent::hasComponent(entityMask, GameComponent::COMPONENT_CHARACTER))
+			{
+				hasHitStop = hitStopTimer > 0.f;
+			}
+
+			return hasHitStop;
+		}
 	};
-
-	// Check if an entity has a component.
-	bool hasComponent(unsigned long entityCompMask, ComponentType comp);
-
-	// Add a component to an entity.
-	void addComponent(unsigned long &entityCompMask, ComponentType comp);
-
-	// Get the duration of the current sprite frame.
-	float getFrameDuration(const Sprite &sprite);
 }
 
 #endif
