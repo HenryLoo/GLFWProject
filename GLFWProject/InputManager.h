@@ -6,24 +6,24 @@
 
 #include <vector>
 
-enum InputType
-{
-	INPUT_UP,
-	INPUT_DOWN,
-	INPUT_LEFT,
-	INPUT_RIGHT,
-	INPUT_CANCEL,
-	INPUT_ATTACK,
-	INPUT_JUMP,
-	INPUT_EVADE,
-	INPUT_SKILL1,
-	INPUT_DEBUG,
-	NUM_INPUT_TYPES
-};
-
 class InputManager
 {
 public:
+	enum InputType
+	{
+		INPUT_UP,
+		INPUT_DOWN,
+		INPUT_LEFT,
+		INPUT_RIGHT,
+		INPUT_CANCEL,
+		INPUT_ATTACK,
+		INPUT_JUMP,
+		INPUT_EVADE,
+		INPUT_SKILL1,
+		INPUT_DEBUG,
+		NUM_INPUT_TYPES
+	};
+
 	InputManager();
 	~InputManager();
 

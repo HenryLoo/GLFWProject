@@ -13,11 +13,17 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="Source Files\GameSystems">
-      <UniqueIdentifier>{393fe6ef-6e50-4a30-b2f4-f3fd08d8f953}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Header Files\Game Systems">
       <UniqueIdentifier>{999574b1-59d5-4634-9a09-033f5e4cd342}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Game Systems">
+      <UniqueIdentifier>{393fe6ef-6e50-4a30-b2f4-f3fd08d8f953}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Asset Loader">
+      <UniqueIdentifier>{28935b3c-cae5-4e03-8cb2-5d3d2045fe10}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Asset Loader">
+      <UniqueIdentifier>{af9d70ae-46f3-4110-8f9e-de0daa160a7d}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -73,31 +79,31 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="GameSystem.cpp">
-      <Filter>Source Files\GameSystems</Filter>
+      <Filter>Source Files\Game Systems</Filter>
     </ClCompile>
     <ClCompile Include="PhysicsSystem.cpp">
-      <Filter>Source Files\GameSystems</Filter>
+      <Filter>Source Files\Game Systems</Filter>
     </ClCompile>
     <ClCompile Include="SpriteSystem.cpp">
-      <Filter>Source Files\GameSystems</Filter>
+      <Filter>Source Files\Game Systems</Filter>
     </ClCompile>
     <ClCompile Include="RoomCollisionSystem.cpp">
-      <Filter>Source Files\GameSystems</Filter>
+      <Filter>Source Files\Game Systems</Filter>
     </ClCompile>
     <ClCompile Include="PlayerSystem.cpp">
-      <Filter>Source Files\GameSystems</Filter>
+      <Filter>Source Files\Game Systems</Filter>
     </ClCompile>
     <ClCompile Include="DebugSystem.cpp">
-      <Filter>Source Files\GameSystems</Filter>
+      <Filter>Source Files\Game Systems</Filter>
     </ClCompile>
     <ClCompile Include="AttackSystem.cpp">
-      <Filter>Source Files\GameSystems</Filter>
+      <Filter>Source Files\Game Systems</Filter>
     </ClCompile>
     <ClCompile Include="AttackCollisionSystem.cpp">
-      <Filter>Source Files\GameSystems</Filter>
+      <Filter>Source Files\Game Systems</Filter>
     </ClCompile>
     <ClCompile Include="CharacterSystem.cpp">
-      <Filter>Source Files\GameSystems</Filter>
+      <Filter>Source Files\Game Systems</Filter>
     </ClCompile>
     <ClCompile Include="StateMachine.cpp">
       <Filter>Source Files</Filter>
@@ -107,6 +113,15 @@
     </ClCompile>
     <ClCompile Include="EffectTypes.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="DiskStream.cpp">
+      <Filter>Source Files\Asset Loader</Filter>
+    </ClCompile>
+    <ClCompile Include="AssetLoader.cpp">
+      <Filter>Source Files\Asset Loader</Filter>
+    </ClCompile>
+    <ClCompile Include="TextureLoader.cpp">
+      <Filter>Source Files\Asset Loader</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -208,6 +223,24 @@
     </ClInclude>
     <ClInclude Include="EffectTypes.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="AssetLoader.h">
+      <Filter>Header Files\Asset Loader</Filter>
+    </ClInclude>
+    <ClInclude Include="ITypeLoader.h">
+      <Filter>Header Files\Asset Loader</Filter>
+    </ClInclude>
+    <ClInclude Include="IDataStream.h">
+      <Filter>Header Files\Asset Loader</Filter>
+    </ClInclude>
+    <ClInclude Include="DiskStream.h">
+      <Filter>Header Files\Asset Loader</Filter>
+    </ClInclude>
+    <ClInclude Include="IAssetType.h">
+      <Filter>Header Files\Asset Loader</Filter>
+    </ClInclude>
+    <ClInclude Include="TextureLoader.h">
+      <Filter>Header Files\Asset Loader</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
