@@ -16,10 +16,11 @@ namespace GameComponent
 class SpriteSheet : public Texture
 {
 public:
-	SpriteSheet(const std::string &filePath, 
+	SpriteSheet(GLuint id, GLint width, GLint height, GLint numChannels,
 		const std::unordered_map<std::string, SpriteAnimation> &animations,
-		glm::ivec2 clipSize);
-	SpriteSheet(const std::string &filePath, glm::ivec2 clipSize);
+		glm::ivec2 clipSize, std::string name);
+	SpriteSheet(GLuint id, GLint width, GLint height, GLint numChannels, 
+		glm::ivec2 clipSize, std::string name);
 	~SpriteSheet();
 
 	// Get the clip size for this sprite sheet.
@@ -30,12 +31,12 @@ public:
 	// Return true if animation was found, else return false.
 	bool setAnimation(const std::string &label, GameComponent::Sprite &output) const;
 
-	// Get the sprite sheet's file path.
-	const std::string &getFilePath() const;
+	// Get the sprite sheet's name.
+	const std::string &getName() const;
 
 private:
-	// The sprite sheet's file path.
-	std::string m_filePath;
+	// The sprite sheet's name.
+	std::string m_name;
 
 	// The width and height of a sprite on the sheet.
 	glm::ivec2 m_clipSize;

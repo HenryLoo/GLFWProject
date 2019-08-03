@@ -77,15 +77,15 @@ private:
 	std::vector<std::pair<AABBSource, AABBSource>> m_collisions;
 	std::unique_ptr<CollisionBroadPhase> m_broadPhase;
 
+	// Hold a reference to the GameEngine.
+	GameEngine &m_game;
+	float m_deltaTime;
+
 	// TODO: remove this later for a more flexible implementation.
 	std::unique_ptr<SpriteSheet> m_playerTexture;
 	std::unique_ptr<SpriteSheet> m_swordTexture;
 	std::unique_ptr<SpriteSheet> m_enemyTexture;
 	std::unique_ptr<SpriteSheet> m_effectsTexture;
-
-	// Hold a reference to the GameEngine.
-	GameEngine &m_game;
-	float m_deltaTime;
 };
 
 #endif

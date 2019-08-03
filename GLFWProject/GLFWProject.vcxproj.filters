@@ -123,6 +123,12 @@
     <ClCompile Include="TextureLoader.cpp">
       <Filter>Source Files\Asset Loader</Filter>
     </ClCompile>
+    <ClCompile Include="LoaderTypes.cpp">
+      <Filter>Source Files\Asset Loader</Filter>
+    </ClCompile>
+    <ClCompile Include="SpriteSheetLoader.cpp">
+      <Filter>Source Files\Asset Loader</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Shader.h">
@@ -240,6 +246,12 @@
       <Filter>Header Files\Asset Loader</Filter>
     </ClInclude>
     <ClInclude Include="TextureLoader.h">
+      <Filter>Header Files\Asset Loader</Filter>
+    </ClInclude>
+    <ClInclude Include="LoaderTypes.h">
+      <Filter>Header Files\Asset Loader</Filter>
+    </ClInclude>
+    <ClInclude Include="SpriteSheetLoader.h">
       <Filter>Header Files\Asset Loader</Filter>
     </ClInclude>
   </ItemGroup>

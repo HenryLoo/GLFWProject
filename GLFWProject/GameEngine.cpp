@@ -6,6 +6,11 @@
 #include "EntityConstants.h"
 #include "EntityManager.h"
 
+#include "DiskStream.h"
+#include "LoaderTypes.h"
+#include "TextureLoader.h"
+#include "SpriteSheetLoader.h"
+
 #include <iostream>
 
 namespace
@@ -64,6 +69,11 @@ GameEngine::GameEngine()
 	// when the window is resized.
 	glfwSetFramebufferSizeCallback(m_window, framebufferSizeCallback);
 
+	// Initialize the asset loader.
+	m_assetLoader = std::make_unique<AssetLoader>(new DiskStream());
+	m_assetLoader->registerLoader(LoaderType::TEXTURE, new TextureLoader());
+	m_assetLoader->registerLoader(LoaderType::SPRITE_SHEET, new SpriteSheetLoader());
+
 	// Initialize the camera.
 	m_camera = std::make_unique<Camera>();
 
@@ -72,7 +82,7 @@ GameEngine::GameEngine()
 	//glfwSetCursorPosCallback(m_window, mouseCallback);
 	//glfwSetWindowUserPointer(m_window, this);
 
-	m_sRenderer = std::make_unique<SpriteRenderer>();
+	m_sRenderer = std::make_unique<SpriteRenderer>(*this);
 	m_uRenderer = std::make_unique<UIRenderer>();
 	m_input = std::make_unique<InputManager>();
 	m_entityManager = std::make_unique<EntityManager>(*this);
@@ -202,4 +212,9 @@ Camera *GameEngine::getCamera() const
 Room *GameEngine::getCurrentRoom() const
 {
 	return m_currentRoom.get();
+}
+
+IAssetType *GameEngine::loadAsset(std::string type, std::string name)
+{
+	return m_assetLoader->load(type, name);
 }

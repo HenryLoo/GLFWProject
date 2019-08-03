@@ -46,11 +46,12 @@ struct SpriteData
 
 class Camera;
 class Room;
+class GameEngine;
 
 class SpriteRenderer
 {
 public:
-	SpriteRenderer();
+	SpriteRenderer(GameEngine &game);
 	~SpriteRenderer();
 
 	// Add sprite data to the array of sprites to prepare for rendering.

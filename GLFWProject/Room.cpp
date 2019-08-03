@@ -7,6 +7,7 @@
 
 namespace
 {
+	const std::string TEXTURE_PATH{ "textures/" };
 	const std::string TILES_EXT{ "_tiles.png" };
 	const std::string LAYOUT_EXT{ "_layout.png" };
 
@@ -23,17 +24,49 @@ namespace
 
 Room::Room(const std::string &roomName)
 {
-	m_tileSprites = std::make_unique<Texture>(roomName + TILES_EXT);
+	// TODO: replace this with asset loader stuff later.
+	GLint width, height, numChan;
+
+	// OpenGL expects 0.0 of the y-axis to be on the bottom, but images have it
+	// at the top. So we need to flip the image.
+	stbi_set_flip_vertically_on_load(true);
+
+	// Load the texture from the file.
+	const std::string tilePath{ TEXTURE_PATH + roomName + TILES_EXT };
+	stbi_uc *tileData{ stbi_load(tilePath.c_str(), &width, &height, &numChan, 0) };
+
+	GLuint textureId;
+	bool success{ false };
+	if (tileData != nullptr)
+	{
+		// Generate the texture for OpenGL and store its id.
+		glGenTextures(1, &textureId);
+		glBindTexture(GL_TEXTURE_2D, textureId);
+
+		// Set texture parameters for the bound texture.
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+		// Create the texture from the loaded file.
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA,
+			GL_UNSIGNED_BYTE, tileData);
+	}
+
+	// Free the image memory after we're done with it.
+	stbi_image_free(tileData);
+
+	m_tileSprites = std::make_unique<Texture>(textureId, width, height, numChan);
+
+	// TODO END;
 
 	stbi_set_flip_vertically_on_load(true);
 
 	// Load the texture from the file.
-	const std::string path{ Texture::TEXTURE_PATH + roomName + LAYOUT_EXT };
+	const std::string path{ TEXTURE_PATH + roomName + LAYOUT_EXT };
 	glm::ivec2 layoutSize;
 	int numChannels;
 	stbi_uc *data{ stbi_load(path.c_str(), &layoutSize.x, &layoutSize.y, &numChannels, 0) };
 
-	// TODO: replace hard-coded walls.
 	for (int i = 0; i < layoutSize.y; ++i)
 	{
 		for (int j = 0; j < layoutSize.x; ++j)

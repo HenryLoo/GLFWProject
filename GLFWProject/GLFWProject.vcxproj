@@ -156,6 +156,7 @@
     <ClCompile Include="GameSystem.cpp" />
     <ClCompile Include="glad.c" />
     <ClCompile Include="InputManager.cpp" />
+    <ClCompile Include="LoaderTypes.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="Mesh.cpp" />
     <ClCompile Include="PhysicsSystem.cpp" />
@@ -166,6 +167,7 @@
     <ClCompile Include="Shader.cpp" />
     <ClCompile Include="SpriteRenderer.cpp" />
     <ClCompile Include="SpriteSheet.cpp" />
+    <ClCompile Include="SpriteSheetLoader.cpp" />
     <ClCompile Include="SpriteSystem.cpp" />
     <ClCompile Include="StateMachine.cpp" />
     <ClCompile Include="Texture.cpp" />
@@ -195,6 +197,7 @@
     <ClInclude Include="IDataStream.h" />
     <ClInclude Include="InputManager.h" />
     <ClInclude Include="ITypeLoader.h" />
+    <ClInclude Include="LoaderTypes.h" />
     <ClInclude Include="Mesh.h" />
     <ClInclude Include="PhysicsSystem.h" />
     <ClInclude Include="PlayerSystem.h" />
@@ -205,6 +208,7 @@
     <ClInclude Include="SpriteAnimation.h" />
     <ClInclude Include="SpriteRenderer.h" />
     <ClInclude Include="SpriteSheet.h" />
+    <ClInclude Include="SpriteSheetLoader.h" />
     <ClInclude Include="SpriteSystem.h" />
     <ClInclude Include="StateMachine.h" />
     <ClInclude Include="stb_image.h" />

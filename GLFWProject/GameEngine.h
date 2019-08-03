@@ -8,6 +8,7 @@
 #include "UIRenderer.h"
 #include "InputManager.h"
 #include "EntityManager.h"
+#include "AssetLoader.h"
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -43,6 +44,9 @@ public:
 	Camera *getCamera() const;
 	Room *getCurrentRoom() const;
 
+	// Load an asset from the asset loader.
+	IAssetType *loadAsset(std::string type, std::string name);
+
 private:
 	// Constructor is private to prevent instantiating singleton.
 	// Handle all user inputs for the game loop's current iteration.
@@ -77,6 +81,7 @@ private:
 	std::unique_ptr<UIRenderer> m_uRenderer;
 	std::unique_ptr<InputManager> m_input;
 	std::unique_ptr<EntityManager> m_entityManager;
+	std::unique_ptr<AssetLoader> m_assetLoader;
 
 	// TODO: remove this later for a more flexible implementation.
 	std::unique_ptr<Room> m_currentRoom;

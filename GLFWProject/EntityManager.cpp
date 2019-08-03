@@ -32,6 +32,14 @@ EntityManager::EntityManager(GameEngine &game) :
 	m_broadPhase = std::make_unique<CollisionBroadPhase>();
 
 	// TODO: replace these hardcoded resources.
+	m_playerTexture = std::unique_ptr<SpriteSheet>(
+		static_cast<SpriteSheet *>(m_game.loadAsset("spritesheets", "serah_sheet.png")));
+	m_swordTexture = std::unique_ptr<SpriteSheet>(
+		static_cast<SpriteSheet *>(m_game.loadAsset("spritesheets", "serah_sword.png")));
+	m_enemyTexture = std::unique_ptr<SpriteSheet>(
+		static_cast<SpriteSheet *>(m_game.loadAsset("spritesheets", "clamper_sheet.png")));
+	m_effectsTexture = std::unique_ptr<SpriteSheet>(
+		static_cast<SpriteSheet *>(m_game.loadAsset("spritesheets", "effects.png")));
 	createEnemy();
 	createPlayer();
 
@@ -55,13 +63,6 @@ EntityManager::EntityManager(GameEngine &game) :
 
 	m_debugSystem = std::make_unique<DebugSystem>(*this,
 		m_compPhysics, m_compCollisions, m_compAttacks);
-
-	// TODO: Initialize effects. Remove this later for more flexible approach.
-	std::unordered_map<std::string, SpriteAnimation> effectAnims{
-		{EffectType::EVADE_SMOKE, { 0, 9, false, glm::vec2(0.f), {0.05f}}},
-		{EffectType::HIT_SPARK, { 9, 4, false, glm::vec2(0.f), {0.05f}}},
-	};
-	m_effectsTexture = std::make_unique<SpriteSheet>("effects.png", effectAnims, glm::ivec2(64, 64));
 }
 
 void EntityManager::update(float deltaTime, bool isDebugMode)
@@ -219,43 +220,6 @@ void EntityManager::deleteFlaggedEntities()
 
 void EntityManager::createPlayer()
 {
-	std::unordered_map<std::string, SpriteAnimation> playerAnims{
-		{CharState::IDLE, { 0, 8, true, glm::vec2(0.f), {3.f, 0.07f, 0.07f, 0.07f, 0.07f, 1.f, 0.07f, 0.07f}}},
-		{CharState::RUN, { 11, 10, true, glm::vec2(0.f), {0.07f} }},
-		{CharState::JUMP_ASCEND, { 22, 4, false, glm::vec2(0.f), {0.07f} }},
-		{CharState::JUMP_PEAK, { 26, 6, false, glm::vec2(0.f), {0.07f} }},
-		{CharState::JUMP_DESCEND, { 33, 4, true, glm::vec2(0.f), {0.07f} }},
-		{CharState::JUMP_LAND, { 37, 1, false, glm::vec2(0.f), {0.1f} }},
-		{CharState::RUN_START, { 38, 5, false, glm::vec2(0.f), {0.07f} }},
-		{CharState::RUN_STOP, { 44, 4, false, glm::vec2(0.f), {0.07f} }},
-		{CharState::ALERT, { 48, 1, false, glm::vec2(0.f), {3.f} }},
-		{CharState::ALERT_STOP, { 49, 2, false, glm::vec2(0.f), {0.07f} }},
-		{CharState::TURN, { 51, 4, false, glm::vec2(0.f), {0.07f} }},
-		{CharState::CROUCH, { 55, 4, false, glm::vec2(0.f), {0.07f} }},
-		{CharState::CROUCH_STOP, { 59, 2, false, glm::vec2(0.f), {0.07f} }},
-		{CharState::ATTACK, { 61, 10, false, glm::vec2(0.f), {0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.1f} }},
-		{CharState::ATTACK_AIR, { 71, 9, false, glm::vec2(0.f), {0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.07f} }},
-		{CharState::ATTACK_CROUCH, { 80, 9, false, glm::vec2(0.f), {0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.07f} }},
-		{CharState::EVADE_START, { 89, 2, false, glm::vec2(0.f), {0.05f} }},
-		{CharState::EVADE, { 91, 4, true, glm::vec2(0.f), {0.05f} }},
-		{CharState::ATTACK2, { 95, 10, false, glm::vec2(0.f), {0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.1f} }},
-		{CharState::ATTACK3, { 105, 11, false, glm::vec2(0.f), {0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.2f} }},
-		{CharState::SKILL1, { 116, 8, false, glm::vec2(0.f), {0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.05f, 0.2f} }},
-		{CharState::ATTACK_EVADE, { 124, 10, false, glm::vec2(0.f), {0.05f} }},
-	};
-	m_playerTexture = std::make_unique<SpriteSheet>("serah_sheet.png", playerAnims, glm::ivec2(32, 32));
-
-	std::unordered_map<std::string, SpriteAnimation> swordAnims{
-		{CharState::ATTACK, { 0, 10, false, glm::vec2(8.f, 8.f) }},
-		{CharState::ATTACK_AIR, { 11, 9, false, glm::vec2(4.f, 8.f) }},
-		{CharState::ATTACK_CROUCH, { 22, 9, false, glm::vec2(5.f, 0.f) }},
-		{CharState::ATTACK_EVADE, { 33, 10, false, glm::vec2(10.f, -3.f) }},
-		{CharState::ATTACK2, { 55, 10, false, glm::vec2(5.f, 8.f) }},
-		{CharState::ATTACK3, { 66, 11, false, glm::vec2(10.f, 8.f) }},
-		{CharState::SKILL1, { 44, 8, false, glm::vec2(0.f, 8.f) }},
-	};
-	m_swordTexture = std::make_unique<SpriteSheet>("serah_sword.png", swordAnims, glm::ivec2(48, 48));
-
 	m_playerId = createEntity({
 		GameComponent::COMPONENT_PHYSICS,
 		GameComponent::COMPONENT_SPRITE,
@@ -777,23 +741,12 @@ void EntityManager::createPlayer()
 
 void EntityManager::createEnemy()
 {
-	std::unordered_map<std::string, SpriteAnimation> enemyAnims{
-		{CharState::IDLE, { 0, 1, false, glm::vec2(0.f),  {1.f}}},
-		{CharState::RUN, { 4, 4, true, glm::vec2(0.f), {0.07f} }},
-		{CharState::ALERT, { 8, 1, false, glm::vec2(0.f), {1.f} }},
-		{CharState::HURT, { 12, 2, false, glm::vec2(0.f), {0.07f} }},
-		{CharState::HURT_AIR, { 16, 3, false, glm::vec2(0.f), {0.07f} }},
-		{CharState::FALLEN, { 20, 1, false, glm::vec2(0.f), {1.f} }},
-		{CharState::ATTACK, { 24, 4, false, glm::vec2(0.f), {0.05f} }},
-	};
-	m_enemyTexture = std::make_unique<SpriteSheet>("clamper_sheet.png", enemyAnims, glm::ivec2(32, 32));
-
 	int enemyId = createEntity({
 		GameComponent::COMPONENT_PHYSICS,
 		GameComponent::COMPONENT_SPRITE,
 		GameComponent::COMPONENT_COLLISION,
 		GameComponent::COMPONENT_CHARACTER,
-		});
+	});
 
 	GameComponent::Physics &phys = m_compPhysics[enemyId];
 	phys.pos = glm::vec3(128.f, 800.f, 0.f);

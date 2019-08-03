@@ -25,7 +25,7 @@ public:
 
 private:
 	// Hold registered loaders for all asset types.
-	std::unordered_map<std::string, ITypeLoader*> m_loaders;
+	std::unordered_map<std::string, std::unique_ptr<ITypeLoader>> m_loaders;
 
 	// Hold the stream to get data from.
 	std::unique_ptr<IDataStream> m_stream;

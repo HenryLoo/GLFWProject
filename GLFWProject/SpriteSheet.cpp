@@ -1,16 +1,18 @@
 #include "SpriteSheet.h"
 #include "GameComponent.h"
 
-SpriteSheet::SpriteSheet(const std::string &filePath,
+SpriteSheet::SpriteSheet(GLuint id, GLint width, GLint height, GLint numChannels,
 	const std::unordered_map<std::string, SpriteAnimation> &animations,
-	glm::ivec2 clipSize) :
-	Texture(filePath), m_filePath(filePath), m_animations(animations), m_clipSize(clipSize)
+	glm::ivec2 clipSize, std::string name) :
+	Texture(id, width, height, numChannels), m_animations(animations), 
+	m_clipSize(clipSize), m_name(name)
 {
 
 }
 
-SpriteSheet::SpriteSheet(const std::string &filePath, glm::ivec2 clipSize) :
-	Texture(filePath), m_clipSize(clipSize)
+SpriteSheet::SpriteSheet(GLuint id, GLint width, GLint height, GLint numChannels, 
+	glm::ivec2 clipSize, std::string name) :
+	Texture(id, width, height, numChannels), m_clipSize(clipSize), m_name(name)
 {
 
 }
@@ -42,7 +44,7 @@ bool SpriteSheet::setAnimation(const std::string &label,
 	return false;
 }
 
-const std::string &SpriteSheet::getFilePath() const
+const std::string &SpriteSheet::getName() const
 {
-	return m_filePath;
+	return m_name;
 }

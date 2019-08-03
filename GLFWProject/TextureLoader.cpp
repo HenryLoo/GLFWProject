@@ -1,17 +1,27 @@
 #include "TextureLoader.h"
 
-//#include "Texture.h"
+#include "Texture.h"
 
-//#define STB_IMAGE_IMPLEMENTATION
+#define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
-#include <glad/glad.h>
-#include <glm/glm.hpp>
-
-IAssetType *TextureLoader::load(std::iostream *stream, int length)
+IAssetType *TextureLoader::load(std::iostream *stream, int length, std::string name)
 {
-	bool success{ false };
+	// If successfully created texture, instantiate the asset and return it.
+	GLuint textureId;
+	GLint width, height, numChannels;
+	if (loadValues(stream, length, textureId, width, height, numChannels))
+	{
+		Texture *texture{ new Texture(textureId, width, height, numChannels) };
+		return texture;
+	}
 
+	return nullptr;
+}
+
+bool TextureLoader::loadValues(std::iostream *stream, int length,
+	GLuint &textureId, GLint &width, GLint &height, GLint &numChannels)
+{
 	// OpenGL expects 0.0 of the y-axis to be on the bottom, but images have it
 	// at the top. So we need to flip the image.
 	stbi_set_flip_vertically_on_load(true);
@@ -21,20 +31,9 @@ IAssetType *TextureLoader::load(std::iostream *stream, int length)
 	//stbi_uc *data{ stbi_load(path.c_str(), &m_width, &m_height, &m_numChannels, 0) };
 	char *buffer{ new char[length] };
 	stream->read(buffer, length);
-	int width, height, numChannels;
 	stbi_uc *data{ stbi_load_from_memory((stbi_uc *)buffer, length, &width, &height, &numChannels, 0) };
 
-	// TODO: Demonstrating getting rgba values from pixels. 
-	// Can use this to define room layouts from images. Remove later.
-	int x = 0;
-	int y = 2;
-	const stbi_uc *p{ data + (4 * (y * width + x)) };
-	stbi_uc r{ p[0] };
-	stbi_uc g{ p[1] };
-	stbi_uc b{ p[2] };
-	stbi_uc a{ p[3] };
-
-	GLuint textureId;
+	bool success{ false };
 	if (data != nullptr)
 	{
 		// Generate the texture for OpenGL and store its id.
@@ -58,13 +57,7 @@ IAssetType *TextureLoader::load(std::iostream *stream, int length)
 
 	// Free the image memory after we're done with it.
 	stbi_image_free(data);
+	delete buffer;
 
-	// If successfully created texture, instantiate the asset and return it.
-	if (success)
-	{
-		/*Texture *texture(textureId, width, height, numChannels);
-		return texture;*/
-	}
-
-	return nullptr;
+	return success;
 }

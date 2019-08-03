@@ -2,15 +2,17 @@
 #ifndef Texture_H
 #define Texture_H
 
+#include "IAssetType.h"
+
 #include <glad/glad.h>
 #include <glm/glm.hpp>
 
 #include <string>
 
-class Texture
+class Texture : public IAssetType
 {
 public:
-	Texture(const std::string &filePath);
+	Texture(GLuint id, GLint width, GLint height, GLint numChannels);
 	~Texture();
 
 	// Bind to this texture.
@@ -18,8 +20,6 @@ public:
 
 	// Get the dimensions of the texture.
 	glm::ivec2 getSize() const;
-
-	const static std::string TEXTURE_PATH;
 
 protected:
 	// This texture's id.

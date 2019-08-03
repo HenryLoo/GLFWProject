@@ -9,7 +9,7 @@ AssetLoader::AssetLoader(IDataStream *stream)
 
 void AssetLoader::registerLoader(std::string key, ITypeLoader *loader)
 {
-	m_loaders.insert({ key, loader });
+	m_loaders.insert({ key, std::unique_ptr<ITypeLoader>(loader) });
 }
 
 IAssetType *AssetLoader::load(std::string type, std::string name)
@@ -24,5 +24,5 @@ IAssetType *AssetLoader::load(std::string type, std::string name)
 	// Get the stream and pass it to the loader.
 	std::iostream *stream{ m_stream->getStream(type, name) };
 	int length{ m_stream->getLength() };
-	return it->second->load(stream, length);
+	return it->second->load(stream, length, name);
 }
