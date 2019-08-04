@@ -11,6 +11,7 @@
 #include "TextureLoader.h"
 #include "SpriteSheetLoader.h"
 #include "RoomLoader.h"
+#include "ShaderLoader.h"
 
 #include <iostream>
 
@@ -75,6 +76,7 @@ GameEngine::GameEngine()
 	m_assetLoader->registerLoader<Texture>(new TextureLoader());
 	m_assetLoader->registerLoader<SpriteSheet>(new SpriteSheetLoader());
 	m_assetLoader->registerLoader<Room>(new RoomLoader());
+	m_assetLoader->registerLoader<Shader>(new ShaderLoader());
 
 	// Initialize the camera.
 	m_camera = std::make_unique<Camera>();
@@ -85,7 +87,7 @@ GameEngine::GameEngine()
 	//glfwSetWindowUserPointer(m_window, this);
 
 	m_sRenderer = std::make_unique<SpriteRenderer>(*this);
-	m_uRenderer = std::make_unique<UIRenderer>();
+	m_uRenderer = std::make_unique<UIRenderer>(*this);
 	m_input = std::make_unique<InputManager>();
 	m_entityManager = std::make_unique<EntityManager>(*this);
 

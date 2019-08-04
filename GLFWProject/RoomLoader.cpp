@@ -31,17 +31,27 @@ std::shared_ptr<IAssetType> RoomLoader::load(
 	const IDataStream::Result &layoutResult{ streams[0] };
 	const IDataStream::Result &tilesResult{ streams[1] };
 
-	// If successfully created texture, instantiate the asset and return it.
-	std::shared_ptr<Texture> tiles{ std::dynamic_pointer_cast<Texture>(
-		TextureLoader::load({tilesResult}, name)) };
-	if (tiles != nullptr)
+	// Create the texture for the room's tiles.
+	GLuint textureId;
+	int width, height, numChannels;
+	if (loadValues(tilesResult, textureId, width, height, numChannels))
 	{
+		std::shared_ptr<Texture> tiles{ 
+			std::make_shared<Texture>(textureId, width, height, numChannels) };
+
+		// Get the layout of the room.
 		std::vector<Room::TileType> layout;
 		loadLayout(layoutResult, layout);
 
+		// Create the room asset from the layout and tiles texture.
 		std::shared_ptr<Room> room{
 			std::make_shared<Room>(layout, tiles) };
-		return room;
+
+		if (room != nullptr)
+		{
+			std::cout << "RoomLoader::load: Loaded '" << name << "'\n" << std::endl;
+			return room;
+		}
 	}
 
 	return nullptr;

@@ -10,11 +10,12 @@
 #include <memory>
 
 class Camera;
+class GameEngine;
 
 class UIRenderer
 {
 public:
-	UIRenderer();
+	UIRenderer(GameEngine &game);
 	~UIRenderer();
 
 	// Add box data to the array of boxes to prepare for rendering.
@@ -32,7 +33,7 @@ public:
 
 private:
 	// Shaders to render with.
-	std::unique_ptr<Shader> m_boxShader;
+	std::shared_ptr<Shader> m_boxShader;
 
 	// Data to send to the GPU.
 	GLfloat *m_posSizeData;

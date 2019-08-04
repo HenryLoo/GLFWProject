@@ -165,6 +165,7 @@
     <ClCompile Include="RoomCollisionSystem.cpp" />
     <ClCompile Include="RoomLoader.cpp" />
     <ClCompile Include="Shader.cpp" />
+    <ClCompile Include="ShaderLoader.cpp" />
     <ClCompile Include="SpriteRenderer.cpp" />
     <ClCompile Include="SpriteSheet.cpp" />
     <ClCompile Include="SpriteSheetLoader.cpp" />
@@ -205,6 +206,7 @@
     <ClInclude Include="RoomCollisionSystem.h" />
     <ClInclude Include="RoomLoader.h" />
     <ClInclude Include="Shader.h" />
+    <ClInclude Include="ShaderLoader.h" />
     <ClInclude Include="SpriteAnimation.h" />
     <ClInclude Include="SpriteRenderer.h" />
     <ClInclude Include="SpriteSheet.h" />

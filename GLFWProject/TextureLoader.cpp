@@ -27,7 +27,11 @@ std::shared_ptr<IAssetType> TextureLoader::load(
 	{
 		std::shared_ptr<Texture> texture{ 
 			std::make_shared<Texture>(textureId, width, height, numChannels) };
-		return texture;
+		if (texture != nullptr)
+		{
+			std::cout << "TextureLoader::load: Loaded '" << name << "'\n" << std::endl;
+			return texture;
+		}
 	}
 
 	return nullptr;
@@ -65,7 +69,7 @@ bool TextureLoader::loadValues(const IDataStream::Result &streamedData,
 	}
 	else
 	{
-		std::cout << "Failed to load texture." << std::endl;
+		std::cout << "TextureLoader::loadValues: Failed to load texture." << std::endl;
 	}
 
 	// Free the image memory after we're done with it.

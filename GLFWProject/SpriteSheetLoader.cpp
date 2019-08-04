@@ -118,7 +118,12 @@ std::shared_ptr<IAssetType>SpriteSheetLoader::load(
 		std::shared_ptr<SpriteSheet> spriteSheet{ 
 			std::make_shared<SpriteSheet>(textureId, width, height, 
 			numChannels, anims, clipSize, name) };
-		return spriteSheet;
+
+		if (spriteSheet != nullptr)
+		{
+			std::cout << "SpriteSheetLoader::load: Loaded '" << name << "'\n" << std::endl;
+			return spriteSheet;
+		}
 	}
 
 	return nullptr;

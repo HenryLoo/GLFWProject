@@ -2,15 +2,17 @@
 #ifndef Shader_H
 #define Shader_H
 
+#include "IAssetType.h"
+
 #include <glad/glad.h>
 #include <glm/glm.hpp>
 
 #include <string>
 
-class Shader
+class Shader : public IAssetType
 {
 public:
-	Shader(const std::string& vertexPath, const std::string& fragmentPath);
+	Shader(GLuint programId);
 	~Shader();
 
 	// Use this program.
@@ -31,6 +33,8 @@ public:
 	void setMat4(const std::string& name, const glm::mat4& mat) const;
 
 private:
+	virtual void cleanup() {};
+
 	// The program's id.
 	GLuint m_id;
 };

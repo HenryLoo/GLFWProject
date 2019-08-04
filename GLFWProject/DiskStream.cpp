@@ -33,7 +33,7 @@ void DiskStream::getStream(const std::vector<std::string> &filePaths,
 			std::cout << "DiskStream::getStream: opened '" << path << "', size: " 
 				<< size << std::endl;
 		}
-		catch (std::invalid_argument e)
+		catch (const std::exception &e)
 		{
 			std::cout << "DiskStream::getStream: " << e.what() << std::endl;
 		}
