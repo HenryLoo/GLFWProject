@@ -5,32 +5,45 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
-IAssetType *TextureLoader::load(std::iostream *stream, int length, std::string name)
+namespace
+{
+	const int NUM_STREAMS_REQUIRED{ 1 };
+}
+
+int TextureLoader::getNumStreamsRequired() const
+{
+	return NUM_STREAMS_REQUIRED;
+}
+
+std::shared_ptr<IAssetType> TextureLoader::load(
+	const std::vector<IDataStream::Result> &streams,
+	const std::string &name)
 {
 	// If successfully created texture, instantiate the asset and return it.
 	GLuint textureId;
 	GLint width, height, numChannels;
-	if (loadValues(stream, length, textureId, width, height, numChannels))
+	const IDataStream::Result &theResult{ streams[0] };
+	if (loadValues(theResult, textureId, width, height, numChannels))
 	{
-		Texture *texture{ new Texture(textureId, width, height, numChannels) };
+		std::shared_ptr<Texture> texture{ 
+			std::make_shared<Texture>(textureId, width, height, numChannels) };
 		return texture;
 	}
 
 	return nullptr;
 }
 
-bool TextureLoader::loadValues(std::iostream *stream, int length,
+bool TextureLoader::loadValues(const IDataStream::Result &streamedData,
 	GLuint &textureId, GLint &width, GLint &height, GLint &numChannels)
 {
 	// OpenGL expects 0.0 of the y-axis to be on the bottom, but images have it
 	// at the top. So we need to flip the image.
 	stbi_set_flip_vertically_on_load(true);
 
-	// Load the texture from the file.
-	//const std::string path{ TEXTURE_PATH + filePath };
-	//stbi_uc *data{ stbi_load(path.c_str(), &m_width, &m_height, &m_numChannels, 0) };
+	// Load the texture from the buffer.
+	int length{ streamedData.length };
 	char *buffer{ new char[length] };
-	stream->read(buffer, length);
+	streamedData.stream->read(buffer, length);
 	stbi_uc *data{ stbi_load_from_memory((stbi_uc *)buffer, length, &width, &height, &numChannels, 0) };
 
 	bool success{ false };

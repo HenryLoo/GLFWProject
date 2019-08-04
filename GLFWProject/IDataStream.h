@@ -3,15 +3,20 @@
 #define IDataStream_H
 
 #include <iostream>
+#include <vector>
 
 class IDataStream
 {
 public:
-	// Get file data via stream, given its type and name.
-	virtual std::iostream *getStream(std::string type, std::string name) = 0;
+	struct Result
+	{
+		std::iostream *stream;
+		int length;
+	};
 
-	// Get the length of the streamed data.
-	virtual int getLength() const = 0;
+	// Get file data via stream, given its type and name.
+	virtual void getStream(const std::vector<std::string> &filePaths, 
+		std::vector<IDataStream::Result> &output) = 0;
 };
 
 #endif

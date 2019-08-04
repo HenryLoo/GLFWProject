@@ -4,7 +4,8 @@
 
 class IAssetType
 {
-
+private:
+	virtual void cleanup() = 0;
 };
 
 #endif

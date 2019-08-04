@@ -12,7 +12,7 @@ namespace
 		{EffectType::HIT_SPARK, { 9, 4, false, glm::vec2(0.f), {0.05f}}},
 	};
 	const glm::ivec2 EFFECT_SIZE{ 64, 64 };
-	const std::string EFFECT_NAME{ "effects.png" };
+	const std::string EFFECT_NAME{ "effects" };
 
 	const std::unordered_map<std::string, SpriteAnimation> PLAYER_ANIMS{
 		{CharState::IDLE, { 0, 8, true, glm::vec2(0.f), {3.f, 0.07f, 0.07f, 0.07f, 0.07f, 1.f, 0.07f, 0.07f}}},
@@ -39,7 +39,7 @@ namespace
 		{CharState::ATTACK_EVADE, { 124, 10, false, glm::vec2(0.f), {0.05f} }},
 	};
 	const glm::ivec2 PLAYER_SIZE{ 32, 32 };
-	const std::string PLAYER_NAME{ "serah_sheet.png" };
+	const std::string PLAYER_NAME{ "serah_sheet" };
 
 	const std::unordered_map<std::string, SpriteAnimation> SWORD_ANIMS{
 		{CharState::ATTACK, { 0, 10, false, glm::vec2(8.f, 8.f) }},
@@ -51,7 +51,7 @@ namespace
 		{CharState::SKILL1, { 44, 8, false, glm::vec2(0.f, 8.f) }},
 	};
 	const glm::ivec2 SWORD_SIZE{ 48, 48 };
-	const std::string SWORD_NAME{ "serah_sword.png" };
+	const std::string SWORD_NAME{ "serah_sword" };
 
 	const std::unordered_map<std::string, SpriteAnimation> ENEMY_ANIMS{
 		{CharState::IDLE, { 0, 1, false, glm::vec2(0.f),  {1.f}}},
@@ -63,18 +63,28 @@ namespace
 		{CharState::ATTACK, { 24, 4, false, glm::vec2(0.f), {0.05f} }},
 	};
 	const glm::ivec2 ENEMY_SIZE{ 32, 32 };
-	const std::string ENEMY_NAME{ "clamper_sheet.png" };
+	const std::string ENEMY_NAME{ "clamper_sheet" };
 
 	const glm::ivec2 TILESET_SIZE{ 16, 16 };
-	const std::string TILESET_NAME{ "tileset.png" };
+	const std::string TILESET_NAME{ "tileset" };
+
+	const int NUM_STREAMS_REQUIRED{ 1 };
 }
 
-IAssetType *SpriteSheetLoader::load(std::iostream *stream, int length, std::string name)
+int SpriteSheetLoader::getNumStreamsRequired() const
+{
+	return NUM_STREAMS_REQUIRED;
+}
+
+std::shared_ptr<IAssetType>SpriteSheetLoader::load(
+	const std::vector<IDataStream::Result> &streams,
+	const std::string &name)
 {
 	// If successfully created texture, instantiate the asset and return it.
 	GLuint textureId;
 	GLint width, height, numChannels;
-	if (loadValues(stream, length, textureId, width, height, numChannels))
+	const IDataStream::Result &theResult{ streams[0] };
+	if (loadValues(theResult, textureId, width, height, numChannels))
 	{
 		// TODO: replace these hardcoded resources later.
 		std::unordered_map<std::string, SpriteAnimation> anims;
@@ -105,7 +115,8 @@ IAssetType *SpriteSheetLoader::load(std::iostream *stream, int length, std::stri
 			clipSize = TILESET_SIZE;
 		}
 
-		SpriteSheet *spriteSheet{ new SpriteSheet(textureId, width, height, 
+		std::shared_ptr<SpriteSheet> spriteSheet{ 
+			std::make_shared<SpriteSheet>(textureId, width, height, 
 			numChannels, anims, clipSize, name) };
 		return spriteSheet;
 	}

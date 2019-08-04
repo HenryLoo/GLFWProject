@@ -3,7 +3,6 @@
 namespace
 {
 	std::string DATA_FILE{ "data.hl" };
-	std::string SEPARATOR{ "/" };
 }
 
 DiskStream::DiskStream()
@@ -19,31 +18,37 @@ DiskStream::~DiskStream()
 	clearStream();
 }
 
-std::iostream *DiskStream::getStream(std::string type, std::string name)
+void DiskStream::getStream(const std::vector<std::string> &filePaths,
+	std::vector<IDataStream::Result> &output)
 {
 	clearStream();
 
-	try
+	for (const std::string &path : filePaths)
 	{
-		std::string filePath{ SEPARATOR + type + SEPARATOR + name };
-		m_stream = new PhysFS::fstream(filePath);
-		std::cout << "DiskStream::getStream: opened " << filePath << std::endl;
-	}
-	catch (std::invalid_argument e)
-	{
-		std::cout << "DiskStream::getStream: " << e.what() << std::endl;
+		try
+		{
+			PhysFS::fstream *stream{ new PhysFS::fstream(path) };
+			int size{ static_cast<int>(stream->length()) };
+			m_streams.push_back({ stream, size });
+			std::cout << "DiskStream::getStream: opened '" << path << "', size: " 
+				<< size << std::endl;
+		}
+		catch (std::invalid_argument e)
+		{
+			std::cout << "DiskStream::getStream: " << e.what() << std::endl;
+		}
 	}
 
-	return m_stream;
-}
-
-int DiskStream::getLength() const
-{
-	return static_cast<int>(m_stream->length());
+	output = m_streams;
 }
 
 void DiskStream::clearStream()
 {
-	if (m_stream != nullptr)
-		delete m_stream;
+	for (auto str : m_streams)
+	{
+		if (str.stream != nullptr)
+			delete str.stream;
+	}
+
+	m_streams.clear();
 }

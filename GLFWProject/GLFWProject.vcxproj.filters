@@ -25,6 +25,18 @@
     <Filter Include="Source Files\Asset Loader">
       <UniqueIdentifier>{af9d70ae-46f3-4110-8f9e-de0daa160a7d}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Asset Loader\Loaders">
+      <UniqueIdentifier>{3b177fea-18e5-434b-b426-a550bf38d8e1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Asset Loader\Assets">
+      <UniqueIdentifier>{abdc9cfa-6260-4ba6-befa-e5854cb689b9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Asset Loader\Loaders">
+      <UniqueIdentifier>{274ab215-84ba-4472-84d2-f3381032c202}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Asset Loader\Assets">
+      <UniqueIdentifier>{b971e3ee-31f6-4f26-8f69-d6975c982602}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="glad.c">
@@ -34,9 +46,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Shader.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Texture.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Renderer.cpp">
@@ -57,13 +66,7 @@
     <ClCompile Include="GameComponent.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SpriteSheet.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="InputManager.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Room.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="UIRenderer.cpp">
@@ -121,20 +124,26 @@
       <Filter>Source Files\Asset Loader</Filter>
     </ClCompile>
     <ClCompile Include="TextureLoader.cpp">
-      <Filter>Source Files\Asset Loader</Filter>
-    </ClCompile>
-    <ClCompile Include="LoaderTypes.cpp">
-      <Filter>Source Files\Asset Loader</Filter>
+      <Filter>Source Files\Asset Loader\Loaders</Filter>
     </ClCompile>
     <ClCompile Include="SpriteSheetLoader.cpp">
-      <Filter>Source Files\Asset Loader</Filter>
+      <Filter>Source Files\Asset Loader\Loaders</Filter>
+    </ClCompile>
+    <ClCompile Include="SpriteSheet.cpp">
+      <Filter>Source Files\Asset Loader\Assets</Filter>
+    </ClCompile>
+    <ClCompile Include="Texture.cpp">
+      <Filter>Source Files\Asset Loader\Assets</Filter>
+    </ClCompile>
+    <ClCompile Include="RoomLoader.cpp">
+      <Filter>Source Files\Asset Loader\Loaders</Filter>
+    </ClCompile>
+    <ClCompile Include="Room.cpp">
+      <Filter>Source Files\Asset Loader\Assets</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Shader.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Texture.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="stb_image.h">
@@ -161,13 +170,7 @@
     <ClInclude Include="GameComponent.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="SpriteSheet.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="InputManager.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Room.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="UIRenderer.h">
@@ -233,26 +236,35 @@
     <ClInclude Include="AssetLoader.h">
       <Filter>Header Files\Asset Loader</Filter>
     </ClInclude>
-    <ClInclude Include="ITypeLoader.h">
-      <Filter>Header Files\Asset Loader</Filter>
-    </ClInclude>
     <ClInclude Include="IDataStream.h">
       <Filter>Header Files\Asset Loader</Filter>
     </ClInclude>
     <ClInclude Include="DiskStream.h">
       <Filter>Header Files\Asset Loader</Filter>
     </ClInclude>
-    <ClInclude Include="IAssetType.h">
-      <Filter>Header Files\Asset Loader</Filter>
+    <ClInclude Include="SpriteSheetLoader.h">
+      <Filter>Header Files\Asset Loader\Loaders</Filter>
     </ClInclude>
     <ClInclude Include="TextureLoader.h">
-      <Filter>Header Files\Asset Loader</Filter>
+      <Filter>Header Files\Asset Loader\Loaders</Filter>
     </ClInclude>
-    <ClInclude Include="LoaderTypes.h">
-      <Filter>Header Files\Asset Loader</Filter>
+    <ClInclude Include="ITypeLoader.h">
+      <Filter>Header Files\Asset Loader\Loaders</Filter>
     </ClInclude>
-    <ClInclude Include="SpriteSheetLoader.h">
-      <Filter>Header Files\Asset Loader</Filter>
+    <ClInclude Include="IAssetType.h">
+      <Filter>Header Files\Asset Loader\Assets</Filter>
+    </ClInclude>
+    <ClInclude Include="Texture.h">
+      <Filter>Header Files\Asset Loader\Assets</Filter>
+    </ClInclude>
+    <ClInclude Include="SpriteSheet.h">
+      <Filter>Header Files\Asset Loader\Assets</Filter>
+    </ClInclude>
+    <ClInclude Include="RoomLoader.h">
+      <Filter>Header Files\Asset Loader\Loaders</Filter>
+    </ClInclude>
+    <ClInclude Include="Room.h">
+      <Filter>Header Files\Asset Loader\Assets</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

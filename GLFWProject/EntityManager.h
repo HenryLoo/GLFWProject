@@ -82,10 +82,10 @@ private:
 	float m_deltaTime;
 
 	// TODO: remove this later for a more flexible implementation.
-	std::unique_ptr<SpriteSheet> m_playerTexture;
-	std::unique_ptr<SpriteSheet> m_swordTexture;
-	std::unique_ptr<SpriteSheet> m_enemyTexture;
-	std::unique_ptr<SpriteSheet> m_effectsTexture;
+	std::shared_ptr<SpriteSheet> m_playerTexture;
+	std::shared_ptr<SpriteSheet> m_swordTexture;
+	std::shared_ptr<SpriteSheet> m_enemyTexture;
+	std::shared_ptr<SpriteSheet> m_effectsTexture;
 };
 
 #endif

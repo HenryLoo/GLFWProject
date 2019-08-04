@@ -31,6 +31,9 @@ protected:
 
 	// This texture's number of colour channels.
 	GLint m_numChannels;
+
+private:
+	virtual void cleanup() {};
 };
 
 #endif

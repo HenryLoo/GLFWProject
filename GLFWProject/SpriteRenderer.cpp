@@ -4,6 +4,7 @@
 #include "EntityConstants.h"
 #include "Room.h"
 #include "GameEngine.h"
+#include "SpriteSheet.h"
 
 #include <glad/glad.h>
 #include <glm/glm.hpp>
@@ -122,8 +123,7 @@ SpriteRenderer::SpriteRenderer(GameEngine &game)
 	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, (void *)0);
 
 	// Instantiate the tileset.
-	m_tileset = std::unique_ptr<SpriteSheet>(
-		static_cast<SpriteSheet *>(game.loadAsset("spritesheets", "tileset.png")));
+	m_tileset = game.loadAsset<SpriteSheet>("tileset", { "textures/tileset.png" });
 }
 
 SpriteRenderer::~SpriteRenderer()
@@ -142,6 +142,12 @@ void SpriteRenderer::addSprite(const GameComponent::Physics &physics,
 	const GameComponent::Sprite &sprite)
 {
 	const std::string spriteName{ sprite.spriteSheet->getName() };
+	if (spriteName.empty())
+	{
+		std::cout << "SpriteRenderer::addSprite: sprite name was empty" << std::endl;
+		return;
+	}
+
 	auto it{ m_spriteData.find(spriteName) };
 	if (it == m_spriteData.end())
 	{

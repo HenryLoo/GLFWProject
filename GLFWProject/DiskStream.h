@@ -14,16 +14,14 @@ public:
 	~DiskStream();
 
 	// Get file data via stream, given its type and name.
-	virtual std::iostream *getStream(std::string type, std::string name);
-
-	// Get the length of the streamed data.
-	virtual int getLength() const;
+	virtual void getStream(const std::vector<std::string> &filePaths,
+		std::vector<IDataStream::Result> &output);
 
 private:
 	// Clear existing stream.
 	void clearStream();
 
-	PhysFS::fstream *m_stream;
+	std::vector<IDataStream::Result>m_streams;
 };
 
 #endif

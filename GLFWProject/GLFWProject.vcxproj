@@ -156,7 +156,6 @@
     <ClCompile Include="GameSystem.cpp" />
     <ClCompile Include="glad.c" />
     <ClCompile Include="InputManager.cpp" />
-    <ClCompile Include="LoaderTypes.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="Mesh.cpp" />
     <ClCompile Include="PhysicsSystem.cpp" />
@@ -164,6 +163,7 @@
     <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="Room.cpp" />
     <ClCompile Include="RoomCollisionSystem.cpp" />
+    <ClCompile Include="RoomLoader.cpp" />
     <ClCompile Include="Shader.cpp" />
     <ClCompile Include="SpriteRenderer.cpp" />
     <ClCompile Include="SpriteSheet.cpp" />
@@ -197,13 +197,13 @@
     <ClInclude Include="IDataStream.h" />
     <ClInclude Include="InputManager.h" />
     <ClInclude Include="ITypeLoader.h" />
-    <ClInclude Include="LoaderTypes.h" />
     <ClInclude Include="Mesh.h" />
     <ClInclude Include="PhysicsSystem.h" />
     <ClInclude Include="PlayerSystem.h" />
     <ClInclude Include="Renderer.h" />
     <ClInclude Include="Room.h" />
     <ClInclude Include="RoomCollisionSystem.h" />
+    <ClInclude Include="RoomLoader.h" />
     <ClInclude Include="Shader.h" />
     <ClInclude Include="SpriteAnimation.h" />
     <ClInclude Include="SpriteRenderer.h" />

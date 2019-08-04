@@ -5,11 +5,12 @@
 #include "Room.h"
 #include "EntityConstants.h"
 #include "EntityManager.h"
+#include "SpriteSheet.h"
 
 #include "DiskStream.h"
-#include "LoaderTypes.h"
 #include "TextureLoader.h"
 #include "SpriteSheetLoader.h"
+#include "RoomLoader.h"
 
 #include <iostream>
 
@@ -71,8 +72,9 @@ GameEngine::GameEngine()
 
 	// Initialize the asset loader.
 	m_assetLoader = std::make_unique<AssetLoader>(new DiskStream());
-	m_assetLoader->registerLoader(LoaderType::TEXTURE, new TextureLoader());
-	m_assetLoader->registerLoader(LoaderType::SPRITE_SHEET, new SpriteSheetLoader());
+	m_assetLoader->registerLoader<Texture>(new TextureLoader());
+	m_assetLoader->registerLoader<SpriteSheet>(new SpriteSheetLoader());
+	m_assetLoader->registerLoader<Room>(new RoomLoader());
 
 	// Initialize the camera.
 	m_camera = std::make_unique<Camera>();
@@ -88,7 +90,8 @@ GameEngine::GameEngine()
 	m_entityManager = std::make_unique<EntityManager>(*this);
 
 	// TODO: remove this later for more flexible approach.
-	m_currentRoom = std::make_unique<Room>("test");
+	m_currentRoom = m_assetLoader->load<Room>("test", 
+		{"rooms/test_layout.png", "rooms/test_tiles.png" });
 }
 
 GameEngine::~GameEngine()
@@ -164,8 +167,11 @@ void GameEngine::processInput()
 void GameEngine::update()
 {
 	glm::vec3 playerPos{ m_entityManager->getPlayerPos() };
-	m_camera->update(m_deltaTime, playerPos, m_windowSize, 
-		m_currentRoom->getSize());
+	if (m_currentRoom != nullptr)
+	{
+		m_camera->update(m_deltaTime, playerPos, m_windowSize,
+			m_currentRoom->getSize());
+	}
 
 	m_sRenderer->resetNumSprites();
 	m_sRenderer->update(m_camera->getViewMatrix());
@@ -212,9 +218,4 @@ Camera *GameEngine::getCamera() const
 Room *GameEngine::getCurrentRoom() const
 {
 	return m_currentRoom.get();
-}
-
-IAssetType *GameEngine::loadAsset(std::string type, std::string name)
-{
-	return m_assetLoader->load(type, name);
 }

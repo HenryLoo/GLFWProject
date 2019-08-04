@@ -39,7 +39,7 @@ void SpriteSystem::process(float deltaTime, int entityId,
 
 		// Process the next frame if the current frame is over and the 
 		// animation is not a non-looping one at its last frame.
-		bool isFrameEnded{ sprite.currentFrameTime >= frameDuration };
+		bool isFrameEnded{ sprite.currentFrameTime >= frameDuration && frameDuration > 0.f };
 		bool isLastFrame{ sprite.currentFrame == sprite.currentAnimation.numSprites - 1 };
 		if (isFrameEnded &&
 			!(!sprite.currentAnimation.isLooping && isLastFrame))

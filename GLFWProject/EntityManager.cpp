@@ -32,14 +32,10 @@ EntityManager::EntityManager(GameEngine &game) :
 	m_broadPhase = std::make_unique<CollisionBroadPhase>();
 
 	// TODO: replace these hardcoded resources.
-	m_playerTexture = std::unique_ptr<SpriteSheet>(
-		static_cast<SpriteSheet *>(m_game.loadAsset("spritesheets", "serah_sheet.png")));
-	m_swordTexture = std::unique_ptr<SpriteSheet>(
-		static_cast<SpriteSheet *>(m_game.loadAsset("spritesheets", "serah_sword.png")));
-	m_enemyTexture = std::unique_ptr<SpriteSheet>(
-		static_cast<SpriteSheet *>(m_game.loadAsset("spritesheets", "clamper_sheet.png")));
-	m_effectsTexture = std::unique_ptr<SpriteSheet>(
-		static_cast<SpriteSheet *>(m_game.loadAsset("spritesheets", "effects.png")));
+	m_playerTexture = m_game.loadAsset<SpriteSheet>("serah_sheet", { "textures/serah_sheet.png" });
+	m_swordTexture = m_game.loadAsset<SpriteSheet>("serah_sword", { "textures/serah_sword.png" });
+	m_enemyTexture = m_game.loadAsset<SpriteSheet>("clamper_sheet", { "textures/clamper_sheet.png" });
+	m_effectsTexture = m_game.loadAsset<SpriteSheet>("effects", { "textures/effects.png" });
 	createEnemy();
 	createPlayer();
 
@@ -422,7 +418,6 @@ void EntityManager::createPlayer()
 
 	auto skill1UpdateAction{ [&spr, &phys, &atk]()
 	{
-		float frameDuration{ GameComponent::getFrameDuration(spr) };
 		if (spr.currentFrame == atk.pattern.frameRange.x && !phys.hasGravity)
 		{
 			float dir{ phys.scale.x > 0 ? 1.f : -1.f };

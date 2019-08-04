@@ -10,10 +10,15 @@
 class TextureLoader : public ITypeLoader
 {
 public:
-	IAssetType *load(std::iostream *stream, int length, std::string name);
+	std::shared_ptr<IAssetType> load(
+		const std::vector<IDataStream::Result> &streams,
+		const std::string &name);
+
+	// Get the number of streams required for this loader.
+	virtual int getNumStreamsRequired() const;
 
 protected:
-	bool loadValues(std::iostream *stream, int length,
+	bool loadValues(const IDataStream::Result &streamedData,
 		GLuint &textureId, GLint &width, GLint &height,
 		GLint &numChannels);
 };

@@ -3,7 +3,6 @@
 #define GameEngine_H
 
 #include "Camera.h"
-#include "Room.h"
 #include "SpriteRenderer.h"
 #include "UIRenderer.h"
 #include "InputManager.h"
@@ -20,6 +19,7 @@ class Renderer;
 class SpriteRenderer;
 class UIRenderer;
 class InputManager;
+class Room;
 
 class GameEngine
 {
@@ -45,7 +45,9 @@ public:
 	Room *getCurrentRoom() const;
 
 	// Load an asset from the asset loader.
-	IAssetType *loadAsset(std::string type, std::string name);
+	template <typename T>
+	std::shared_ptr<T> loadAsset(const std::string name,
+		const std::vector<std::string> &filePaths);
 
 private:
 	// Constructor is private to prevent instantiating singleton.
@@ -84,7 +86,14 @@ private:
 	std::unique_ptr<AssetLoader> m_assetLoader;
 
 	// TODO: remove this later for a more flexible implementation.
-	std::unique_ptr<Room> m_currentRoom;
+	std::shared_ptr<Room> m_currentRoom;
 };
+
+template <typename T>
+std::shared_ptr<T> GameEngine::loadAsset(const std::string name,
+	const std::vector<std::string> &filePaths)
+{
+	return m_assetLoader->load<T>(name, filePaths);
+}
 
 #endif

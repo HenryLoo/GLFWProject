@@ -3,6 +3,7 @@
 #define Room_H
 
 #include "Texture.h"
+#include "IAssetType.h"
 
 #include <glm/glm.hpp>
 
@@ -11,28 +12,29 @@
 
 class SpriteRenderer;
 
-enum TileType
-{
-	TILE_SPACE,
-	TILE_WALL,
-	TILE_SLOPE_LEFT_UPPER,
-	TILE_SLOPE_LEFT_LOWER,
-	TILE_SLOPE_RIGHT_UPPER,
-	TILE_SLOPE_RIGHT_LOWER,
-	TILE_GHOST
-};
-
-class Room
+class Room : public IAssetType
 {
 public:
-	Room(const std::string &roomName);
+	enum TileType
+	{
+		TILE_SPACE,
+		TILE_WALL,
+		TILE_SLOPE_LEFT_UPPER,
+		TILE_SLOPE_LEFT_LOWER,
+		TILE_SLOPE_RIGHT_UPPER,
+		TILE_SLOPE_RIGHT_LOWER,
+		TILE_GHOST
+	};
+
+	Room(const std::vector<Room::TileType> &layout,
+		std::shared_ptr<Texture> tiles);
 	~Room();
 
 	// Get the size of the room.
 	glm::ivec2 getSize() const;
 
 	// Get the tile at a given x, y, in tile coordinates.
-	const TileType &getTileType(glm::ivec2 tileCoord) const;
+	const Room::TileType &getTileType(glm::ivec2 tileCoord) const;
 
 	// Get the tile coordinates corresponding to given world coordinates.
 	const glm::ivec2 getTileCoord(glm::vec2 pos) const;
@@ -51,16 +53,14 @@ public:
 	const static int SLOPE_HEIGHT{ 8 };
 
 private:
-	// Check if a pixel matches the given rgb values.
-	// This is used to determine the tile type of a tile from a layout texture.
-	bool isTileType(const unsigned char *pixel, unsigned char rgb[3]);
+	virtual void cleanup() {};
 
 	// Hold all the tiles in this room.
 	// Tiles are stored in row-major order, bottom-up.
-	std::vector<TileType> m_tileTypes;
+	std::vector<TileType> m_layout;
 
 	// Hold each tile's index on the sprite sheet.
-	std::unique_ptr<Texture> m_tileSprites;
+	std::shared_ptr<Texture> m_tiles;
 };
 
 #endif
