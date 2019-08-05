@@ -9,7 +9,7 @@
 struct SpriteAnimation
 {
 	// The index of this animation's first frame on the sprite sheet.
-	int sheetIndex;
+	int firstIndex;
 
 	// The number of sprites in this animation.
 	int numSprites;

@@ -156,6 +156,7 @@
     <ClCompile Include="GameSystem.cpp" />
     <ClCompile Include="glad.c" />
     <ClCompile Include="InputManager.cpp" />
+    <ClCompile Include="JSONUtilities.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="Mesh.cpp" />
     <ClCompile Include="PhysicsSystem.cpp" />
@@ -198,6 +199,7 @@
     <ClInclude Include="IDataStream.h" />
     <ClInclude Include="InputManager.h" />
     <ClInclude Include="ITypeLoader.h" />
+    <ClInclude Include="JSONUtilities.h" />
     <ClInclude Include="Mesh.h" />
     <ClInclude Include="PhysicsSystem.h" />
     <ClInclude Include="PlayerSystem.h" />

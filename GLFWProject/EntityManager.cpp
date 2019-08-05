@@ -32,10 +32,10 @@ EntityManager::EntityManager(GameEngine &game) :
 	m_broadPhase = std::make_unique<CollisionBroadPhase>();
 
 	// TODO: replace these hardcoded resources.
-	m_playerTexture = m_game.loadAsset<SpriteSheet>("serah_sheet", { "textures/serah_sheet.png" });
-	m_swordTexture = m_game.loadAsset<SpriteSheet>("serah_sword", { "textures/serah_sword.png" });
-	m_enemyTexture = m_game.loadAsset<SpriteSheet>("clamper_sheet", { "textures/clamper_sheet.png" });
-	m_effectsTexture = m_game.loadAsset<SpriteSheet>("effects", { "textures/effects.png" });
+	m_playerTexture = m_game.loadAsset<SpriteSheet>("serah");
+	m_swordTexture = m_game.loadAsset<SpriteSheet>("serah_sword");
+	m_enemyTexture = m_game.loadAsset<SpriteSheet>("clamper");
+	m_effectsTexture = m_game.loadAsset<SpriteSheet>("effects");
 	createEnemy();
 	createPlayer();
 
@@ -232,8 +232,6 @@ void EntityManager::createPlayer()
 	phys.scale = glm::vec2(1.f);
 
 	GameComponent::Sprite &spr = m_compSprites[m_playerId];
-
-	// TODO: replace hard-coded frames.
 	spr.spriteSheet = m_playerTexture.get();
 	spr.spriteSheet->setAnimation(CharState::IDLE, spr);
 
@@ -749,8 +747,6 @@ void EntityManager::createEnemy()
 	phys.scale = glm::vec2(1.f);
 
 	GameComponent::Sprite &spr = m_compSprites[enemyId];
-
-	// TODO: replace hard-coded frames.
 	spr.spriteSheet = m_enemyTexture.get();
 	spr.spriteSheet->setAnimation(CharState::IDLE, spr);
 

@@ -92,8 +92,7 @@ GameEngine::GameEngine()
 	m_entityManager = std::make_unique<EntityManager>(*this);
 
 	// TODO: remove this later for more flexible approach.
-	m_currentRoom = m_assetLoader->load<Room>("test", 
-		{"rooms/test_layout.png", "rooms/test_tiles.png" });
+	m_currentRoom = m_assetLoader->load<Room>("test");
 }
 
 GameEngine::~GameEngine()

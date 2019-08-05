@@ -144,6 +144,9 @@
     <ClCompile Include="Shader.cpp">
       <Filter>Source Files\Asset Loader\Assets</Filter>
     </ClCompile>
+    <ClCompile Include="JSONUtilities.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stb_image.h">
@@ -271,6 +274,9 @@
     </ClInclude>
     <ClInclude Include="Shader.h">
       <Filter>Header Files\Asset Loader\Assets</Filter>
+    </ClInclude>
+    <ClInclude Include="JSONUtilities.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

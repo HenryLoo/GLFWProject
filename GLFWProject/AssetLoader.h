@@ -5,6 +5,8 @@
 #include "IDataStream.h"
 #include "ITypeLoader.h"
 
+#include <json/include/nlohmann/json_fwd.hpp>
+
 #include <memory>
 #include <unordered_map>
 #include <string>
@@ -27,12 +29,24 @@ public:
 	std::shared_ptr<T> load(const std::string name, 
 		const std::vector<std::string> &filePaths);
 
+	template <typename T>
+	std::shared_ptr<T> load(const std::string name);
+
 private:
+	// Load list for assets of a given type.
+	void loadAssetList(nlohmann::json json, const std::string &assetLabel, 
+		const std::type_index &assetType);
+
 	// Hold registered loaders for all asset types.
 	std::unordered_map<std::type_index, std::unique_ptr<ITypeLoader>> m_loaders;
 
 	// Hold the stream to get data from.
 	std::unique_ptr<IDataStream> m_stream;
+
+	// 2-dimensional map to hold a list of all asset files.
+	// First key is asset type. Second key is asset name, which is mapped to
+	// a list of file paths for that asset.
+	std::unordered_map<std::type_index, std::unordered_map<std::string, std::vector<std::string>>> m_assetsList;
 };
 
 template <typename T>
@@ -72,6 +86,28 @@ std::shared_ptr<T> AssetLoader::load(const std::string name,
 	// Downcast result to the actual type.
 	return std::dynamic_pointer_cast<T>(
 		it->second->load(streams, name));
+}
+
+template <typename T>
+std::shared_ptr<T> AssetLoader::load(const std::string name)
+{
+	// Get the file paths from the assets list.
+	std::type_index type{ std::type_index(typeid(T)) };
+	auto typeIt{ m_assetsList.find(type) };
+	if (typeIt == m_assetsList.end())
+	{
+		std::cout << "AssetLoader::load: type listing not found for: " << name << std::endl;
+		return nullptr;
+	}
+
+	auto assetIt{ typeIt->second.find(name) };
+	if (assetIt == typeIt->second.end())
+	{
+		std::cout << "AssetLoader::load: asset listing not found for: " << name << std::endl;
+		return nullptr;
+	}
+
+	return load<T>(name, assetIt->second);
 }
 
 #endif

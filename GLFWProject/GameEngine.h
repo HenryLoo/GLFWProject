@@ -49,6 +49,9 @@ public:
 	std::shared_ptr<T> loadAsset(const std::string name,
 		const std::vector<std::string> &filePaths);
 
+	template <typename T>
+	std::shared_ptr<T> loadAsset(const std::string name);
+
 private:
 	// Constructor is private to prevent instantiating singleton.
 	// Handle all user inputs for the game loop's current iteration.
@@ -94,6 +97,12 @@ std::shared_ptr<T> GameEngine::loadAsset(const std::string name,
 	const std::vector<std::string> &filePaths)
 {
 	return m_assetLoader->load<T>(name, filePaths);
+}
+
+template <typename T>
+std::shared_ptr<T> GameEngine::loadAsset(const std::string name)
+{
+	return m_assetLoader->load<T>(name);
 }
 
 #endif

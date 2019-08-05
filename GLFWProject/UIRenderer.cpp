@@ -21,8 +21,7 @@ namespace
 UIRenderer::UIRenderer(GameEngine &game)
 {
 	// TODO: replace these hardcoded resources.
-	m_boxShader = game.loadAsset<Shader>("box",
-		{ "shaders/box.vs", "shaders/box.fs" });
+	m_boxShader = game.loadAsset<Shader>("box");
 
 	// Prepare the data buffers.
 	m_posSizeData = new GLfloat[EntityConstants::MAX_ENTITIES * 4];

@@ -4,6 +4,10 @@
 
 #include "TextureLoader.h"
 
+#include <unordered_map>
+
+struct SpriteAnimation;
+
 class SpriteSheetLoader : public TextureLoader
 {
 public:
@@ -13,6 +17,11 @@ public:
 	
 	// Get the number of streams required for this loader.
 	virtual int getNumStreamsRequired() const;
+	
+private:
+	void loadAnimations(const IDataStream::Result &streamedData,
+		glm::ivec2 &clipSize,
+		std::unordered_map<std::string, SpriteAnimation> &anims) const;
 };
 
 #endif
