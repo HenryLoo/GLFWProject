@@ -88,7 +88,7 @@ GameEngine::GameEngine()
 
 	m_sRenderer = std::make_unique<SpriteRenderer>(*this);
 	m_uRenderer = std::make_unique<UIRenderer>(*this);
-	m_input = std::make_unique<InputManager>();
+	m_input = std::make_unique<InputManager>(m_window);
 	m_entityManager = std::make_unique<EntityManager>(*this);
 
 	// TODO: remove this later for more flexible approach.
@@ -154,7 +154,9 @@ void GameEngine::updateRendererSize()
 
 void GameEngine::processInput()
 {
-	m_input->processInput(m_window);
+	glfwPollEvents();
+
+	m_input->update(m_deltaTime);
 
 	// Exit game.
 	if (m_input->isKeyPressed(InputManager::INPUT_CANCEL))

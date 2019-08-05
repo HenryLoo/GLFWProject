@@ -1,12 +1,25 @@
 #include "InputManager.h"
 
-InputManager::InputManager()
+#include <glm/glm.hpp>
+
+#include <iostream>
+
+namespace
+{
+	// Duration in seconds to allow the press state of an input to linger.
+	const float PRESS_DURATION{ 0.1f };
+}
+
+std::vector<InputManager::InputState> InputManager::m_inputStates;
+
+InputManager::InputManager(GLFWwindow *window)
 {
 	for (int i = 0; i < NUM_INPUT_TYPES; ++i)
 	{
-		m_inputStates.push_back(GLFW_RELEASE);
+		m_inputStates.push_back({ false, true, 0.f });
 	}
-	m_prevInputStates = m_inputStates;
+
+	glfwSetKeyCallback(window, InputManager::keyCallback);
 }
 
 InputManager::~InputManager()
@@ -14,45 +27,94 @@ InputManager::~InputManager()
 
 }
 
-void InputManager::processInput(GLFWwindow *window)
+void InputManager::update(float deltaTime)
 {
-	// Store the inputs from the previous frame.
-	for (int i = 0; i < NUM_INPUT_TYPES; ++i)
+	// Update durations for all input states.
+	for (InputState &state : m_inputStates)
 	{
-		m_prevInputStates[i] = m_inputStates[i];
+		if (state.duration > 0.f)
+		{
+			state.duration -= deltaTime;
+			state.duration = glm::max(0.f, state.duration);
+		}
+	}
+}
+
+bool InputManager::isKeyPressing(InputType type) const
+{
+	return !m_inputStates[type].isReleased;
+}
+
+bool InputManager::isKeyPressed(InputType type, bool isResetDuration) const
+{
+	// Reset the input to guarantee that it only remains
+	// pressed for 1 frame.
+	InputState &state{ m_inputStates[type] };
+	bool isPressed{ state.isPressed || state.duration > 0.f};
+	if (isPressed)
+	{
+		state.isPressed = false;
+		state.isReleased = true;
+
+		if (isResetDuration)
+			state.duration = 0.f;
 	}
 
-	// Poll IO events.
-	glfwPollEvents();
-
-	m_inputStates[INPUT_UP] = glfwGetKey(window, GLFW_KEY_UP);
-	m_inputStates[INPUT_DOWN] = glfwGetKey(window, GLFW_KEY_DOWN);
-	m_inputStates[INPUT_LEFT] = glfwGetKey(window, GLFW_KEY_LEFT);
-	m_inputStates[INPUT_RIGHT] = glfwGetKey(window, GLFW_KEY_RIGHT);
-	m_inputStates[INPUT_CANCEL] = glfwGetKey(window, GLFW_KEY_ESCAPE);
-	m_inputStates[INPUT_ATTACK] = glfwGetKey(window, GLFW_KEY_X);
-	m_inputStates[INPUT_JUMP] = glfwGetKey(window, GLFW_KEY_C);
-	m_inputStates[INPUT_EVADE] = glfwGetKey(window, GLFW_KEY_SPACE);
-	m_inputStates[INPUT_SKILL1] = glfwGetKey(window, GLFW_KEY_Z);
-	m_inputStates[INPUT_DEBUG] = glfwGetKey(window, GLFW_KEY_F1);
+	return isPressed;
 }
 
-bool InputManager::isKeyPressing(InputType type)
+bool InputManager::isKeyReleased(InputType type) const
 {
-	return m_inputStates[type] == GLFW_PRESS;
+	return m_inputStates[type].isReleased;
 }
 
-bool InputManager::isKeyReleasing(InputType type)
+void InputManager::keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods)
 {
-	return m_inputStates[type] == GLFW_RELEASE;
+	bool isPressed{ action == GLFW_PRESS };
+	bool isReleased{ action == GLFW_RELEASE };
+
+	switch (key)
+	{
+		case GLFW_KEY_UP:
+			setKey(INPUT_UP, isPressed, isReleased);
+			break;
+		case GLFW_KEY_DOWN:
+			setKey(INPUT_DOWN, isPressed, isReleased);
+			break;
+		case GLFW_KEY_LEFT:
+			setKey(INPUT_LEFT, isPressed, isReleased);
+			break;
+		case GLFW_KEY_RIGHT:
+			setKey(INPUT_RIGHT, isPressed, isReleased);
+			break;
+		case GLFW_KEY_ESCAPE:
+			setKey(INPUT_CANCEL, isPressed, isReleased);
+			break;
+		case GLFW_KEY_X:
+			setKey(INPUT_ATTACK, isPressed, isReleased);
+			break;
+		case GLFW_KEY_C:
+			setKey(INPUT_JUMP, isPressed, isReleased);
+			break;
+		case GLFW_KEY_SPACE:
+			setKey(INPUT_EVADE, isPressed, isReleased);
+			break;
+		case GLFW_KEY_Z:
+			setKey(INPUT_SKILL1, isPressed, isReleased);
+			break;
+		case GLFW_KEY_F1:
+			setKey(INPUT_DEBUG, isPressed, isReleased);
+			break;
+	}
 }
 
-bool InputManager::isKeyPressed(InputType type)
+void InputManager::setKey(InputType type, bool isPressed, bool isReleased)
 {
-	return m_inputStates[type] == GLFW_PRESS && m_prevInputStates[type] == GLFW_RELEASE;
-}
+	m_inputStates[type].isPressed = isPressed;
+	m_inputStates[type].isReleased = isReleased;
 
-bool InputManager::isKeyReleased(InputType type)
-{
-	return m_inputStates[type] == GLFW_RELEASE && m_prevInputStates[type] == GLFW_PRESS;
+	// Set duration on press so that it lingers on the "pressed" state
+	// for a bit.
+	if (isPressed)
+		m_inputStates[type].duration = PRESS_DURATION;
 }

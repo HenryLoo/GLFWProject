@@ -249,14 +249,14 @@ void EntityManager::createPlayer()
 
 	GameComponent::Character &character = m_compCharacters[m_playerId];
 	character.attackPatterns = {
-		{CharState::ATTACK, {glm::vec2(18, 21), glm::vec2(14, 6), glm::ivec2(2, 7), 3, 0, glm::vec2(96.f, 0.f)}},
+		{CharState::ATTACK, {glm::vec2(18, 21), glm::vec2(14, 6), glm::ivec2(2, 7), 4, 0, glm::vec2(96.f, 0.f)}},
 		{CharState::ATTACK_AIR, {glm::vec2(22, 17), glm::vec2(6, 4), glm::ivec2(2, 6), -1, 0, glm::vec2(96.f, 64.f)}},
 		{CharState::ATTACK_CROUCH, {glm::vec2(22, 17), glm::vec2(7, -3), glm::ivec2(2, 6), -1, 0, glm::vec2(96.f, 0.f)}},
-		{CharState::ATTACK2, {glm::vec2(18, 21), glm::vec2(14, 6), glm::ivec2(2, 7), 3, 0, glm::vec2(96.f, 0.f)}},
+		{CharState::ATTACK2, {glm::vec2(18, 21), glm::vec2(14, 6), glm::ivec2(2, 7), 4, 0, glm::vec2(96.f, 0.f)}},
 		{CharState::ATTACK3, {glm::vec2(19, 21), glm::vec2(15, 6), glm::ivec2(2, 8), -1, 0, glm::vec2(128.f, 0.f)}},
 		{CharState::SKILL1, {glm::vec2(14, 23), glm::vec2(10, 9), glm::ivec2(2, 6), -1, 0, glm::vec2(96.f, 288.f)}},
 	};
-
+	m_compPlayer.numMaxJumps = 2;
 	// Set up state machine.
 	StateMachine &states{ character.states };
 
@@ -268,29 +268,6 @@ void EntityManager::createPlayer()
 	auto enableGravity{ [&phys]()
 	{
 		phys.hasGravity = true;
-	} };
-
-	auto jumpEnterAction{ [&phys, &spr, &character, this]()
-	{
-		InputManager *input{ m_game.getInputManager()};
-		bool isJumping{ input->isKeyPressed(InputManager::INPUT_JUMP) };
-		if (isJumping && m_compPlayer.numRemainingJumps > 0)
-		{
-			phys.isLockedDirection = false;
-			phys.hasGravity = true;
-			spr.isResetAnimation = true;
-			m_compPlayer.numRemainingJumps--;
-			phys.speed.y = character.jumpSpeed;
-
-			// Don't allow for free evade if jumping from an evade.
-			std::string prevState{ character.previousState };
-			if (prevState == CharState::EVADE_START ||
-				prevState == CharState::EVADE)
-			{
-				m_compPlayer.numRemainingEvades = glm::min(
-					m_compPlayer.numRemainingEvades, m_compPlayer.numMaxEvades - 1);
-			}
-		}
 	} };
 
 	auto evadeUpdateAction{ [&phys, &col]()
@@ -428,7 +405,7 @@ void EntityManager::createPlayer()
 
 	states.addState(CharState::IDLE);
 	states.addState(CharState::RUN, runUpdateAction);
-	states.addState(CharState::JUMP_ASCEND, runUpdateAction, jumpEnterAction);
+	states.addState(CharState::JUMP_ASCEND, runUpdateAction);
 	states.addState(CharState::JUMP_PEAK, runUpdateAction, dropDownEnterAction);
 	states.addState(CharState::JUMP_DESCEND, runUpdateAction);
 	states.addState(CharState::JUMP_LAND, []() {}, jumpLandEnterAction);
@@ -549,6 +526,8 @@ void EntityManager::createPlayer()
 	states.addEdge(CharState::JUMP_ASCEND, CharState::ATTACK_AIR, isAttacking);
 	states.addEdge(CharState::JUMP_PEAK, CharState::ATTACK_AIR, isAttacking);
 	states.addEdge(CharState::JUMP_DESCEND, CharState::ATTACK_AIR, isAttacking);
+	states.addEdge(CharState::EVADE_START, CharState::ATTACK, isAttacking);
+	states.addEdge(CharState::EVADE, CharState::ATTACK, isAttacking);
 
 	auto isAttackCombo{ [&spr, &atk, this]() -> bool
 	{
@@ -571,11 +550,30 @@ void EntityManager::createPlayer()
 	states.addEdge(CharState::EVADE_START, CharState::ATTACK, isAttacking);
 
 	// Jumping.
-	auto isJumping{ [this]() -> bool
+	auto isJumping{ [&spr, &phys, &character, this]() -> bool
 	{
 		InputManager *input{ m_game.getInputManager()};
-		bool isJumping{ input->isKeyPressed(InputManager::INPUT_JUMP) };
-		return (isJumping && m_compPlayer.numRemainingJumps > 0);
+		bool isJumping{ input->isKeyPressed(InputManager::INPUT_JUMP, true) };
+		bool canJump{ isJumping && m_compPlayer.numRemainingJumps > 0 };
+
+		if (canJump)
+		{
+			phys.isLockedDirection = false;
+			phys.hasGravity = true;
+			spr.isResetAnimation = true;
+			m_compPlayer.numRemainingJumps--;
+			phys.speed.y = character.jumpSpeed;
+
+			// Don't allow for free evade if jumping from an evade.
+			std::string prevState{ character.previousState };
+			if (prevState == CharState::EVADE_START ||
+				prevState == CharState::EVADE)
+			{
+				m_compPlayer.numRemainingEvades = glm::min(
+					m_compPlayer.numRemainingEvades, m_compPlayer.numMaxEvades - 1);
+			}
+		}
+		return canJump;
 	} };
 	states.addEdge(CharState::IDLE, CharState::JUMP_ASCEND, isJumping);
 	states.addEdge(CharState::ALERT, CharState::JUMP_ASCEND, isJumping);
@@ -586,6 +584,7 @@ void EntityManager::createPlayer()
 	states.addEdge(CharState::TURN, CharState::JUMP_ASCEND, isJumping);
 	states.addEdge(CharState::CROUCH_STOP, CharState::JUMP_ASCEND, isJumping);
 	states.addEdge(CharState::JUMP_LAND, CharState::JUMP_ASCEND, isJumping);
+	states.addEdge(CharState::JUMP_ASCEND, CharState::JUMP_ASCEND, isJumping);
 	states.addEdge(CharState::JUMP_PEAK, CharState::JUMP_ASCEND, isJumping);
 	states.addEdge(CharState::JUMP_DESCEND, CharState::JUMP_ASCEND, isJumping);
 	states.addEdge(CharState::ATTACK, CharState::JUMP_ASCEND, isJumping);
@@ -725,7 +724,7 @@ void EntityManager::createPlayer()
 		bool isRunningRight{ input->isKeyPressing(InputManager::INPUT_RIGHT) };
 		bool isRunning{ isRunningLeft != isRunningRight };
 
-		return (isStopRunningLeft || isStopRunningRight || !isRunning);
+		return ((isStopRunningLeft && isStopRunningRight) || !isRunning);
 	} };
 	states.addEdge(CharState::RUN, CharState::RUN_STOP, isStopRunning);
 	states.addEdge(CharState::RUN_START, CharState::RUN_STOP, isStopRunning);

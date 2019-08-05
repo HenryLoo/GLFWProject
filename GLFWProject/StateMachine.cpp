@@ -5,6 +5,13 @@ void StateMachine::update()
 	if (m_currentState == nullptr)
 		return;
 
+	// If this is a new state, call the enter action.
+	if (isNewState)
+	{
+		m_currentState->enterAction();
+		isNewState = false;
+	}
+
 	// Call update action.
 	m_currentState->updateAction();
 
@@ -23,11 +30,12 @@ void StateMachine::update()
 			// Call exit action.
 			m_currentState->exitAction();
 
+			// Change to new state.
+			// The enter action will be called in the next frame,
+			// so that player inputs don't stack.
 			m_currentLabel = it->first;
 			m_currentState = &(it->second);
-
-			// Call enter action.
-			m_currentState->enterAction();
+			isNewState = true;
 
 			// Stop checking edges.
 			break;

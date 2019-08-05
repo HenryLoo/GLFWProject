@@ -57,6 +57,9 @@ private:
 	// Hold the current state and its label.
 	std::string m_currentLabel;
 	State *m_currentState{ nullptr };
+
+	// Flag for if this is the first frame since entering the current state.
+	bool isNewState{ false };
 };
 
 #endif
