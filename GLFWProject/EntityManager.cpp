@@ -18,14 +18,11 @@
 
 #include <iostream>
 
-#include <SoLoud/soloud.h>
-#include <SoLoud/soloud_wav.h>
-SoLoud::Soloud engine;
-
 EntityManager::EntityManager(GameEngine *game, AssetLoader *assetLoader,
 	InputManager *inputManager, SpriteRenderer *sRenderer,
-	UIRenderer *uRenderer):
-	m_assetLoader(assetLoader), m_inputManager(inputManager)
+	UIRenderer *uRenderer, SoLoud::Soloud &soundEngine):
+	m_assetLoader(assetLoader), m_inputManager(inputManager),
+	m_soundEngine(soundEngine)
 {
 	// Initialize entity and component vectors.
 	m_entities.resize(EntityConstants::MAX_ENTITIES);
@@ -45,6 +42,9 @@ EntityManager::EntityManager(GameEngine *game, AssetLoader *assetLoader,
 	m_enemyTexture = assetLoader->load<SpriteSheet>("clamper");
 	m_effectsTexture = assetLoader->load<SpriteSheet>("effects");
 	m_jumpSound = assetLoader->load<Sound>("jump");
+	m_evadeSound = assetLoader->load<Sound>("evade");
+	m_attackSound = assetLoader->load<Sound>("serah_attack");
+	m_hitSound = assetLoader->load<Sound>("hit");
 	createEnemy();
 	createPlayer();
 
@@ -52,8 +52,8 @@ EntityManager::EntityManager(GameEngine *game, AssetLoader *assetLoader,
 	m_gameSystems.emplace_back(std::make_unique<AttackSystem>(*this,
 		m_compSprites, m_compAttacks));
 	m_gameSystems.emplace_back(std::make_unique<AttackCollisionSystem>(*this,
-		m_compPhysics, m_compSprites, m_compCollisions, m_compAttacks,
-		m_compCharacters));
+		soundEngine, m_compPhysics, m_compSprites, m_compCollisions, 
+		m_compAttacks, m_compCharacters));
 	m_gameSystems.emplace_back(std::make_unique<PhysicsSystem>(*this,
 		m_compPhysics, m_compCollisions, m_compCharacters));
 	m_gameSystems.emplace_back(std::make_unique<SpriteSystem>(*this,
@@ -68,13 +68,11 @@ EntityManager::EntityManager(GameEngine *game, AssetLoader *assetLoader,
 
 	m_debugSystem = std::make_unique<DebugSystem>(*this, uRenderer,
 		m_compPhysics, m_compCollisions, m_compAttacks);
-
-	engine.init();
 }
 
 EntityManager::~EntityManager()
 {
-	engine.deinit();
+
 }
 
 void EntityManager::update(float deltaTime, bool isDebugMode)
@@ -260,12 +258,12 @@ void EntityManager::createPlayer()
 
 	GameComponent::Character &character = m_compCharacters[m_playerId];
 	character.attackPatterns = {
-		{CharState::ATTACK, {glm::vec2(18, 21), glm::vec2(14, 6), glm::ivec2(2, 7), 4, 0, glm::vec2(96.f, 0.f)}},
-		{CharState::ATTACK_AIR, {glm::vec2(22, 17), glm::vec2(6, 4), glm::ivec2(2, 6), -1, 0, glm::vec2(96.f, 64.f)}},
-		{CharState::ATTACK_CROUCH, {glm::vec2(22, 17), glm::vec2(7, -3), glm::ivec2(2, 6), -1, 0, glm::vec2(96.f, 0.f)}},
-		{CharState::ATTACK2, {glm::vec2(18, 21), glm::vec2(14, 6), glm::ivec2(2, 7), 4, 0, glm::vec2(96.f, 0.f)}},
-		{CharState::ATTACK3, {glm::vec2(19, 21), glm::vec2(15, 6), glm::ivec2(2, 8), -1, 0, glm::vec2(128.f, 0.f)}},
-		{CharState::SKILL1, {glm::vec2(14, 23), glm::vec2(10, 9), glm::ivec2(2, 6), -1, 0, glm::vec2(96.f, 288.f)}},
+		{CharState::ATTACK, {glm::vec2(18, 21), glm::vec2(14, 6), glm::ivec2(3, 7), 4, m_hitSound, 0, glm::vec2(96.f, 0.f)}},
+		{CharState::ATTACK_AIR, {glm::vec2(22, 17), glm::vec2(6, 4), glm::ivec2(2, 6), -1, m_hitSound, 0, glm::vec2(96.f, 64.f)}},
+		{CharState::ATTACK_CROUCH, {glm::vec2(22, 17), glm::vec2(7, -3), glm::ivec2(2, 6), -1, m_hitSound, 0, glm::vec2(96.f, 0.f)}},
+		{CharState::ATTACK2, {glm::vec2(18, 21), glm::vec2(14, 6), glm::ivec2(2, 7), 4, m_hitSound, 0, glm::vec2(96.f, 0.f)}},
+		{CharState::ATTACK3, {glm::vec2(19, 21), glm::vec2(15, 6), glm::ivec2(2, 8), -1, m_hitSound, 0, glm::vec2(128.f, 0.f)}},
+		{CharState::SKILL1, {glm::vec2(14, 23), glm::vec2(10, 9), glm::ivec2(2, 6), -1, m_hitSound,0, glm::vec2(96.f, 288.f)}},
 	};
 
 	// Set up state machine.
@@ -329,6 +327,8 @@ void EntityManager::createPlayer()
 		effectPos.y -= 4.f;
 		createEffect(EffectType::EVADE_SMOKE, effectPos, phys.scale, 
 			255, 255, 255, 180);
+
+		m_evadeSound->play(m_soundEngine);
 	} };
 
 	auto runUpdateAction{ [&phys, &character, this]()
@@ -517,6 +517,10 @@ void EntityManager::createPlayer()
 	auto isAttacking{ [this]() -> bool
 	{
 		bool isAttacking{ m_inputManager->isKeyPressed(InputManager::INPUT_ATTACK) };
+		if (isAttacking)
+		{
+			m_attackSound->play(m_soundEngine);
+		}
 		return isAttacking;
 	} };
 	states.addEdge(CharState::IDLE, CharState::ATTACK, isAttacking);
@@ -537,8 +541,13 @@ void EntityManager::createPlayer()
 
 	auto isAttackCombo{ [&spr, &atk, this]() -> bool
 	{
-		bool isAttacking{ m_inputManager->isKeyPressed(InputManager::INPUT_ATTACK) };
-		return (isAttacking && spr.currentFrame > atk.pattern.comboFrame);
+		bool isAttacking{ m_inputManager->isKeyPressed(InputManager::INPUT_ATTACK) && 
+			spr.currentFrame > atk.pattern.comboFrame };
+		if (isAttacking)
+		{
+			m_attackSound->play(m_soundEngine);
+		}
+		return isAttacking;
 	} };
 	states.addEdge(CharState::ATTACK, CharState::ATTACK2, isAttackCombo);
 	states.addEdge(CharState::ATTACK2, CharState::ATTACK3, isAttackCombo);
@@ -561,7 +570,7 @@ void EntityManager::createPlayer()
 
 		if (canJump)
 		{
-			m_jumpSound->play(engine);
+			m_jumpSound->play(m_soundEngine);
 			phys.isLockedDirection = false;
 			phys.hasGravity = true;
 			spr.isResetAnimation = true;
@@ -611,7 +620,7 @@ void EntityManager::createPlayer()
 	// Evading.
 	auto isEvading{ [this]() -> bool
 	{
-		bool isEvading{ m_inputManager->isKeyPressed(InputManager::INPUT_EVADE) };
+		bool isEvading{ m_inputManager->isKeyPressed(InputManager::INPUT_EVADE, true) };
 		return (isEvading && m_compPlayer.numRemainingEvades > 0);
 	} };
 	states.addEdge(CharState::IDLE, CharState::EVADE_START, isEvading);

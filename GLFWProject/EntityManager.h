@@ -16,12 +16,17 @@ class InputManager;
 class SpriteRenderer;
 class UIRenderer;
 
+namespace SoLoud
+{
+	class Soloud;
+}
+
 class EntityManager
 {
 public:
 	EntityManager(GameEngine *game, AssetLoader *assetLoader, 
 		InputManager *inputManager, SpriteRenderer *sRenderer, 
-		UIRenderer *uRenderer);
+		UIRenderer *uRenderer, SoLoud::Soloud &soundEngine);
 	~EntityManager();
 
 	// Update all appropriate values for the game loop's current iteration.
@@ -87,9 +92,10 @@ private:
 	std::vector<std::pair<AABBSource, AABBSource>> m_collisions;
 	std::unique_ptr<CollisionBroadPhase> m_broadPhase;
 
-	// Hold pointers to other core systems.
+	// Hold pointers and references to other core systems.
 	AssetLoader *m_assetLoader;
 	InputManager *m_inputManager;
+	SoLoud::Soloud &m_soundEngine;
 
 	// TODO: remove this later for a more flexible implementation.
 	std::shared_ptr<SpriteSheet> m_playerTexture;
@@ -97,6 +103,9 @@ private:
 	std::shared_ptr<SpriteSheet> m_enemyTexture;
 	std::shared_ptr<SpriteSheet> m_effectsTexture;
 	std::shared_ptr<Sound> m_jumpSound;
+	std::shared_ptr<Sound> m_evadeSound;
+	std::shared_ptr<Sound> m_attackSound;
+	std::shared_ptr<Sound> m_hitSound;
 };
 
 #endif

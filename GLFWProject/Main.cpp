@@ -25,6 +25,9 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
+#include <SoLoud/soloud.h>
+#include <SoLoud/soloud_wav.h>
+
 #include <cstdlib>
 #include <ctime>
 
@@ -51,9 +54,15 @@ int main()
 		std::make_unique<UIRenderer>(assetLoader.get()) };
 	std::unique_ptr<InputManager> inputManager{ 
 		std::make_unique<InputManager>(game->getWindow()) };
+
+	// Initialize the sound engine.
+	SoLoud::Soloud soundEngine;
+	soundEngine.init();
+
 	std::unique_ptr<EntityManager> entityManager{ 
 		std::make_unique<EntityManager>( game.get(), assetLoader.get(), 
-		inputManager.get(), sRenderer.get(), uRenderer.get()) };
+		inputManager.get(), sRenderer.get(), uRenderer.get(),
+		soundEngine) };
 
 	// Seed the random number generator.
 	srand(static_cast<unsigned> (time(0)));
@@ -61,6 +70,9 @@ int main()
 	// Start the game loop.
 	game->start(entityManager.get(), assetLoader.get(), inputManager.get(),
 		sRenderer.get(), uRenderer.get());
+
+	// Deinitialize the sound engine before closing.
+	soundEngine.deinit();
 
 	// Game has ended.
 	return 0;

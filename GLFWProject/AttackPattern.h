@@ -4,6 +4,10 @@
 
 #include "AABB.h"
 
+#include <memory>
+
+class Sound;
+
 struct AttackPattern
 {
 	// The attack's collision box.
@@ -14,6 +18,9 @@ struct AttackPattern
 
 	// The minimum frame index to allow for an additional attack.
 	int comboFrame;
+
+	// The sound to play when a target is hit.
+	std::shared_ptr<Sound> hitSound;
 
 	// The amount of damage this attack will deal.
 	int damage;

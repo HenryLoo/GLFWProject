@@ -3,6 +3,7 @@
 #include "CharStates.h"
 #include "EffectTypes.h"
 #include "EntityManager.h"
+#include "Sound.h"
 
 namespace
 {
@@ -22,14 +23,15 @@ namespace
 }
 
 AttackCollisionSystem::AttackCollisionSystem(EntityManager &manager,
+	SoLoud::Soloud &soundEngine,
 	std::vector<GameComponent::Physics> &physics,
 	std::vector<GameComponent::Sprite> &sprites,
 	std::vector<GameComponent::Collision> &collisions,
 	std::vector<GameComponent::Attack> &attacks,
 	std::vector<GameComponent::Character> &characters) :
 	GameSystem(manager, {}),
-	m_physics(physics), m_sprites(sprites), m_collisions(collisions),
-	m_attacks(attacks), m_characters(characters)
+	m_soundEngine(soundEngine), m_physics(physics), m_sprites(sprites), 
+	m_collisions(collisions), m_attacks(attacks), m_characters(characters)
 {
 
 }
@@ -67,6 +69,9 @@ void AttackCollisionSystem::update(float deltaTime, int numEntities,
 
 			// Add to the list of hit entities.
 			hitEntities.insert(targetId);
+
+			// Play the hit sound.
+			attack.pattern.hitSound->play(m_soundEngine);
 
 			// If the target is airborne, apply a minimum vertical knockback.
 			GameComponent::Collision &col{ m_collisions[targetId] };

@@ -146,11 +146,11 @@ void GameEngine::processInput(InputManager *inputManager)
 	inputManager->update(m_deltaTime);
 
 	// Exit game.
-	if (inputManager->isKeyPressed(InputManager::INPUT_CANCEL))
+	if (inputManager->isKeyPressed(InputManager::INPUT_CANCEL, true))
 		glfwSetWindowShouldClose(m_window, true);
 
 	// Toggle debug mode.
-	if (inputManager->isKeyPressed(InputManager::INPUT_DEBUG))
+	if (inputManager->isKeyPressed(InputManager::INPUT_DEBUG, true))
 		m_isDebugMode = !m_isDebugMode;
 }
 

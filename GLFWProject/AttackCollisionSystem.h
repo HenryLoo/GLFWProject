@@ -4,11 +4,17 @@
 
 #include "GameSystem.h"
 
+namespace SoLoud
+{
+	class Soloud;
+}
+
 // Handles collisions involving entities and attacks.
 class AttackCollisionSystem : public GameSystem
 {
 public:
 	AttackCollisionSystem(EntityManager &manager,
+		SoLoud::Soloud &soundEngine,
 		std::vector<GameComponent::Physics> &physics,
 		std::vector<GameComponent::Sprite> &sprites,
 		std::vector<GameComponent::Collision> &collisions,
@@ -21,6 +27,9 @@ public:
 private:
 	virtual void process(float deltaTime, int entityId,
 		unsigned long &entityMask);
+
+	// Reference to the sound engine.
+	SoLoud::Soloud &m_soundEngine;
 
 	// References to the relevant components.
 	std::vector<GameComponent::Physics> &m_physics;

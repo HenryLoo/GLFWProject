@@ -57,7 +57,12 @@ bool InputManager::isKeyPressed(InputType type, bool isResetDuration) const
 		state.isReleased = true;
 
 		if (isResetDuration)
-			state.duration = 0.f;
+		{
+			for (InputState &thisState : m_inputStates)
+			{
+				thisState.duration = 0.f;
+			}
+		}
 	}
 
 	return isPressed;
