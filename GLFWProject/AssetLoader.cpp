@@ -5,6 +5,7 @@
 #include "SpriteSheet.h"
 #include "Room.h"
 #include "Shader.h"
+#include "Sound.h"
 
 #include <json/single_include/nlohmann/json.hpp>
 
@@ -16,6 +17,7 @@ namespace
 
 	const std::string LIST_ROOMS{ "rooms" };
 	const std::string LIST_SHADERS{ "shaders" };
+	const std::string LIST_SOUNDS{ "sounds" };
 	const std::string LIST_SPRITESHEETS{ "spritesheets" };
 	const std::string LIST_TEXTURES{ "textures" };
 
@@ -26,6 +28,7 @@ namespace
 	{
 		{ LIST_ROOMS, std::type_index(typeid(Room)) },
 		{ LIST_SHADERS, std::type_index(typeid(Shader)) },
+		{ LIST_SOUNDS, std::type_index(typeid(Sound)) },
 		{ LIST_SPRITESHEETS, std::type_index(typeid(SpriteSheet)) },
 		{ LIST_TEXTURES, std::type_index(typeid(Texture)) }
 	};

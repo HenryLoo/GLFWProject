@@ -147,6 +147,12 @@
     <ClCompile Include="JSONUtilities.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="SoundLoader.cpp">
+      <Filter>Source Files\Asset Loader\Loaders</Filter>
+    </ClCompile>
+    <ClCompile Include="Sound.cpp">
+      <Filter>Source Files\Asset Loader\Assets</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stb_image.h">
@@ -277,6 +283,12 @@
     </ClInclude>
     <ClInclude Include="JSONUtilities.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Sound.h">
+      <Filter>Header Files\Asset Loader\Assets</Filter>
+    </ClInclude>
+    <ClInclude Include="SoundLoader.h">
+      <Filter>Header Files\Asset Loader\Loaders</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

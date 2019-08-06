@@ -5,6 +5,7 @@
 #include "EntityConstants.h"
 #include "GameEngine.h"
 #include "SpriteSheet.h"
+#include "Sound.h"
 
 #include "AttackCollisionSystem.h"
 #include "AttackSystem.h"
@@ -15,6 +16,10 @@
 #include "SpriteSystem.h"
 
 #include <iostream>
+
+#include <SoLoud/soloud.h>
+#include <SoLoud/soloud_wav.h>
+SoLoud::Soloud engine;
 
 EntityManager::EntityManager(GameEngine &game) :
 	m_game(game)
@@ -36,6 +41,7 @@ EntityManager::EntityManager(GameEngine &game) :
 	m_swordTexture = m_game.loadAsset<SpriteSheet>("serah_sword");
 	m_enemyTexture = m_game.loadAsset<SpriteSheet>("clamper");
 	m_effectsTexture = m_game.loadAsset<SpriteSheet>("effects");
+	m_jumpSound = m_game.loadAsset<Sound>("jump");
 	createEnemy();
 	createPlayer();
 
@@ -59,6 +65,13 @@ EntityManager::EntityManager(GameEngine &game) :
 
 	m_debugSystem = std::make_unique<DebugSystem>(*this,
 		m_compPhysics, m_compCollisions, m_compAttacks);
+
+	engine.init();
+}
+
+EntityManager::~EntityManager()
+{
+	engine.deinit();
 }
 
 void EntityManager::update(float deltaTime, bool isDebugMode)
@@ -256,7 +269,7 @@ void EntityManager::createPlayer()
 		{CharState::ATTACK3, {glm::vec2(19, 21), glm::vec2(15, 6), glm::ivec2(2, 8), -1, 0, glm::vec2(128.f, 0.f)}},
 		{CharState::SKILL1, {glm::vec2(14, 23), glm::vec2(10, 9), glm::ivec2(2, 6), -1, 0, glm::vec2(96.f, 288.f)}},
 	};
-	m_compPlayer.numMaxJumps = 2;
+
 	// Set up state machine.
 	StateMachine &states{ character.states };
 
@@ -558,6 +571,7 @@ void EntityManager::createPlayer()
 
 		if (canJump)
 		{
+			m_jumpSound->play(engine);
 			phys.isLockedDirection = false;
 			phys.hasGravity = true;
 			spr.isResetAnimation = true;

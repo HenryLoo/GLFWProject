@@ -10,11 +10,13 @@
 #include <vector>
 
 class GameEngine;
+class Sound;
 
 class EntityManager
 {
 public:
 	EntityManager(GameEngine &input);
+	~EntityManager();
 
 	// Update all appropriate values for the game loop's current iteration.
 	void update(float deltaTime, bool isDebugMode);
@@ -86,6 +88,7 @@ private:
 	std::shared_ptr<SpriteSheet> m_swordTexture;
 	std::shared_ptr<SpriteSheet> m_enemyTexture;
 	std::shared_ptr<SpriteSheet> m_effectsTexture;
+	std::shared_ptr<Sound> m_jumpSound;
 };
 
 #endif

@@ -6,12 +6,14 @@
 #include "EntityConstants.h"
 #include "EntityManager.h"
 #include "SpriteSheet.h"
+#include "Sound.h"
 
 #include "DiskStream.h"
 #include "TextureLoader.h"
 #include "SpriteSheetLoader.h"
 #include "RoomLoader.h"
 #include "ShaderLoader.h"
+#include "SoundLoader.h"
 
 #include <iostream>
 
@@ -77,6 +79,7 @@ GameEngine::GameEngine()
 	m_assetLoader->registerLoader<SpriteSheet>(new SpriteSheetLoader());
 	m_assetLoader->registerLoader<Room>(new RoomLoader());
 	m_assetLoader->registerLoader<Shader>(new ShaderLoader());
+	m_assetLoader->registerLoader<Sound>(new SoundLoader());
 
 	// Initialize the camera.
 	m_camera = std::make_unique<Camera>();

@@ -5,9 +5,6 @@
 #include <stdlib.h>
 
 #include "GameEngine.h"
-#include "SpriteRenderer.h"
-#include "InputManager.h"
-#include "UIRenderer.h"
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>

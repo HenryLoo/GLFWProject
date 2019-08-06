@@ -1,7 +1,5 @@
 #include "Texture.h"
 
-#include <iostream>
-
 Texture::Texture(GLuint id, GLint width, GLint height, GLint numChannels) :
 	m_id(id), m_width(width), m_height(height), m_numChannels(numChannels)
 {
