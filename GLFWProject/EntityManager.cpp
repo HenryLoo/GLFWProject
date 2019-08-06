@@ -3,9 +3,10 @@
 #include "CharStates.h"
 #include "EffectTypes.h"
 #include "EntityConstants.h"
-#include "GameEngine.h"
+#include "AssetLoader.h"
 #include "SpriteSheet.h"
 #include "Sound.h"
+#include "InputManager.h"
 
 #include "AttackCollisionSystem.h"
 #include "AttackSystem.h"
@@ -21,8 +22,10 @@
 #include <SoLoud/soloud_wav.h>
 SoLoud::Soloud engine;
 
-EntityManager::EntityManager(GameEngine &game) :
-	m_game(game)
+EntityManager::EntityManager(GameEngine *game, AssetLoader *assetLoader,
+	InputManager *inputManager, SpriteRenderer *sRenderer,
+	UIRenderer *uRenderer):
+	m_assetLoader(assetLoader), m_inputManager(inputManager)
 {
 	// Initialize entity and component vectors.
 	m_entities.resize(EntityConstants::MAX_ENTITIES);
@@ -37,11 +40,11 @@ EntityManager::EntityManager(GameEngine &game) :
 	m_broadPhase = std::make_unique<CollisionBroadPhase>();
 
 	// TODO: replace these hardcoded resources.
-	m_playerTexture = m_game.loadAsset<SpriteSheet>("serah");
-	m_swordTexture = m_game.loadAsset<SpriteSheet>("serah_sword");
-	m_enemyTexture = m_game.loadAsset<SpriteSheet>("clamper");
-	m_effectsTexture = m_game.loadAsset<SpriteSheet>("effects");
-	m_jumpSound = m_game.loadAsset<Sound>("jump");
+	m_playerTexture = assetLoader->load<SpriteSheet>("serah");
+	m_swordTexture = assetLoader->load<SpriteSheet>("serah_sword");
+	m_enemyTexture = assetLoader->load<SpriteSheet>("clamper");
+	m_effectsTexture = assetLoader->load<SpriteSheet>("effects");
+	m_jumpSound = assetLoader->load<Sound>("jump");
 	createEnemy();
 	createPlayer();
 
@@ -54,16 +57,16 @@ EntityManager::EntityManager(GameEngine &game) :
 	m_gameSystems.emplace_back(std::make_unique<PhysicsSystem>(*this,
 		m_compPhysics, m_compCollisions, m_compCharacters));
 	m_gameSystems.emplace_back(std::make_unique<SpriteSystem>(*this,
-		m_compPhysics, m_compSprites, m_compWeapons));
+		sRenderer, m_compPhysics, m_compSprites, m_compWeapons));
 	m_gameSystems.emplace_back(std::make_unique<RoomCollisionSystem>(*this,
-		m_compPhysics, m_compCollisions, m_compCharacters));
+		game, m_compPhysics, m_compCollisions, m_compCharacters));
 	m_gameSystems.emplace_back(std::make_unique<PlayerSystem>(*this,
 		m_compPlayer, m_compPhysics, m_compCollisions));
 	m_gameSystems.emplace_back(std::make_unique<CharacterSystem>(*this,
 		m_compSprites, m_compWeapons, m_compCollisions, m_compAttacks,
 		m_compCharacters));
 
-	m_debugSystem = std::make_unique<DebugSystem>(*this,
+	m_debugSystem = std::make_unique<DebugSystem>(*this, uRenderer,
 		m_compPhysics, m_compCollisions, m_compAttacks);
 
 	engine.init();
@@ -137,11 +140,6 @@ glm::vec3 EntityManager::getPlayerPos() const
 const std::vector<std::pair<AABBSource, AABBSource>> &EntityManager::getCollisions() const
 {
 	return m_collisions;
-}
-
-GameEngine &EntityManager::getGameEngine() const
-{
-	return m_game;
 }
 
 void EntityManager::createEffect(const std::string &type, glm::vec3 pos, 
@@ -305,9 +303,8 @@ void EntityManager::createPlayer()
 
 		// If left/right is held down, then evade in that direction
 		// instead.
-		InputManager *input{ m_game.getInputManager() };
-		bool isRunningLeft{ input->isKeyPressing(InputManager::INPUT_LEFT) };
-		bool isRunningRight{ input->isKeyPressing(InputManager::INPUT_RIGHT) };
+		bool isRunningLeft{ m_inputManager->isKeyPressing(InputManager::INPUT_LEFT) };
+		bool isRunningRight{ m_inputManager->isKeyPressing(InputManager::INPUT_RIGHT) };
 		bool isRunning{ isRunningLeft != isRunningRight };
 		if (isRunning)
 		{
@@ -336,9 +333,8 @@ void EntityManager::createPlayer()
 
 	auto runUpdateAction{ [&phys, &character, this]()
 	{
-		InputManager *input{ m_game.getInputManager()};
-		bool isRunningLeft{ input->isKeyPressing(InputManager::INPUT_LEFT) };
-		bool isRunningRight{ input->isKeyPressing(InputManager::INPUT_RIGHT) };
+		bool isRunningLeft{ m_inputManager->isKeyPressing(InputManager::INPUT_LEFT) };
+		bool isRunningRight{ m_inputManager->isKeyPressing(InputManager::INPUT_RIGHT) };
 		bool isRunning{ isRunningLeft != isRunningRight };
 
 		// If current speed is greater than the character's movement speed,
@@ -368,9 +364,8 @@ void EntityManager::createPlayer()
 
 	auto dropDownEnterAction{ [&phys, &spr, &col, this]()
 	{
-		InputManager *input{ m_game.getInputManager()};
-		bool isCrouching{ input->isKeyPressing(InputManager::INPUT_DOWN) };
-		bool isJumping{ input->isKeyPressed(InputManager::INPUT_JUMP) };
+		bool isCrouching{ m_inputManager->isKeyPressing(InputManager::INPUT_DOWN) };
+		bool isJumping{ m_inputManager->isKeyPressed(InputManager::INPUT_JUMP) };
 		if (isCrouching && isJumping && col.isCollidingGhost &&
 			!col.isCollidingFloor && !col.isCollidingSlope)
 		{
@@ -491,8 +486,7 @@ void EntityManager::createPlayer()
 	// Skill 1.
 	auto isSkill1{ [this]() -> bool
 	{
-		InputManager *input{ m_game.getInputManager()};
-		bool isSkill1 { input->isKeyPressed(InputManager::INPUT_SKILL1) };
+		bool isSkill1 { m_inputManager->isKeyPressed(InputManager::INPUT_SKILL1) };
 		return isSkill1;
 	} };
 	states.addEdge(CharState::IDLE, CharState::SKILL1, isSkill1);
@@ -522,8 +516,7 @@ void EntityManager::createPlayer()
 	// Attacking.
 	auto isAttacking{ [this]() -> bool
 	{
-		InputManager *input{ m_game.getInputManager()};
-		bool isAttacking{ input->isKeyPressed(InputManager::INPUT_ATTACK) };
+		bool isAttacking{ m_inputManager->isKeyPressed(InputManager::INPUT_ATTACK) };
 		return isAttacking;
 	} };
 	states.addEdge(CharState::IDLE, CharState::ATTACK, isAttacking);
@@ -544,8 +537,7 @@ void EntityManager::createPlayer()
 
 	auto isAttackCombo{ [&spr, &atk, this]() -> bool
 	{
-		InputManager *input{ m_game.getInputManager()};
-		bool isAttacking{ input->isKeyPressed(InputManager::INPUT_ATTACK) };
+		bool isAttacking{ m_inputManager->isKeyPressed(InputManager::INPUT_ATTACK) };
 		return (isAttacking && spr.currentFrame > atk.pattern.comboFrame);
 	} };
 	states.addEdge(CharState::ATTACK, CharState::ATTACK2, isAttackCombo);
@@ -553,8 +545,7 @@ void EntityManager::createPlayer()
 
 	auto isAirAttacking{ [&phys, &col, this]() -> bool
 	{
-		InputManager *input{ m_game.getInputManager()};
-		bool isAttacking{ input->isKeyPressed(InputManager::INPUT_ATTACK) };
+		bool isAttacking{ m_inputManager->isKeyPressed(InputManager::INPUT_ATTACK) };
 		return (isAttacking && col.isInAir(phys));
 	} };
 	states.addEdge(CharState::EVADE, CharState::ATTACK_AIR, isAirAttacking);
@@ -565,8 +556,7 @@ void EntityManager::createPlayer()
 	// Jumping.
 	auto isJumping{ [&spr, &phys, &character, this]() -> bool
 	{
-		InputManager *input{ m_game.getInputManager()};
-		bool isJumping{ input->isKeyPressed(InputManager::INPUT_JUMP, true) };
+		bool isJumping{ m_inputManager->isKeyPressed(InputManager::INPUT_JUMP, true) };
 		bool canJump{ isJumping && m_compPlayer.numRemainingJumps > 0 };
 
 		if (canJump)
@@ -611,9 +601,8 @@ void EntityManager::createPlayer()
 	// Drop down.
 	auto isDroppingDown{ [&col, this]() -> bool
 	{
-		InputManager *input{ m_game.getInputManager()};
-		bool isCrouching{ input->isKeyPressing(InputManager::INPUT_DOWN) };
-		bool isJumping{ input->isKeyPressed(InputManager::INPUT_JUMP) };
+		bool isCrouching{ m_inputManager->isKeyPressing(InputManager::INPUT_DOWN) };
+		bool isJumping{ m_inputManager->isKeyPressed(InputManager::INPUT_JUMP) };
 		return (isCrouching && isJumping && col.isCollidingGhost &&
 			!col.isCollidingFloor && !col.isCollidingSlope);
 	} };
@@ -622,8 +611,7 @@ void EntityManager::createPlayer()
 	// Evading.
 	auto isEvading{ [this]() -> bool
 	{
-		InputManager *input{ m_game.getInputManager()};
-		bool isEvading{ input->isKeyPressed(InputManager::INPUT_EVADE) };
+		bool isEvading{ m_inputManager->isKeyPressed(InputManager::INPUT_EVADE) };
 		return (isEvading && m_compPlayer.numRemainingEvades > 0);
 	} };
 	states.addEdge(CharState::IDLE, CharState::EVADE_START, isEvading);
@@ -646,9 +634,8 @@ void EntityManager::createPlayer()
 	// Stop evading.
 	auto isEvadeTimerEndAndTurning{ [&phys, this]() -> bool
 	{
-		InputManager *input{ m_game.getInputManager()};
-		bool isRunningLeft{ input->isKeyPressing(InputManager::INPUT_LEFT) };
-		bool isRunningRight{ input->isKeyPressing(InputManager::INPUT_RIGHT) };
+		bool isRunningLeft{ m_inputManager->isKeyPressing(InputManager::INPUT_LEFT) };
+		bool isRunningRight{ m_inputManager->isKeyPressing(InputManager::INPUT_RIGHT) };
 		bool isRunning{ isRunningLeft != isRunningRight };
 
 		// Show turning animation if moving in opposite from the direction 
@@ -668,8 +655,7 @@ void EntityManager::createPlayer()
 	// Crouching.
 	auto isCrouching{ [this]() -> bool
 	{
-		InputManager *input{ m_game.getInputManager()};
-		bool isCrouching{ input->isKeyPressing(InputManager::INPUT_DOWN) };
+		bool isCrouching{ m_inputManager->isKeyPressing(InputManager::INPUT_DOWN) };
 		return isCrouching;
 	} };
 	states.addEdge(CharState::IDLE, CharState::CROUCH, isCrouching);
@@ -685,8 +671,7 @@ void EntityManager::createPlayer()
 	// Stop crouching.
 	auto isStopCrouching{ [this]() -> bool
 	{
-		InputManager *input{ m_game.getInputManager()};
-		bool isCrouching{ input->isKeyPressing(InputManager::INPUT_DOWN) };
+		bool isCrouching{ m_inputManager->isKeyPressing(InputManager::INPUT_DOWN) };
 		return !isCrouching;
 	} };
 	states.addEdge(CharState::CROUCH, CharState::CROUCH_STOP, isStopCrouching);
@@ -694,18 +679,16 @@ void EntityManager::createPlayer()
 	// Start running.
 	auto isStartRunning{ [this]() -> bool
 	{
-		InputManager *input{ m_game.getInputManager()};
-		bool isRunningLeft{ input->isKeyPressing(InputManager::INPUT_LEFT) };
-		bool isRunningRight{ input->isKeyPressing(InputManager::INPUT_RIGHT) };
+		bool isRunningLeft{ m_inputManager->isKeyPressing(InputManager::INPUT_LEFT) };
+		bool isRunningRight{ m_inputManager->isKeyPressing(InputManager::INPUT_RIGHT) };
 		bool isRunning{ isRunningLeft != isRunningRight };
 
 		return isRunning;
 	} };
 	auto isTurning{ [&phys, this]() -> bool
 	{
-		InputManager *input{ m_game.getInputManager()};
-		bool isRunningLeft{ input->isKeyPressing(InputManager::INPUT_LEFT) };
-		bool isRunningRight{ input->isKeyPressing(InputManager::INPUT_RIGHT) };
+		bool isRunningLeft{ m_inputManager->isKeyPressing(InputManager::INPUT_LEFT) };
+		bool isRunningRight{ m_inputManager->isKeyPressing(InputManager::INPUT_RIGHT) };
 		bool isRunning{ isRunningLeft != isRunningRight };
 
 		// Show turning animation if moving in opposite from the direction 
@@ -731,11 +714,10 @@ void EntityManager::createPlayer()
 	// Stop running.
 	auto isStopRunning{ [&character, this]() -> bool
 	{
-		InputManager *input{ m_game.getInputManager()};
-		bool isStopRunningLeft{ input->isKeyReleased(InputManager::INPUT_LEFT) };
-		bool isStopRunningRight{ input->isKeyReleased(InputManager::INPUT_RIGHT) };
-		bool isRunningLeft{ input->isKeyPressing(InputManager::INPUT_LEFT) };
-		bool isRunningRight{ input->isKeyPressing(InputManager::INPUT_RIGHT) };
+		bool isStopRunningLeft{ m_inputManager->isKeyReleased(InputManager::INPUT_LEFT) };
+		bool isStopRunningRight{ m_inputManager->isKeyReleased(InputManager::INPUT_RIGHT) };
+		bool isRunningLeft{ m_inputManager->isKeyPressing(InputManager::INPUT_LEFT) };
+		bool isRunningRight{ m_inputManager->isKeyPressing(InputManager::INPUT_RIGHT) };
 		bool isRunning{ isRunningLeft != isRunningRight };
 
 		return ((isStopRunningLeft && isStopRunningRight) || !isRunning);

@@ -3,19 +3,20 @@
 #define UIRenderer_H
 
 #include "GameComponent.h"
-#include "Shader.h"
 
+#include <glad/glad.h>
 #include <glm/glm.hpp>
 
 #include <memory>
 
 class Camera;
-class GameEngine;
+class Shader;
+class AssetLoader;
 
 class UIRenderer
 {
 public:
-	UIRenderer(GameEngine &game);
+	UIRenderer(AssetLoader *assetLoader);
 	~UIRenderer();
 
 	// Add box data to the array of boxes to prepare for rendering.

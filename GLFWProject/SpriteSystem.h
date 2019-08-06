@@ -13,6 +13,7 @@ class SpriteSystem : public GameSystem
 {
 public:
 	SpriteSystem(EntityManager &manager,
+		SpriteRenderer *sRenderer,
 		std::vector<GameComponent::Physics> &physics,
 		std::vector<GameComponent::Sprite> &sprites,
 		std::vector<GameComponent::Weapon> &weapons);
@@ -20,6 +21,9 @@ public:
 private:
 	virtual void process(float deltaTime, int entityId,
 		unsigned long &entityMask);
+
+	// Pointer to the sprite renderer.
+	SpriteRenderer *m_sRenderer{ nullptr };
 
 	// References to the relevant components.
 	std::vector<GameComponent::Physics> &m_physics;

@@ -11,12 +11,14 @@ namespace
 }
 
 RoomCollisionSystem::RoomCollisionSystem(EntityManager &manager,
+	GameEngine *game,
 	std::vector<GameComponent::Physics> &physics,
 	std::vector<GameComponent::Collision> &collisions,
 	std::vector<GameComponent::Character> &characters) :
 	GameSystem(manager, { GameComponent::COMPONENT_PHYSICS,
 		GameComponent::COMPONENT_COLLISION }),
-	m_physics(physics), m_collisions(collisions), m_characters(characters)
+	m_game(game), m_physics(physics), m_collisions(collisions), 
+	m_characters(characters)
 {
 
 }
@@ -29,9 +31,13 @@ void RoomCollisionSystem::process(float deltaTime, int entityId,
 	if (character.hasHitStop(entityMask))
 		return;
 
+	// Skip this if the current room has not been initialized.
+	Room *room{ m_game->getCurrentRoom() };
+	if (room == nullptr)
+		return;
+
 	GameComponent::Physics &phys{ m_physics[entityId] };
 	GameComponent::Collision &col{ m_collisions[entityId] };
-	Room *room{ m_manager.getGameEngine().getCurrentRoom() };
 
 	// Reset collision flags.
 	col.wasOnGround = col.isOnGround(phys);

@@ -1,6 +1,7 @@
 #include "SpriteSystem.h"
 
-#include "GameEngine.h"
+#include "EntityManager.h"
+#include "SpriteRenderer.h"
 
 #include <glm/gtx/norm.hpp>
 
@@ -10,12 +11,14 @@ namespace
 }
 
 SpriteSystem::SpriteSystem(EntityManager &manager,
+	SpriteRenderer *sRenderer,
 	std::vector<GameComponent::Physics> &physics,
 	std::vector<GameComponent::Sprite> &sprites,
 	std::vector<GameComponent::Weapon> &weapons) :
 	GameSystem(manager, { GameComponent::COMPONENT_PHYSICS,
 		GameComponent::COMPONENT_SPRITE }),
-	m_physics(physics), m_sprites(sprites), m_weapons(weapons)
+	m_sRenderer(sRenderer), m_physics(physics), m_sprites(sprites), 
+	m_weapons(weapons)
 {
 
 }
@@ -30,8 +33,8 @@ void SpriteSystem::process(float deltaTime, int entityId,
 	if (sprite.isPersistent || !sprite.isDead)
 	{
 		// Update this sprite's values.
-		Camera *camera{ m_manager.getGameEngine().getCamera() };
-		sprite.cameraDistance = glm::length2(phys.pos - camera->getPosition());
+		/*Camera *camera{ m_manager.getGameEngine().getCamera() };
+		sprite.cameraDistance = glm::length2(phys.pos - camera->getPosition());*/
 	
 		// Update this sprite's animation.
 		sprite.currentFrameTime += deltaTime;
@@ -90,8 +93,7 @@ void SpriteSystem::process(float deltaTime, int entityId,
 	}
 	
 	// Update the renderer's array of sprites.
-	SpriteRenderer *renderer{ m_manager.getGameEngine().getSpriteRenderer() };
-	renderer->addSprite(phys, sprite);
+	m_sRenderer->addSprite(phys, sprite);
 
 	// Render this entity's weapon only if it exists.
 	if (!GameComponent::hasComponent(entityMask, GameComponent::COMPONENT_WEAPON))
@@ -116,7 +118,6 @@ void SpriteSystem::process(float deltaTime, int entityId,
 		weaponSprite.a = sprite.a;
 
 		// Update the renderer's array of sprites.
-		SpriteRenderer *renderer{ m_manager.getGameEngine().getSpriteRenderer() };
-		renderer->addSprite(phys, weaponSprite);
+		m_sRenderer->addSprite(phys, weaponSprite);
 	}
 }

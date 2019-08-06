@@ -4,16 +4,11 @@
 #include "GameSystem.h"
 #include "Room.h"
 #include "EntityConstants.h"
+#include "AssetLoader.h"
 #include "EntityManager.h"
-#include "SpriteSheet.h"
-#include "Sound.h"
-
-#include "DiskStream.h"
-#include "TextureLoader.h"
-#include "SpriteSheetLoader.h"
-#include "RoomLoader.h"
-#include "ShaderLoader.h"
-#include "SoundLoader.h"
+#include "InputManager.h"
+#include "SpriteRenderer.h"
+#include "UIRenderer.h"
 
 #include <iostream>
 
@@ -73,14 +68,6 @@ GameEngine::GameEngine()
 	// when the window is resized.
 	glfwSetFramebufferSizeCallback(m_window, framebufferSizeCallback);
 
-	// Initialize the asset loader.
-	m_assetLoader = std::make_unique<AssetLoader>(new DiskStream());
-	m_assetLoader->registerLoader<Texture>(new TextureLoader());
-	m_assetLoader->registerLoader<SpriteSheet>(new SpriteSheetLoader());
-	m_assetLoader->registerLoader<Room>(new RoomLoader());
-	m_assetLoader->registerLoader<Shader>(new ShaderLoader());
-	m_assetLoader->registerLoader<Sound>(new SoundLoader());
-
 	// Initialize the camera.
 	m_camera = std::make_unique<Camera>();
 
@@ -88,14 +75,6 @@ GameEngine::GameEngine()
 	//glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 	//glfwSetCursorPosCallback(m_window, mouseCallback);
 	//glfwSetWindowUserPointer(m_window, this);
-
-	m_sRenderer = std::make_unique<SpriteRenderer>(*this);
-	m_uRenderer = std::make_unique<UIRenderer>(*this);
-	m_input = std::make_unique<InputManager>(m_window);
-	m_entityManager = std::make_unique<EntityManager>(*this);
-
-	// TODO: remove this later for more flexible approach.
-	m_currentRoom = m_assetLoader->load<Room>("test");
 }
 
 GameEngine::~GameEngine()
@@ -104,10 +83,15 @@ GameEngine::~GameEngine()
 	glfwTerminate();
 }
 
-void GameEngine::start()
+void GameEngine::start(EntityManager *entityManager, AssetLoader *assetLoader,
+	InputManager *inputManager, SpriteRenderer *sRenderer,
+	UIRenderer *uRenderer)
 {
 	double previousTime = glfwGetTime();
 	int frameCount = 0;
+
+	// TODO: remove this later for more flexible approach.
+	m_currentRoom = assetLoader->load<Room>("test");
 
 	// The game loop.
 	while (!glfwWindowShouldClose(m_window))
@@ -135,13 +119,13 @@ void GameEngine::start()
 		m_lastFrame = currentFrame;
 
 		// Handle user inputs.
-		processInput();
+		processInput(inputManager);
 
 		// Update values.
-		update();
+		update(entityManager, sRenderer, uRenderer);
 
 		// Call rendering functions.
-		render();
+		render(sRenderer, uRenderer);
 	}
 }
 
@@ -155,65 +139,56 @@ void GameEngine::updateRendererSize()
 	m_hasNewWindowSize = true;
 }
 
-void GameEngine::processInput()
+void GameEngine::processInput(InputManager *inputManager)
 {
 	glfwPollEvents();
 
-	m_input->update(m_deltaTime);
+	inputManager->update(m_deltaTime);
 
 	// Exit game.
-	if (m_input->isKeyPressed(InputManager::INPUT_CANCEL))
+	if (inputManager->isKeyPressed(InputManager::INPUT_CANCEL))
 		glfwSetWindowShouldClose(m_window, true);
 
 	// Toggle debug mode.
-	if (m_input->isKeyPressed(InputManager::INPUT_DEBUG))
+	if (inputManager->isKeyPressed(InputManager::INPUT_DEBUG))
 		m_isDebugMode = !m_isDebugMode;
 }
 
-void GameEngine::update()
+void GameEngine::update(EntityManager *entityManager, 
+	SpriteRenderer *sRenderer, UIRenderer *uRenderer)
 {
-	glm::vec3 playerPos{ m_entityManager->getPlayerPos() };
+	glm::vec3 playerPos{ entityManager->getPlayerPos() };
 	if (m_currentRoom != nullptr)
 	{
 		m_camera->update(m_deltaTime, playerPos, m_windowSize,
 			m_currentRoom->getSize());
 	}
 
-	m_sRenderer->resetNumSprites();
-	m_sRenderer->update(m_camera->getViewMatrix());
+	sRenderer->resetNumSprites();
+	sRenderer->update(m_camera->getViewMatrix());
 
-	m_uRenderer->resetNumBoxes();
+	uRenderer->resetNumBoxes();
 
 	// Update all entities.
-	m_entityManager->update(m_deltaTime, m_isDebugMode);
+	entityManager->update(m_deltaTime, m_isDebugMode);
 }
 
-void GameEngine::render()
+void GameEngine::render(SpriteRenderer *sRenderer, UIRenderer *uRenderer)
 {
 	// Call the renderer.
-	m_sRenderer->render(m_windowSize, m_currentRoom.get());
+	sRenderer->render(m_windowSize, m_currentRoom.get());
 
 	// Draw hit boxes if debug modes is on.
 	if (m_isDebugMode)
-		m_uRenderer->render(m_camera.get(), m_windowSize);
+		uRenderer->render(m_camera.get(), m_windowSize);
 
 	// Swap the buffers to show the rendered visuals.
 	glfwSwapBuffers(m_window);
 }
 
-SpriteRenderer *GameEngine::getSpriteRenderer() const
+GLFWwindow *GameEngine::getWindow() const
 {
-	return m_sRenderer.get();
-}
-
-UIRenderer *GameEngine::getUIRenderer() const
-{
-	return m_uRenderer.get();
-}
-
-InputManager *GameEngine::getInputManager() const
-{
-	return m_input.get();
+	return m_window;
 }
 
 Camera *GameEngine::getCamera() const

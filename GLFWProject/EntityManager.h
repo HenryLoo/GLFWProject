@@ -10,12 +10,18 @@
 #include <vector>
 
 class GameEngine;
+class AssetLoader;
 class Sound;
+class InputManager;
+class SpriteRenderer;
+class UIRenderer;
 
 class EntityManager
 {
 public:
-	EntityManager(GameEngine &input);
+	EntityManager(GameEngine *game, AssetLoader *assetLoader, 
+		InputManager *inputManager, SpriteRenderer *sRenderer, 
+		UIRenderer *uRenderer);
 	~EntityManager();
 
 	// Update all appropriate values for the game loop's current iteration.
@@ -32,7 +38,6 @@ public:
 	int getPlayerId() const;
 	glm::vec3 getPlayerPos() const;
 	const std::vector<std::pair<AABBSource, AABBSource>> &getCollisions() const;
-	GameEngine &getGameEngine() const;
 
 	// Create an effect.
 	void createEffect(const std::string &type, glm::vec3 pos, glm::vec2 scale,
@@ -61,6 +66,9 @@ private:
 	// Hold the player's entity id.
 	int m_playerId;
 
+	// Hold this frame's deltaTime.
+	float m_deltaTime;
+
 	// Hold components for each entity.
 	std::vector<GameComponent::Physics> m_compPhysics;
 	std::vector<GameComponent::Sprite> m_compSprites;
@@ -79,9 +87,9 @@ private:
 	std::vector<std::pair<AABBSource, AABBSource>> m_collisions;
 	std::unique_ptr<CollisionBroadPhase> m_broadPhase;
 
-	// Hold a reference to the GameEngine.
-	GameEngine &m_game;
-	float m_deltaTime;
+	// Hold pointers to other core systems.
+	AssetLoader *m_assetLoader;
+	InputManager *m_inputManager;
 
 	// TODO: remove this later for a more flexible implementation.
 	std::shared_ptr<SpriteSheet> m_playerTexture;

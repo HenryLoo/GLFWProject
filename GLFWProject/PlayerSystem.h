@@ -4,8 +4,6 @@
 
 #include "GameSystem.h"
 
-class InputManager;
-
 // Update the player entity's values.
 class PlayerSystem : public GameSystem
 {

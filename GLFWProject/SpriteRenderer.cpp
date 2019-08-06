@@ -1,13 +1,11 @@
 #include "SpriteRenderer.h"
 
-#include "Camera.h"
 #include "EntityConstants.h"
 #include "Room.h"
-#include "GameEngine.h"
+#include "AssetLoader.h"
 #include "SpriteSheet.h"
+#include "Shader.h"
 
-#include <glad/glad.h>
-#include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/norm.hpp>
 
@@ -31,7 +29,7 @@ namespace
 	};
 }
 
-SpriteRenderer::SpriteRenderer(GameEngine &game)
+SpriteRenderer::SpriteRenderer(AssetLoader *assetLoader)
 {
 	// Configure GL settings.
 	glEnable(GL_BLEND);
@@ -40,8 +38,8 @@ SpriteRenderer::SpriteRenderer(GameEngine &game)
 	glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 
 	// TODO: replace these hardcoded resources.
-	m_spriteShader = game.loadAsset<Shader>("sprite");
-	m_roomShader = game.loadAsset<Shader>("room");
+	m_spriteShader = assetLoader->load<Shader>("sprite");
+	m_roomShader = assetLoader->load<Shader>("room");
 
 	// Create the vertex array object and bind to it.
 	// All subsequent VBO configurations will be saved for this VAO.
@@ -123,7 +121,7 @@ SpriteRenderer::SpriteRenderer(GameEngine &game)
 	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, (void *)0);
 
 	// Instantiate the tileset.
-	m_tileset = game.loadAsset<SpriteSheet>("tileset");
+	m_tileset = assetLoader->load<SpriteSheet>("tileset");
 }
 
 SpriteRenderer::~SpriteRenderer()

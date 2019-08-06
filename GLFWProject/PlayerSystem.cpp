@@ -1,7 +1,7 @@
 #include "PlayerSystem.h"
 
 #include "CharStates.h"
-#include "GameEngine.h"
+#include "EntityManager.h"
 
 namespace
 {

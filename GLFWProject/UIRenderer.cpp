@@ -2,7 +2,8 @@
 
 #include "Camera.h"
 #include "EntityConstants.h"
-#include "GameEngine.h"
+#include "AssetLoader.h"
+#include "Shader.h"
 
 #include <glm/gtc/matrix_transform.hpp>
 
@@ -18,10 +19,10 @@ namespace
 	};
 }
 
-UIRenderer::UIRenderer(GameEngine &game)
+UIRenderer::UIRenderer(AssetLoader *assetLoader)
 {
 	// TODO: replace these hardcoded resources.
-	m_boxShader = game.loadAsset<Shader>("box");
+	m_boxShader = assetLoader->load<Shader>("box");
 
 	// Prepare the data buffers.
 	m_posSizeData = new GLfloat[EntityConstants::MAX_ENTITIES * 4];

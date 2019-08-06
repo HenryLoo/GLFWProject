@@ -3,11 +3,6 @@
 #define GameEngine_H
 
 #include "Camera.h"
-#include "SpriteRenderer.h"
-#include "UIRenderer.h"
-#include "InputManager.h"
-#include "EntityManager.h"
-#include "AssetLoader.h"
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -15,11 +10,12 @@
 #include <memory>
 #include <vector>
 
-class Renderer;
+class Room;
+class AssetLoader;
+class EntityManager;
+class InputManager;
 class SpriteRenderer;
 class UIRenderer;
-class InputManager;
-class Room;
 
 class GameEngine
 {
@@ -29,7 +25,9 @@ public:
 
 	// Start the game loop.
 	// The function will only return when the game ends.
-	void start();
+	void start(EntityManager *entityManager, AssetLoader *assetLoader, 
+		InputManager *inputManager, SpriteRenderer *sRenderer, 
+		UIRenderer *uRenderer);
 
 	// Update the camera to look at a position on the screen.
 	void updateCameraLook(glm::vec2 screenPos);
@@ -38,30 +36,21 @@ public:
 	void updateRendererSize();
 
 	// Getter functions.
-	SpriteRenderer *getSpriteRenderer() const;
-	UIRenderer *getUIRenderer() const;
-	InputManager *getInputManager() const;
+	GLFWwindow *getWindow() const;
 	Camera *getCamera() const;
 	Room *getCurrentRoom() const;
-
-	// Load an asset from the asset loader.
-	template <typename T>
-	std::shared_ptr<T> loadAsset(const std::string name,
-		const std::vector<std::string> &filePaths);
-
-	template <typename T>
-	std::shared_ptr<T> loadAsset(const std::string name);
 
 private:
 	// Constructor is private to prevent instantiating singleton.
 	// Handle all user inputs for the game loop's current iteration.
-	void processInput();
+	void processInput(InputManager *inputManager);
 
 	// Update all appropriate values for the game loop's current iteration.
-	void update();
+	void update(EntityManager *entityManager, SpriteRenderer *sRenderer,
+		UIRenderer *uRenderer);
 
 	// Render all appropriate visuals for the game loop's current iteration.
-	void render();
+	void render(SpriteRenderer *sRenderer, UIRenderer *uRenderer);
 
 	// The window to render to.
 	GLFWwindow *m_window{ nullptr };
@@ -82,27 +71,8 @@ private:
 	// Flag for if debug mode is enabled.
 	bool m_isDebugMode{ false };
 
-	std::unique_ptr<SpriteRenderer> m_sRenderer;
-	std::unique_ptr<UIRenderer> m_uRenderer;
-	std::unique_ptr<InputManager> m_input;
-	std::unique_ptr<EntityManager> m_entityManager;
-	std::unique_ptr<AssetLoader> m_assetLoader;
-
 	// TODO: remove this later for a more flexible implementation.
 	std::shared_ptr<Room> m_currentRoom;
 };
-
-template <typename T>
-std::shared_ptr<T> GameEngine::loadAsset(const std::string name,
-	const std::vector<std::string> &filePaths)
-{
-	return m_assetLoader->load<T>(name, filePaths);
-}
-
-template <typename T>
-std::shared_ptr<T> GameEngine::loadAsset(const std::string name)
-{
-	return m_assetLoader->load<T>(name);
-}
 
 #endif

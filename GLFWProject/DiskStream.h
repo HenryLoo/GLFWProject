@@ -21,7 +21,7 @@ private:
 	// Clear existing stream.
 	void clearStream();
 
-	std::vector<IDataStream::Result>m_streams;
+	std::vector<IDataStream::Result> m_streams;
 };
 
 #endif

@@ -26,11 +26,11 @@ public:
 	// Load assets by their file paths, through its
 	// relevant loader.
 	template <typename T>
-	std::shared_ptr<T> load(const std::string name, 
+	std::shared_ptr<T> load(const std::string &name, 
 		const std::vector<std::string> &filePaths);
 
 	template <typename T>
-	std::shared_ptr<T> load(const std::string name);
+	std::shared_ptr<T> load(const std::string &name);
 
 private:
 	// Load list for assets of a given type.
@@ -57,7 +57,7 @@ void AssetLoader::registerLoader(ITypeLoader *loader)
 }
 
 template <typename T>
-std::shared_ptr<T> AssetLoader::load(const std::string name,
+std::shared_ptr<T> AssetLoader::load(const std::string &name,
 	const std::vector<std::string> &filePaths)
 {
 	std::type_index type{ std::type_index(typeid(T)) };
@@ -89,7 +89,7 @@ std::shared_ptr<T> AssetLoader::load(const std::string name,
 }
 
 template <typename T>
-std::shared_ptr<T> AssetLoader::load(const std::string name)
+std::shared_ptr<T> AssetLoader::load(const std::string &name)
 {
 	// Get the file paths from the assets list.
 	std::type_index type{ std::type_index(typeid(T)) };

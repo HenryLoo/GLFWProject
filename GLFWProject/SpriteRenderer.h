@@ -2,8 +2,10 @@
 #ifndef SpriteRenderer_H
 #define SpriteRenderer_H
 
-#include "Shader.h"
 #include "GameComponent.h"
+
+#include <glad/glad.h>
+#include <glm/glm.hpp>
 
 #include <memory>
 
@@ -30,6 +32,7 @@ struct Sprite
 	}
 };
 
+class Shader;
 class SpriteSheet;
 
 struct SpriteData
@@ -47,12 +50,12 @@ struct SpriteData
 
 class Camera;
 class Room;
-class GameEngine;
+class AssetLoader;
 
 class SpriteRenderer
 {
 public:
-	SpriteRenderer(GameEngine &game);
+	SpriteRenderer(AssetLoader *assetLoader);
 	~SpriteRenderer();
 
 	// Add sprite data to the array of sprites to prepare for rendering.
