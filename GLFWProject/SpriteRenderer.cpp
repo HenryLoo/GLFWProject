@@ -155,7 +155,7 @@ void SpriteRenderer::addSprite(const GameComponent::Physics &physics,
 
 		// Insert new sprite data for this sprite sheet.
 		SpriteData data;
-		data.spriteSheet = sprite.spriteSheet;
+		data.spriteSheet = sprite.spriteSheet.get();
 		addSpriteData(data, physics, sprite);
 		m_spriteData.insert({ spriteName, data });
 	}

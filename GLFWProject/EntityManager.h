@@ -6,6 +6,8 @@
 #include "CollisionBroadPhase.h"
 #include "DebugSystem.h"
 
+#include <json/include/nlohmann/json_fwd.hpp>
+
 #include <memory>
 #include <vector>
 
@@ -15,6 +17,7 @@ class Sound;
 class InputManager;
 class SpriteRenderer;
 class UIRenderer;
+class Prefab;
 
 namespace SoLoud
 {
@@ -35,6 +38,7 @@ public:
 	// Create a new entity, given a list of component types.
 	// Return the new entity's id.
 	int createEntity(std::vector<GameComponent::ComponentType> types);
+	int createEntity(Prefab *prefab);
 
 	// Flag an entity for deletion.
 	void deleteEntity(int id);
@@ -50,6 +54,14 @@ public:
 		unsigned char a = 255, float rotation = 0.f);
 
 private:
+	// Component initializers.
+	void initializeSprite(int entityId, const nlohmann::json &json);
+	void initializePlayer(const nlohmann::json &json);
+	void initializeCollision(int entityId, const nlohmann::json &json);
+	void initializeWeapon(int entityId, const nlohmann::json &json);
+	void initializeAttack(int entityId, const nlohmann::json &json);
+	void initializeCharacter(int entityId, const nlohmann::json &json);
+
 	// Delete all flagged entities.
 	void deleteFlaggedEntities();
 
@@ -98,8 +110,6 @@ private:
 	SoLoud::Soloud &m_soundEngine;
 
 	// TODO: remove this later for a more flexible implementation.
-	std::shared_ptr<SpriteSheet> m_playerTexture;
-	std::shared_ptr<SpriteSheet> m_swordTexture;
 	std::shared_ptr<SpriteSheet> m_enemyTexture;
 	std::shared_ptr<SpriteSheet> m_effectsTexture;
 	std::shared_ptr<Sound> m_jumpSound;

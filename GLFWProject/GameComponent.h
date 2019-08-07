@@ -42,14 +42,14 @@ namespace GameComponent
 	struct Physics
 	{
 		// This entity's position.
-		glm::vec3 pos;
+		glm::vec3 pos{ 0.f };
 
 		// This entity's movement speed.
-		glm::vec3 speed;
+		glm::vec3 speed{ 0.f };
 
 		// This entity's physical attributes.
-		float rotation, weight;
-		glm::vec2 scale;
+		float rotation{ 0.f };
+		glm::vec2 scale{ 1.f };
 
 		// Flag for if the entity is being affected by friction.
 		bool hasFriction{ true };
@@ -64,7 +64,7 @@ namespace GameComponent
 	struct Sprite
 	{
 		// This sprite's texture.
-		SpriteSheet *spriteSheet;
+		std::shared_ptr<SpriteSheet> spriteSheet;
 
 		// This sprite's colour.
 		unsigned char r{ 255 }, g{ 255 }, b{ 255 }, a{ 255 };
@@ -157,7 +157,7 @@ namespace GameComponent
 	struct Weapon
 	{
 		// This weapon's texture.
-		SpriteSheet *spriteSheet;
+		std::shared_ptr<SpriteSheet> spriteSheet;
 
 		// Hold all frames for this sprite.
 		// The weapon's frame timer will be dependent on the entity's sprite

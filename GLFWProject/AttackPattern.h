@@ -5,6 +5,7 @@
 #include "AABB.h"
 
 #include <memory>
+#include <string>
 
 class Sound;
 
@@ -21,6 +22,9 @@ struct AttackPattern
 
 	// The sound to play when a target is hit.
 	std::shared_ptr<Sound> hitSound;
+
+	// The effect to show when a target is hit.
+	std::string hitSpark;
 
 	// The amount of damage this attack will deal.
 	int damage;

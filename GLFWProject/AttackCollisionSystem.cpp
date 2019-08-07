@@ -1,7 +1,6 @@
 #include "AttackCollisionSystem.h"
 
 #include "CharStates.h"
-#include "EffectTypes.h"
 #include "EntityManager.h"
 #include "Sound.h"
 
@@ -109,9 +108,13 @@ void AttackCollisionSystem::update(float deltaTime, int numEntities,
 			phys.speed.y = knockback.y;
 
 			// Create hit spark effect.
-			float rotation{ static_cast<float>(rand()) / (static_cast<float>(RAND_MAX / MAX_ROTATION)) };
-			m_manager.createEffect(EffectType::HIT_SPARK, phys.pos, glm::vec2(1.2f),
-				255, 255, 255, 255, rotation);
+			if (!attack.pattern.hitSpark.empty())
+			{
+				float rotation{ static_cast<float>(rand()) / (static_cast<float>(RAND_MAX / MAX_ROTATION)) };
+				m_manager.createEffect(attack.pattern.hitSpark, phys.pos, glm::vec2(1.2f),
+					255, 255, 255, 255, rotation);
+			}
+
 		}
 	}
 }

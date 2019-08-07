@@ -13,6 +13,7 @@
 #include "SpriteSheet.h"
 #include "Shader.h"
 #include "Sound.h"
+#include "Prefab.h"
 
 #include "AssetLoader.h"
 #include "DiskStream.h"
@@ -21,6 +22,7 @@
 #include "RoomLoader.h"
 #include "ShaderLoader.h"
 #include "SoundLoader.h"
+#include "PrefabLoader.h"
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -47,6 +49,7 @@ int main()
 	assetLoader->registerLoader<Room>(new RoomLoader());
 	assetLoader->registerLoader<Shader>(new ShaderLoader());
 	assetLoader->registerLoader<Sound>(new SoundLoader());
+	assetLoader->registerLoader<Prefab>(new PrefabLoader());
 
 	std::unique_ptr<SpriteRenderer> sRenderer{ 
 		std::make_unique<SpriteRenderer>(assetLoader.get()) };

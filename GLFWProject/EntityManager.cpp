@@ -7,6 +7,8 @@
 #include "SpriteSheet.h"
 #include "Sound.h"
 #include "InputManager.h"
+#include "Prefab.h"
+#include "JSONUtilities.h"
 
 #include "AttackCollisionSystem.h"
 #include "AttackSystem.h"
@@ -17,6 +19,48 @@
 #include "SpriteSystem.h"
 
 #include <iostream>
+
+using json = nlohmann::json;
+
+namespace
+{
+	// Component labels for prefabs.
+	const std::string COMPONENT_SPRITE{ "sprite" };
+	const std::string COMPONENT_PHYSICS{ "physics" };
+	const std::string COMPONENT_PLAYER{ "player" };
+	const std::string COMPONENT_COLLISION{ "collision" };
+	const std::string COMPONENT_WEAPON{ "weapon" };
+	const std::string COMPONENT_ATTACK{ "attack" };
+	const std::string COMPONENT_CHARACTER{ "character" };
+	const std::unordered_map<std::string, GameComponent::ComponentType> LABEL_TO_COMPONENT{
+		{ COMPONENT_SPRITE, GameComponent::COMPONENT_SPRITE },
+		{ COMPONENT_PHYSICS, GameComponent::COMPONENT_PHYSICS },
+		{ COMPONENT_PLAYER, GameComponent::COMPONENT_PLAYER },
+		{ COMPONENT_COLLISION, GameComponent::COMPONENT_COLLISION },
+		{ COMPONENT_WEAPON, GameComponent::COMPONENT_WEAPON },
+		{ COMPONENT_ATTACK, GameComponent::COMPONENT_ATTACK },
+		{ COMPONENT_CHARACTER, GameComponent::COMPONENT_CHARACTER },
+	};
+
+	const std::string PROPERTY_COMPONENTS{ "components" };
+	const std::string PROPERTY_SPRITESHEET{ "spritesheet" };
+	const std::string PROPERTY_EVADEDURATION{ "evadeDuration" };
+	const std::string PROPERTY_BOXES{ "boxes" };
+	const std::string PROPERTY_HALFSIZE{ "halfSize" };
+	const std::string PROPERTY_OFFSET{ "offset" };
+	const std::string PROPERTY_X{ "x" };
+	const std::string PROPERTY_Y{ "y" };
+	const std::string PROPERTY_ATTACKPATTERNS{ "attackPatterns" };
+	const std::string PROPERTY_TYPE{ "type" };
+	const std::string PROPERTY_FRAMERANGE{ "frameRange" };
+	const std::string PROPERTY_START{ "start" };
+	const std::string PROPERTY_END{ "end" };
+	const std::string PROPERTY_COMBOFRAME{ "comboFrame" };
+	const std::string PROPERTY_HITSOUND{ "hitSound" };
+	const std::string PROPERTY_HITEFFECT{ "hitEffect" };
+	const std::string PROPERTY_DAMAGE{ "damage" };
+	const std::string PROPERTY_KNOCKBACK{ "knockback" };
+}
 
 EntityManager::EntityManager(GameEngine *game, AssetLoader *assetLoader,
 	InputManager *inputManager, SpriteRenderer *sRenderer,
@@ -37,8 +81,6 @@ EntityManager::EntityManager(GameEngine *game, AssetLoader *assetLoader,
 	m_broadPhase = std::make_unique<CollisionBroadPhase>();
 
 	// TODO: replace these hardcoded resources.
-	m_playerTexture = assetLoader->load<SpriteSheet>("serah");
-	m_swordTexture = assetLoader->load<SpriteSheet>("serah_sword");
 	m_enemyTexture = assetLoader->load<SpriteSheet>("clamper");
 	m_effectsTexture = assetLoader->load<SpriteSheet>("effects");
 	m_jumpSound = assetLoader->load<Sound>("jump");
@@ -118,6 +160,230 @@ int EntityManager::createEntity(std::vector<GameComponent::ComponentType> types)
 	return id;
 }
 
+int EntityManager::createEntity(Prefab *prefab)
+{
+	const json &json{ prefab->getJson() };
+
+	unsigned long mask = GameComponent::COMPONENT_NONE;
+	int id = m_numEntities;
+
+	bool hasComponents{ JSONUtilities::hasEntry(PROPERTY_COMPONENTS, json) };
+	if (hasComponents)
+	{
+		auto &components{ json.at(PROPERTY_COMPONENTS) };
+		if (components.is_array())
+		{
+			for (auto &component : components)
+			{
+				bool hasType{ JSONUtilities::hasEntry(PROPERTY_TYPE, component) };
+				if (!hasType)
+					continue;
+
+				std::string type{ component.at(PROPERTY_TYPE).get<std::string>() };
+
+				auto it{ LABEL_TO_COMPONENT.find(type) };
+				if (it == LABEL_TO_COMPONENT.end())
+					continue;
+
+				GameComponent::addComponent(mask, it->second);
+
+				if (type == COMPONENT_SPRITE)
+					initializeSprite(id, component);
+				else if (type == COMPONENT_PLAYER)
+					initializePlayer(component);
+				else if (type == COMPONENT_COLLISION)
+					initializeCollision(id, component);
+				else if (type == COMPONENT_WEAPON)
+					initializeWeapon(id, component);
+				else if (type == COMPONENT_ATTACK)
+					initializeAttack(id, component);
+				else if (type == COMPONENT_CHARACTER)
+					initializeCharacter(id, component);
+			}
+		}
+	}
+
+	m_entities[id] = mask;
+	m_numEntities++;
+	return id;
+}
+
+void EntityManager::initializeSprite(int entityId, const nlohmann::json &json)
+{
+	GameComponent::Sprite &spr{ m_compSprites[entityId] };
+	if (JSONUtilities::hasEntry(PROPERTY_SPRITESHEET, json))
+	{
+		std::string spriteSheetLabel{ json.at(PROPERTY_SPRITESHEET).get<std::string>() };
+		spr.spriteSheet = m_assetLoader->load<SpriteSheet>(spriteSheetLabel);
+	}
+}
+
+void EntityManager::initializePlayer(const nlohmann::json &json)
+{
+	GameComponent::Player &player{ m_compPlayer };
+	if (JSONUtilities::hasEntry(PROPERTY_EVADEDURATION, json))
+	{
+		float evadeDuration{ json.at(PROPERTY_EVADEDURATION).get<float>() };
+		player.evadeDuration = evadeDuration;
+	}
+}
+
+void EntityManager::initializeCollision(int entityId, const nlohmann::json &json)
+{
+	GameComponent::Collision &col{ m_compCollisions[entityId] };
+	if (JSONUtilities::hasEntry(PROPERTY_BOXES, json))
+	{
+		nlohmann::json boxes{ json.at(PROPERTY_BOXES) };
+		if (boxes.is_array())
+		{
+			// TODO: fix this to support multiple boxes.
+			for (auto &box : boxes)
+			{
+				if (JSONUtilities::hasEntry(PROPERTY_HALFSIZE, box))
+				{
+					nlohmann::json sizeJson{ box.at(PROPERTY_HALFSIZE) };
+					if (JSONUtilities::hasEntry(PROPERTY_X, sizeJson))
+					{
+						col.aabb.halfSize.x = sizeJson.at(PROPERTY_X).get<float>();
+					}
+					if (JSONUtilities::hasEntry(PROPERTY_Y, sizeJson))
+					{
+						col.aabb.halfSize.y = sizeJson.at(PROPERTY_Y).get<float>();
+					}
+				}
+
+				if (JSONUtilities::hasEntry(PROPERTY_OFFSET, box))
+				{
+					nlohmann::json offsetJson{ box.at(PROPERTY_OFFSET) };
+					if (JSONUtilities::hasEntry(PROPERTY_X, offsetJson))
+					{
+						col.aabb.offset.x = offsetJson.at(PROPERTY_X).get<float>();
+					}
+					if (JSONUtilities::hasEntry(PROPERTY_Y, offsetJson))
+					{
+						col.aabb.offset.y = offsetJson.at(PROPERTY_Y).get<float>();
+					}
+				}
+			}
+		}
+	}
+}
+
+void EntityManager::initializeWeapon(int entityId, const nlohmann::json &json)
+{
+	GameComponent::Weapon &wpn{ m_compWeapons[entityId] };
+	if (JSONUtilities::hasEntry(PROPERTY_SPRITESHEET, json))
+	{
+		std::string spriteSheetLabel{ json.at(PROPERTY_SPRITESHEET).get<std::string>() };
+		wpn.spriteSheet = m_assetLoader->load<SpriteSheet>(spriteSheetLabel);
+	}
+}
+
+void EntityManager::initializeAttack(int entityId, const nlohmann::json &json)
+{
+	GameComponent::Attack &atk{ m_compAttacks[entityId] };
+	atk.sourceId = entityId;
+}
+
+void EntityManager::initializeCharacter(int entityId, const nlohmann::json &json)
+{
+	GameComponent::Character &character{ m_compCharacters[entityId] };
+	if (JSONUtilities::hasEntry(PROPERTY_ATTACKPATTERNS, json))
+	{
+		nlohmann::json patterns{ json.at(PROPERTY_ATTACKPATTERNS) };
+		if (patterns.is_array())
+		{
+			for (auto &thisPattern : patterns)
+			{
+				AttackPattern atkPattern;
+
+				// Can't uniquely identify this attack pattern without a "type",
+				// so skip this.
+				if (!JSONUtilities::hasEntry(PROPERTY_TYPE, thisPattern))
+					continue;
+
+				std::string type{ thisPattern.at(PROPERTY_TYPE).get<std::string>() };
+
+				if (JSONUtilities::hasEntry(PROPERTY_HALFSIZE, thisPattern))
+				{
+					nlohmann::json sizeJson{ thisPattern.at(PROPERTY_HALFSIZE) };
+					if (JSONUtilities::hasEntry(PROPERTY_X, sizeJson))
+					{
+						atkPattern.aabb.halfSize.x = sizeJson.at(PROPERTY_X).get<float>();
+					}
+					if (JSONUtilities::hasEntry(PROPERTY_Y, sizeJson))
+					{
+						atkPattern.aabb.halfSize.y = sizeJson.at(PROPERTY_Y).get<float>();
+					}
+				}
+
+				if (JSONUtilities::hasEntry(PROPERTY_OFFSET, thisPattern))
+				{
+					nlohmann::json offsetJson{ thisPattern.at(PROPERTY_OFFSET) };
+					if (JSONUtilities::hasEntry(PROPERTY_X, offsetJson))
+					{
+						atkPattern.aabb.offset.x = offsetJson.at(PROPERTY_X).get<float>();
+					}
+					if (JSONUtilities::hasEntry(PROPERTY_Y, offsetJson))
+					{
+						atkPattern.aabb.offset.y = offsetJson.at(PROPERTY_Y).get<float>();
+					}
+				}
+
+				if (JSONUtilities::hasEntry(PROPERTY_FRAMERANGE, thisPattern))
+				{
+					nlohmann::json frameJson{ thisPattern.at(PROPERTY_FRAMERANGE) };
+					if (JSONUtilities::hasEntry(PROPERTY_START, frameJson))
+					{
+						atkPattern.frameRange.x = frameJson.at(PROPERTY_START).get<int>();
+					}
+					if (JSONUtilities::hasEntry(PROPERTY_END, frameJson))
+					{
+						atkPattern.frameRange.y = frameJson.at(PROPERTY_END).get<int>();
+					}
+				}
+
+				if (JSONUtilities::hasEntry(PROPERTY_COMBOFRAME, thisPattern))
+				{
+					atkPattern.comboFrame = thisPattern.at(PROPERTY_COMBOFRAME).get<int>();
+				}
+
+				if (JSONUtilities::hasEntry(PROPERTY_HITSOUND, thisPattern))
+				{
+					std::string soundLabel{ thisPattern.at(PROPERTY_HITSOUND).get<std::string>() };
+					atkPattern.hitSound = m_assetLoader->load<Sound>(soundLabel);
+				}
+
+				if (JSONUtilities::hasEntry(PROPERTY_HITEFFECT, thisPattern))
+				{
+					atkPattern.hitSpark = thisPattern.at(PROPERTY_HITEFFECT).get<std::string>();
+				}
+
+				if (JSONUtilities::hasEntry(PROPERTY_DAMAGE, thisPattern))
+				{
+					atkPattern.damage = thisPattern.at(PROPERTY_DAMAGE).get<int>();
+				}
+
+				if (JSONUtilities::hasEntry(PROPERTY_KNOCKBACK, thisPattern))
+				{
+					nlohmann::json knockbackJson{ thisPattern.at(PROPERTY_KNOCKBACK) };
+					if (JSONUtilities::hasEntry(PROPERTY_X, knockbackJson))
+					{
+						atkPattern.knockback.x = knockbackJson.at(PROPERTY_X).get<float>();
+					}
+					if (JSONUtilities::hasEntry(PROPERTY_Y, knockbackJson))
+					{
+						atkPattern.knockback.y = knockbackJson.at(PROPERTY_Y).get<float>();
+					}
+				}
+
+				// Add this attack pattern.
+				character.attackPatterns.insert({ type, atkPattern });
+			}
+		}
+	}
+}
+
 void EntityManager::deleteEntity(int id)
 {
 	// Flag the entity to be deleted at the end of the game loop.
@@ -160,7 +426,7 @@ void EntityManager::createEffect(const std::string &type, glm::vec3 pos,
 	spr.b = b;
 	spr.a = a;
 	spr.isPersistent = false;
-	spr.spriteSheet = m_effectsTexture.get();
+	spr.spriteSheet = m_effectsTexture;
 	spr.spriteSheet->setAnimation(type, spr);
 }
 
@@ -225,46 +491,16 @@ void EntityManager::deleteFlaggedEntities()
 
 void EntityManager::createPlayer()
 {
-	m_playerId = createEntity({
-		GameComponent::COMPONENT_PHYSICS,
-		GameComponent::COMPONENT_SPRITE,
-		GameComponent::COMPONENT_PLAYER,
-		GameComponent::COMPONENT_COLLISION,
-		GameComponent::COMPONENT_WEAPON,
-		GameComponent::COMPONENT_ATTACK,
-		GameComponent::COMPONENT_CHARACTER,
-	});
+	std::shared_ptr<Prefab> playerPrefab{ m_assetLoader->load<Prefab>("serah") };
+	m_playerId = createEntity(playerPrefab.get());
 
 	GameComponent::Physics &phys = m_compPhysics[m_playerId];
 	phys.pos = glm::vec3(64.f, 800.f, 0.f);
-	phys.speed = glm::vec3(0.f);
-	phys.scale = glm::vec2(1.f);
-
 	GameComponent::Sprite &spr = m_compSprites[m_playerId];
-	spr.spriteSheet = m_playerTexture.get();
-	spr.spriteSheet->setAnimation(CharState::IDLE, spr);
-
 	GameComponent::Weapon &wp = m_compWeapons[m_playerId];
-	wp.spriteSheet = m_swordTexture.get();
-
 	GameComponent::Collision &col = m_compCollisions[m_playerId];
-	col.aabb.halfSize = glm::vec2(8, 10);
-	col.aabb.offset = glm::vec2(0, -6);
-
 	GameComponent::Attack &atk = m_compAttacks[m_playerId];
-	atk.sourceId = m_playerId;
-
-	m_compPlayer.evadeDuration = 0.2f;
-
 	GameComponent::Character &character = m_compCharacters[m_playerId];
-	character.attackPatterns = {
-		{CharState::ATTACK, {glm::vec2(18, 21), glm::vec2(14, 6), glm::ivec2(3, 7), 4, m_hitSound, 0, glm::vec2(96.f, 0.f)}},
-		{CharState::ATTACK_AIR, {glm::vec2(22, 17), glm::vec2(6, 4), glm::ivec2(2, 6), -1, m_hitSound, 0, glm::vec2(96.f, 64.f)}},
-		{CharState::ATTACK_CROUCH, {glm::vec2(22, 17), glm::vec2(7, -3), glm::ivec2(2, 6), -1, m_hitSound, 0, glm::vec2(96.f, 0.f)}},
-		{CharState::ATTACK2, {glm::vec2(18, 21), glm::vec2(14, 6), glm::ivec2(2, 7), 4, m_hitSound, 0, glm::vec2(96.f, 0.f)}},
-		{CharState::ATTACK3, {glm::vec2(19, 21), glm::vec2(15, 6), glm::ivec2(2, 8), -1, m_hitSound, 0, glm::vec2(128.f, 0.f)}},
-		{CharState::SKILL1, {glm::vec2(14, 23), glm::vec2(10, 9), glm::ivec2(2, 6), -1, m_hitSound,0, glm::vec2(96.f, 288.f)}},
-	};
 
 	// Set up state machine.
 	StateMachine &states{ character.states };
@@ -751,7 +987,7 @@ void EntityManager::createEnemy()
 	phys.scale = glm::vec2(1.f);
 
 	GameComponent::Sprite &spr = m_compSprites[enemyId];
-	spr.spriteSheet = m_enemyTexture.get();
+	spr.spriteSheet = m_enemyTexture;
 	spr.spriteSheet->setAnimation(CharState::IDLE, spr);
 
 	GameComponent::Collision &col = m_compCollisions[enemyId];

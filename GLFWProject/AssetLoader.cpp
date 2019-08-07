@@ -6,6 +6,7 @@
 #include "Room.h"
 #include "Shader.h"
 #include "Sound.h"
+#include "Prefab.h"
 
 #include <json/single_include/nlohmann/json.hpp>
 
@@ -15,17 +16,19 @@ namespace
 {
 	const std::string ASSETS_FILE{ "assets.json" };
 
-	const std::string LIST_ROOMS{ "rooms" };
-	const std::string LIST_SHADERS{ "shaders" };
-	const std::string LIST_SOUNDS{ "sounds" };
-	const std::string LIST_SPRITESHEETS{ "spritesheets" };
-	const std::string LIST_TEXTURES{ "textures" };
+	const std::string LIST_PREFABS{ "prefab" };
+	const std::string LIST_ROOMS{ "room" };
+	const std::string LIST_SHADERS{ "shader" };
+	const std::string LIST_SOUNDS{ "sound" };
+	const std::string LIST_SPRITESHEETS{ "spritesheet" };
+	const std::string LIST_TEXTURES{ "texture" };
 
 	const std::string PROPERTY_NAME{ "name" };
 	const std::string PROPERTY_FILE{ "file" };
 
 	const std::vector<std::pair<std::string, std::type_index>> ASSET_TYPES
 	{
+		{ LIST_PREFABS, std::type_index(typeid(Prefab)) },
 		{ LIST_ROOMS, std::type_index(typeid(Room)) },
 		{ LIST_SHADERS, std::type_index(typeid(Shader)) },
 		{ LIST_SOUNDS, std::type_index(typeid(Sound)) },
