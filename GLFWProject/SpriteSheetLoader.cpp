@@ -26,12 +26,12 @@ namespace
 	const std::string PROPERTY_ANIM_DURATION{ "durations" };
 }
 
-int SpriteSheetLoader::getNumStreamsRequired() const
+SpriteSheetLoader::SpriteSheetLoader()
 {
-	return NUM_STREAMS_REQUIRED;
+	m_numStreamsRequired = NUM_STREAMS_REQUIRED;
 }
 
-std::shared_ptr<IAssetType>SpriteSheetLoader::load(
+std::shared_ptr<IAssetType>SpriteSheetLoader::loadFromStream(
 	const std::vector<IDataStream::Result> &streams,
 	const std::string &name)
 {

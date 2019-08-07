@@ -19,12 +19,12 @@ namespace
 	const int NUM_STREAMS_REQUIRED{ 2 };
 }
 
-int RoomLoader::getNumStreamsRequired() const
+RoomLoader::RoomLoader()
 {
-	return NUM_STREAMS_REQUIRED;
+	m_numStreamsRequired = NUM_STREAMS_REQUIRED;
 }
 
-std::shared_ptr<IAssetType> RoomLoader::load(
+std::shared_ptr<IAssetType> RoomLoader::loadFromStream(
 	const std::vector<IDataStream::Result> &streams, 
 	const std::string &name)
 {

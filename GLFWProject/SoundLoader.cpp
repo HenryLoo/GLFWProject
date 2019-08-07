@@ -5,17 +5,7 @@
 #include <SoLoud/soloud.h>
 #include <SoLoud/soloud_wav.h>
 
-namespace
-{
-	const int NUM_STREAMS_REQUIRED{ 1 };
-}
-
-int SoundLoader::getNumStreamsRequired() const
-{
-	return NUM_STREAMS_REQUIRED;
-}
-
-std::shared_ptr<IAssetType> SoundLoader::load(
+std::shared_ptr<IAssetType> SoundLoader::loadFromStream(
 	const std::vector<IDataStream::Result> &streams,
 	const std::string &name)
 {

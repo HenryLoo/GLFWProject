@@ -8,14 +8,13 @@
 class RoomLoader : public TextureLoader
 {
 public:
-	std::shared_ptr<IAssetType> load(
-		const std::vector<IDataStream::Result> &streams, 
-		const std::string &name);
-
-	// Get the number of streams required for this loader.
-	virtual int getNumStreamsRequired() const;
+	RoomLoader();
 
 private:
+	virtual std::shared_ptr<IAssetType> loadFromStream(
+		const std::vector<IDataStream::Result> &streams,
+		const std::string &name);
+
 	// Load the layout of tile types for the room and output it into
 	// the output vector param.
 	void loadLayout(const IDataStream::Result &streamedData,

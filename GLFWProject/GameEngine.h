@@ -46,8 +46,8 @@ private:
 	void processInput(InputManager *inputManager);
 
 	// Update all appropriate values for the game loop's current iteration.
-	void update(EntityManager *entityManager, SpriteRenderer *sRenderer,
-		UIRenderer *uRenderer);
+	void update(EntityManager *entityManager, AssetLoader *assetLoader,
+		SpriteRenderer *sRenderer, UIRenderer *uRenderer);
 
 	// Render all appropriate visuals for the game loop's current iteration.
 	void render(SpriteRenderer *sRenderer, UIRenderer *uRenderer);

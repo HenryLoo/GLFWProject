@@ -4,17 +4,7 @@
 
 using json = nlohmann::json;
 
-namespace
-{
-	const int NUM_STREAMS_REQUIRED{ 1 };
-}
-
-int PrefabLoader::getNumStreamsRequired() const
-{
-	return NUM_STREAMS_REQUIRED;
-}
-
-std::shared_ptr<IAssetType> PrefabLoader::load(
+std::shared_ptr<IAssetType> PrefabLoader::loadFromStream(
 	const std::vector<IDataStream::Result> &streams,
 	const std::string &name)
 {
@@ -24,12 +14,12 @@ std::shared_ptr<IAssetType> PrefabLoader::load(
 		// Read the contents into json.
 		json j;
 		*(theResult.stream) >> j;
-
-		std::shared_ptr<Prefab> texture{ std::make_shared<Prefab>(j) };
-		if (texture != nullptr)
+	
+		std::shared_ptr<Prefab> prefab{ std::make_shared<Prefab>(j) };
+		if (prefab != nullptr)
 		{
 			std::cout << "PrefabLoader::load: Loaded '" << name << "'\n" << std::endl;
-			return texture;
+			return prefab;
 		}
 	}
 	catch (const nlohmann::json::parse_error &e)
@@ -52,6 +42,6 @@ std::shared_ptr<IAssetType> PrefabLoader::load(
 	{
 		std::cout << "PrefabLoader::load: " << e.what() << std::endl;
 	}
-
+	
 	return nullptr;
 }

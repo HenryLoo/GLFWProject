@@ -5,17 +5,7 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
-namespace
-{
-	const int NUM_STREAMS_REQUIRED{ 1 };
-}
-
-int TextureLoader::getNumStreamsRequired() const
-{
-	return NUM_STREAMS_REQUIRED;
-}
-
-std::shared_ptr<IAssetType> TextureLoader::load(
+std::shared_ptr<IAssetType> TextureLoader::loadFromStream(
 	const std::vector<IDataStream::Result> &streams,
 	const std::string &name)
 {

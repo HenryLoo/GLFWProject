@@ -162,6 +162,9 @@
     <ClCompile Include="PrefabLoader.cpp">
       <Filter>Source Files\Asset Loader\Loaders</Filter>
     </ClCompile>
+    <ClCompile Include="ITypeLoader.cpp">
+      <Filter>Source Files\Asset Loader\Loaders</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stb_image.h">

@@ -32,6 +32,8 @@ public:
 	template <typename T>
 	std::shared_ptr<T> load(const std::string &name);
 
+	void update(float deltaTime);
+
 private:
 	// Load list for assets of a given type.
 	void loadAssetList(nlohmann::json json, const std::string &assetLabel, 
@@ -78,6 +80,12 @@ std::shared_ptr<T> AssetLoader::load(const std::string &name,
 			numFiles << ")" << std::endl;
 		return nullptr;
 	}
+
+	// Check the cache for the asset.
+	// If it already exists, then return it.
+	std::shared_ptr<IAssetType> asset{ it->second->loadFromCache(name) };
+	if (asset != nullptr)
+		return std::dynamic_pointer_cast<T>(asset);
 
 	// Get the stream and pass it to the loader.
 	std::vector<IDataStream::Result> streams;

@@ -156,6 +156,7 @@
     <ClCompile Include="GameSystem.cpp" />
     <ClCompile Include="glad.c" />
     <ClCompile Include="InputManager.cpp" />
+    <ClCompile Include="ITypeLoader.cpp" />
     <ClCompile Include="JSONUtilities.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="Mesh.cpp" />

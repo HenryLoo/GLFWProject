@@ -140,3 +140,12 @@ void AssetLoader::loadAssetList(json json, const std::string &assetLabel,
 			"', " << assets.size() << " assets" << std::endl;
 	}
 }
+
+void AssetLoader::update(float deltaTime)
+{
+	// Update each loader.
+	for (auto &element : m_loaders)
+	{
+		element.second->update(deltaTime);
+	}
+}

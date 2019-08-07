@@ -113,11 +113,15 @@ void CollisionBroadPhase::generateOverlapList(
 	}
 
 	// Output the AABBSource of the overlapping endpoints.
-	for (const std::pair<int, int> &overlap : m_overlapsSet)
+	// There must be at least 2 AABB's to form a pair.
+	if (m_aabbList.size() > 2)
 	{
-		output.push_back(std::make_pair(
-			m_aabbList[overlap.first].src,
-			m_aabbList[overlap.second].src));
+		for (const std::pair<int, int> &overlap : m_overlapsSet)
+		{
+			output.push_back(std::make_pair(
+				m_aabbList[overlap.first].src,
+				m_aabbList[overlap.second].src));
+		}
 	}
 }
 

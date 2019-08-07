@@ -25,10 +25,13 @@ void PlayerSystem::update(float deltaTime, int numEntities,
 	std::vector<unsigned long> &entities)
 {
 	int playerId{ m_manager.getPlayerId() };
-	unsigned long &e{ entities[playerId] };
-	if (!hasComponents(e)) return;
+	if (playerId != EntityConstants::PLAYER_NOT_SET)
+	{
+		unsigned long &e{ entities[playerId] };
+		if (!hasComponents(e)) return;
 
-	process(deltaTime, playerId, e);
+		process(deltaTime, playerId, e);
+	}
 }
 
 void PlayerSystem::process(float deltaTime, int entityId,

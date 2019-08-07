@@ -2,7 +2,6 @@
 
 #include "CharStates.h"
 #include "EffectTypes.h"
-#include "EntityConstants.h"
 #include "AssetLoader.h"
 #include "SpriteSheet.h"
 #include "Sound.h"
@@ -398,7 +397,12 @@ int EntityManager::getPlayerId() const
 
 glm::vec3 EntityManager::getPlayerPos() const
 {
-	return m_compPhysics[m_playerId].pos;
+	if (m_playerId != EntityConstants::PLAYER_NOT_SET)
+	{
+		return m_compPhysics[m_playerId].pos;
+	}
+
+	return glm::vec3(0.f);
 }
 
 const std::vector<std::pair<AABBSource, AABBSource>> &EntityManager::getCollisions() const

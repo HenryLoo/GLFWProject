@@ -122,7 +122,7 @@ void GameEngine::start(EntityManager *entityManager, AssetLoader *assetLoader,
 		processInput(inputManager);
 
 		// Update values.
-		update(entityManager, sRenderer, uRenderer);
+		update(entityManager, assetLoader, sRenderer, uRenderer);
 
 		// Call rendering functions.
 		render(sRenderer, uRenderer);
@@ -154,9 +154,11 @@ void GameEngine::processInput(InputManager *inputManager)
 		m_isDebugMode = !m_isDebugMode;
 }
 
-void GameEngine::update(EntityManager *entityManager, 
+void GameEngine::update(EntityManager *entityManager, AssetLoader *assetLoader,
 	SpriteRenderer *sRenderer, UIRenderer *uRenderer)
 {
+	assetLoader->update(m_deltaTime);
+
 	glm::vec3 playerPos{ entityManager->getPlayerPos() };
 	if (m_currentRoom != nullptr)
 	{

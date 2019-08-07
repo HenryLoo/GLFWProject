@@ -13,12 +13,12 @@ namespace
 	const int NUM_STREAMS_REQUIRED{ 2 };
 }
 
-int ShaderLoader::getNumStreamsRequired() const
+ShaderLoader::ShaderLoader()
 {
-	return NUM_STREAMS_REQUIRED;
+	m_numStreamsRequired = NUM_STREAMS_REQUIRED;
 }
 
-std::shared_ptr<IAssetType> ShaderLoader::load(
+std::shared_ptr<IAssetType> ShaderLoader::loadFromStream(
 	const std::vector<IDataStream::Result> &streams,
 	const std::string &name)
 {

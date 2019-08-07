@@ -6,13 +6,10 @@
 
 class SoundLoader : public ITypeLoader
 {
-public:
-	std::shared_ptr<IAssetType> load(
+private:
+	virtual std::shared_ptr<IAssetType> loadFromStream(
 		const std::vector<IDataStream::Result> &streams,
 		const std::string &name);
-
-	// Get the number of streams required for this loader.
-	virtual int getNumStreamsRequired() const;
 };
 
 #endif

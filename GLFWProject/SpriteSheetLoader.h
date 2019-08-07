@@ -11,14 +11,13 @@ struct SpriteAnimation;
 class SpriteSheetLoader : public TextureLoader
 {
 public:
-	std::shared_ptr<IAssetType> load(
-		const std::vector<IDataStream::Result> &streams,
-		const std::string &name);
-	
-	// Get the number of streams required for this loader.
-	virtual int getNumStreamsRequired() const;
+	SpriteSheetLoader();
 	
 private:
+	virtual std::shared_ptr<IAssetType> loadFromStream(
+		const std::vector<IDataStream::Result> &streams,
+		const std::string &name);
+
 	void loadAnimations(const IDataStream::Result &streamedData,
 		glm::ivec2 &clipSize,
 		std::unordered_map<std::string, SpriteAnimation> &anims) const;

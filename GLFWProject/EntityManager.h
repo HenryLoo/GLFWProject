@@ -5,6 +5,7 @@
 #include "GameComponent.h"
 #include "CollisionBroadPhase.h"
 #include "DebugSystem.h"
+#include "EntityConstants.h"
 
 #include <json/include/nlohmann/json_fwd.hpp>
 
@@ -81,7 +82,7 @@ private:
 	int m_numEntities{ 0 };
 
 	// Hold the player's entity id.
-	int m_playerId;
+	int m_playerId{ EntityConstants::PLAYER_NOT_SET };
 
 	// Hold this frame's deltaTime.
 	float m_deltaTime;
