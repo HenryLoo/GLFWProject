@@ -113,14 +113,22 @@ void CollisionBroadPhase::generateOverlapList(
 	}
 
 	// Output the AABBSource of the overlapping endpoints.
-	// There must be at least 2 AABB's to form a pair.
-	if (m_aabbList.size() > 2)
+	int numEndpoints{ static_cast<int>(m_endpointsX.size()) };
+	for (auto it = m_overlapsSet.begin(); it != m_overlapsSet.end();)
 	{
-		for (const std::pair<int, int> &overlap : m_overlapsSet)
+		// Prune overlap pairs that include endpoints belonging to entities
+		// that no longer exist.
+		if (it->first >= numEndpoints || it->second >= numEndpoints)
+		{
+			it = m_overlapsSet.erase(it);
+		}
+		else
 		{
 			output.push_back(std::make_pair(
-				m_aabbList[overlap.first].src,
-				m_aabbList[overlap.second].src));
+				m_aabbList[it->first].src,
+				m_aabbList[it->second].src));
+
+			++it;
 		}
 	}
 }
@@ -146,7 +154,6 @@ void CollisionBroadPhase::updateEndpoints()
 void  CollisionBroadPhase::updateIntervals(std::vector<Endpoint> &endpoints,
 	std::vector<int> &lookup)
 {
-	//std::cout << "---" << std::endl;
 	for (int i = 0; i < endpoints.size(); ++i)
 	{
 		// Sort the endpoints by value, in increasing order.

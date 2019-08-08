@@ -80,7 +80,6 @@ EntityManager::EntityManager(GameEngine *game, AssetLoader *assetLoader,
 	m_broadPhase = std::make_unique<CollisionBroadPhase>();
 
 	// TODO: replace these hardcoded resources.
-	m_enemyTexture = assetLoader->load<SpriteSheet>("clamper");
 	m_effectsTexture = assetLoader->load<SpriteSheet>("effects");
 	m_jumpSound = assetLoader->load<Sound>("jump");
 	m_evadeSound = assetLoader->load<Sound>("evade");
@@ -139,6 +138,12 @@ void EntityManager::update(float deltaTime, bool isDebugMode)
 
 	// Reset overlaps list.
 	m_collisions.clear();
+
+	if (isDebugMode && m_playerId != -1)
+	{
+		deleteEntity(m_playerId);
+		m_playerId = -1;
+	}
 
 	// Delete all flagged entities.
 	deleteFlaggedEntities();
@@ -978,25 +983,14 @@ void EntityManager::createPlayer()
 
 void EntityManager::createEnemy()
 {
-	int enemyId = createEntity({
-		GameComponent::COMPONENT_PHYSICS,
-		GameComponent::COMPONENT_SPRITE,
-		GameComponent::COMPONENT_COLLISION,
-		GameComponent::COMPONENT_CHARACTER,
-	});
+	std::shared_ptr<Prefab> enemyPrefab{ m_assetLoader->load<Prefab>("clamper") };
+	int enemyId{ createEntity(enemyPrefab.get()) };
 
 	GameComponent::Physics &phys = m_compPhysics[enemyId];
 	phys.pos = glm::vec3(128.f, 800.f, 0.f);
-	phys.speed = glm::vec3(0.f);
-	phys.scale = glm::vec2(1.f);
 
 	GameComponent::Sprite &spr = m_compSprites[enemyId];
-	spr.spriteSheet = m_enemyTexture;
-	spr.spriteSheet->setAnimation(CharState::IDLE, spr);
-
 	GameComponent::Collision &col = m_compCollisions[enemyId];
-	col.aabb.halfSize = glm::vec2(14, 9);
-	col.aabb.offset = glm::vec2(0, -7);
 
 	// Set up state machine.
 	GameComponent::Character &character{ m_compCharacters[enemyId] };

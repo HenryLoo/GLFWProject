@@ -111,7 +111,6 @@ private:
 	SoLoud::Soloud &m_soundEngine;
 
 	// TODO: remove this later for a more flexible implementation.
-	std::shared_ptr<SpriteSheet> m_enemyTexture;
 	std::shared_ptr<SpriteSheet> m_effectsTexture;
 	std::shared_ptr<Sound> m_jumpSound;
 	std::shared_ptr<Sound> m_evadeSound;

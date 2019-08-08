@@ -103,9 +103,15 @@ void AttackCollisionSystem::update(float deltaTime, int numEntities,
 			character.hitStunTimer = hitStun;
 
 			// Apply knockback to target.
-			int direction{ m_physics[attackId].scale.x > 0 ? 1 : -1 };
-			phys.speed.x = direction * knockback.x;
-			phys.speed.y = knockback.y;
+			if (knockback.x != 0.f)
+			{
+				int direction{ m_physics[attackId].scale.x > 0 ? 1 : -1 };
+				phys.speed.x = direction * knockback.x;
+			}
+			if (knockback.y != 0.f)
+			{
+				phys.speed.y = knockback.y;
+			}
 
 			// Create hit spark effect.
 			if (!attack.pattern.hitSpark.empty())

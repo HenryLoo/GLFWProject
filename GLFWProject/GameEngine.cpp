@@ -28,10 +28,6 @@ namespace
 	//	GameEngine *game{ (GameEngine *)glfwGetWindowUserPointer(window) };
 	//	game->updateCameraLook(glm::vec2(xpos, ypos));
 	//}
-
-	// TODO: remove these later.
-	const float SECONDS_PER_FRAME{ 1 / 60.f };
-	const int NUM_ENTITIES_PER_SECOND{ 1000 };
 }
 
 GameEngine::GameEngine()
