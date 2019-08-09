@@ -28,7 +28,7 @@ public:
 
 	Room(const std::vector<Room::TileType> &layout,
 		std::shared_ptr<Texture> tiles);
-	~Room();
+	virtual ~Room();
 
 	// Get the size of the room.
 	glm::ivec2 getSize() const;
@@ -53,8 +53,6 @@ public:
 	const static int SLOPE_HEIGHT{ 8 };
 
 private:
-	virtual void cleanup() {};
-
 	// Hold all the tiles in this room.
 	// Tiles are stored in row-major order, bottom-up.
 	std::vector<TileType> m_layout;

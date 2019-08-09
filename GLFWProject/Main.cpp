@@ -9,11 +9,13 @@
 #include "SpriteRenderer.h"
 #include "UIRenderer.h"
 #include "InputManager.h"
+#include "TextRenderer.h"
 
 #include "SpriteSheet.h"
 #include "Shader.h"
 #include "Sound.h"
 #include "Prefab.h"
+#include "Font.h"
 
 #include "AssetLoader.h"
 #include "DiskStream.h"
@@ -23,6 +25,7 @@
 #include "ShaderLoader.h"
 #include "SoundLoader.h"
 #include "PrefabLoader.h"
+#include "FontLoader.h"
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -50,6 +53,7 @@ int main()
 	assetLoader->registerLoader<Shader>(new ShaderLoader());
 	assetLoader->registerLoader<Sound>(new SoundLoader());
 	assetLoader->registerLoader<Prefab>(new PrefabLoader());
+	assetLoader->registerLoader<Font>(new FontLoader());
 
 	std::unique_ptr<SpriteRenderer> sRenderer{ 
 		std::make_unique<SpriteRenderer>(assetLoader.get()) };
@@ -57,6 +61,8 @@ int main()
 		std::make_unique<UIRenderer>(assetLoader.get()) };
 	std::unique_ptr<InputManager> inputManager{ 
 		std::make_unique<InputManager>(game->getWindow()) };
+	std::unique_ptr<TextRenderer> tRenderer{
+		std::make_unique<TextRenderer>(assetLoader.get()) };
 
 	// Initialize the sound engine.
 	SoLoud::Soloud soundEngine;
@@ -72,7 +78,7 @@ int main()
 
 	// Start the game loop.
 	game->start(entityManager.get(), assetLoader.get(), inputManager.get(),
-		sRenderer.get(), uRenderer.get());
+		sRenderer.get(), uRenderer.get(), tRenderer.get());
 
 	// Deinitialize the sound engine before closing.
 	soundEngine.deinit();

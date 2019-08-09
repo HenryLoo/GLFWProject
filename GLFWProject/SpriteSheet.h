@@ -21,7 +21,6 @@ public:
 		glm::ivec2 clipSize, std::string name);
 	SpriteSheet(GLuint id, GLint width, GLint height, GLint numChannels, 
 		glm::ivec2 clipSize, std::string name);
-	~SpriteSheet();
 
 	// Get the clip size for this sprite sheet.
 	glm::ivec2 getClipSize() const;

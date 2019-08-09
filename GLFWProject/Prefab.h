@@ -14,8 +14,6 @@ public:
 	const nlohmann::json &getJson();
 
 private:
-	virtual void cleanup() {};
-
 	nlohmann::json m_json;
 };
 

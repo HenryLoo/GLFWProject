@@ -20,7 +20,7 @@ ShaderLoader::ShaderLoader()
 
 std::shared_ptr<IAssetType> ShaderLoader::loadFromStream(
 	const std::vector<IDataStream::Result> &streams,
-	const std::string &name)
+	const std::string &name, int flag)
 {
 	auto vShaderFile{ streams[0].stream };
 	auto fShaderFile{ streams[1].stream };
@@ -45,7 +45,7 @@ std::shared_ptr<IAssetType> ShaderLoader::loadFromStream(
 	}
 	catch (std::ifstream::failure e)
 	{
-		std::cout << "ShaderLoader::load: Shader file '" << name << 
+		std::cout << "ShaderLoader::loadFromStream: Shader file '" << name << 
 			"' could not be read." << std::endl;
 	}
 
@@ -67,7 +67,7 @@ std::shared_ptr<IAssetType> ShaderLoader::loadFromStream(
 	if (!success)
 	{
 		glGetShaderInfoLog(vertexId, 512, NULL, infoLog);
-		std::cout << "ShaderLoader::load: Vertex shader failed to compile for '" <<
+		std::cout << "ShaderLoader::loadFromStream: Vertex shader failed to compile for '" <<
 			name << "'\n" << infoLog << std::endl;
 	};
 
@@ -81,7 +81,7 @@ std::shared_ptr<IAssetType> ShaderLoader::loadFromStream(
 	if (!success)
 	{
 		glGetShaderInfoLog(fragmentId, 512, NULL, infoLog);
-		std::cout << "ShaderLoader::load: Fragment shader failed to compile for '" <<
+		std::cout << "ShaderLoader::loadFromStream: Fragment shader failed to compile for '" <<
 			name << "'\n" << infoLog << std::endl;
 	};
 
@@ -96,7 +96,7 @@ std::shared_ptr<IAssetType> ShaderLoader::loadFromStream(
 	if (!success)
 	{
 		glGetProgramInfoLog(programId, 512, NULL, infoLog);
-		std::cout << "ShaderLoader::load: Program failed to link for '" <<
+		std::cout << "ShaderLoader::loadFromStream: Program failed to link for '" <<
 			name << "'\n" << infoLog << std::endl;
 	}
 
@@ -111,7 +111,7 @@ std::shared_ptr<IAssetType> ShaderLoader::loadFromStream(
 			std::make_shared<Shader>(programId) };
 		if (shader != nullptr)
 		{
-			std::cout << "ShaderLoader::load: Loaded '" << name << "'\n" << std::endl;
+			std::cout << "ShaderLoader::loadFromStream: Loaded '" << name << "'\n" << std::endl;
 			return shader;
 		}
 	}

@@ -13,7 +13,7 @@ public:
 private:
 	virtual std::shared_ptr<IAssetType> loadFromStream(
 		const std::vector<IDataStream::Result> &streams,
-		const std::string &name);
+		const std::string &name, int flag);
 
 	// Load the layout of tile types for the room and output it into
 	// the output vector param.

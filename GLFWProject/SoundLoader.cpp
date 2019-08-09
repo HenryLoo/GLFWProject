@@ -7,7 +7,7 @@
 
 std::shared_ptr<IAssetType> SoundLoader::loadFromStream(
 	const std::vector<IDataStream::Result> &streams,
-	const std::string &name)
+	const std::string &name, int flag)
 {
 	const IDataStream::Result &theResult{ streams[0] };
 	int length{ theResult.length };
@@ -18,7 +18,7 @@ std::shared_ptr<IAssetType> SoundLoader::loadFromStream(
 	if (wav != nullptr)
 		wav->loadMem((unsigned char *)buffer, length, true);
 
-	delete buffer;
+	delete[] buffer;
 
 	if (wav != nullptr)
 	{
@@ -26,7 +26,7 @@ std::shared_ptr<IAssetType> SoundLoader::loadFromStream(
 			std::make_shared<Sound>(wav) };
 		if (sound != nullptr)
 		{
-			std::cout << "SoundLoader::load: Loaded '" << name << "'\n" << std::endl;
+			std::cout << "SoundLoader::loadFromStream: Loaded '" << name << "'\n" << std::endl;
 			return sound;
 		}
 	}

@@ -17,11 +17,6 @@ SpriteSheet::SpriteSheet(GLuint id, GLint width, GLint height, GLint numChannels
 
 }
 
-SpriteSheet::~SpriteSheet()
-{
-
-}
-
 glm::ivec2 SpriteSheet::getClipSize() const
 {
 	return m_clipSize;

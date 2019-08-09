@@ -2,6 +2,8 @@
 
 #include <glm/glm.hpp>
 
+#include <string>
+
 namespace
 {
 	// Time in seconds between checking to clear cache.
@@ -9,14 +11,16 @@ namespace
 }
 
 std::shared_ptr<IAssetType> ITypeLoader::loadFromCache(
-	const std::string &name)
+	const std::string &name, int flag)
 {
 	// Check the cache for the asset.
 	// If it already exists, then return it.
-	auto it{ m_cache.find(name) };
+	std::string flaggedName;
+	getFlaggedName(name, flag, flaggedName);
+	auto it{ m_cache.find(flaggedName) };
 	if (it != m_cache.end())
 	{
-		std::cout << "ITypeLoader::load: Loaded '" << name << "' from cache" << std::endl;
+		std::cout << "ITypeLoader::load: Loaded '" << flaggedName << "' from cache" << std::endl;
 		return it->second;
 	}
 
@@ -25,14 +29,16 @@ std::shared_ptr<IAssetType> ITypeLoader::loadFromCache(
 
 std::shared_ptr<IAssetType> ITypeLoader::load(
 	const std::vector<IDataStream::Result> &streams,
-	const std::string &name)
+	const std::string &name, int flag)
 {
-	std::shared_ptr<IAssetType> asset{ loadFromStream(streams, name) };
+	std::shared_ptr<IAssetType> asset{ loadFromStream(streams, name, flag) };
 
 	// Cache the loaded asset if valid.
 	if (asset != nullptr)
 	{
-		m_cache.insert({ name, asset });
+		std::string flaggedName;
+		getFlaggedName(name, flag, flaggedName);
+		m_cache.insert({ flaggedName, asset });
 	}
 
 	return asset;
@@ -41,6 +47,17 @@ std::shared_ptr<IAssetType> ITypeLoader::load(
 int ITypeLoader::getNumStreamsRequired() const
 {
 	return m_numStreamsRequired;
+}
+
+
+void ITypeLoader::getFlaggedName(const std::string &name, int flag,
+	std::string &output) const
+{
+	output = name;
+	if (flag > 0)
+	{
+		output += ("/" + std::to_string(flag));
+	}
 }
 
 void ITypeLoader::update(float deltaTime)

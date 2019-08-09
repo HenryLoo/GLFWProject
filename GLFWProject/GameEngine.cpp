@@ -9,6 +9,8 @@
 #include "InputManager.h"
 #include "SpriteRenderer.h"
 #include "UIRenderer.h"
+#include "TextRenderer.h"
+#include "Font.h"
 
 #include <iostream>
 
@@ -81,13 +83,14 @@ GameEngine::~GameEngine()
 
 void GameEngine::start(EntityManager *entityManager, AssetLoader *assetLoader,
 	InputManager *inputManager, SpriteRenderer *sRenderer,
-	UIRenderer *uRenderer)
+	UIRenderer *uRenderer, TextRenderer *tRenderer)
 {
 	double previousTime = glfwGetTime();
 	int frameCount = 0;
 
 	// TODO: remove this later for more flexible approach.
 	m_currentRoom = assetLoader->load<Room>("test");
+	m_font = assetLoader->load<Font>("default", 16);
 
 	// The game loop.
 	while (!glfwWindowShouldClose(m_window))
@@ -96,8 +99,9 @@ void GameEngine::start(EntityManager *entityManager, AssetLoader *assetLoader,
 		frameCount++;
 		if (currentTime - previousTime >= 1.0)
 		{
-			std::cout << "FPS: " << frameCount << std::endl;
+			//std::cout << "FPS: " << frameCount << std::endl;
 
+			m_fps = frameCount;
 			frameCount = 0;
 			previousTime = currentTime;
 		}
@@ -108,6 +112,7 @@ void GameEngine::start(EntityManager *entityManager, AssetLoader *assetLoader,
 			m_hasNewWindowSize = false;
 			glfwGetWindowSize(m_window, &m_windowSize.x, &m_windowSize.y);
 			//renderer->createFramebuffer(width, height);
+			tRenderer->setProjectionMatrix(m_windowSize);
 		}
 
 		float currentFrame{ static_cast<float>(glfwGetTime()) };
@@ -118,10 +123,10 @@ void GameEngine::start(EntityManager *entityManager, AssetLoader *assetLoader,
 		processInput(inputManager);
 
 		// Update values.
-		update(entityManager, assetLoader, sRenderer, uRenderer);
+		update(entityManager, assetLoader, sRenderer, uRenderer, tRenderer);
 
 		// Call rendering functions.
-		render(sRenderer, uRenderer);
+		render(sRenderer, uRenderer, tRenderer);
 	}
 }
 
@@ -151,7 +156,7 @@ void GameEngine::processInput(InputManager *inputManager)
 }
 
 void GameEngine::update(EntityManager *entityManager, AssetLoader *assetLoader,
-	SpriteRenderer *sRenderer, UIRenderer *uRenderer)
+	SpriteRenderer *sRenderer, UIRenderer *uRenderer, TextRenderer *tRenderer)
 {
 	assetLoader->update(m_deltaTime);
 
@@ -171,14 +176,21 @@ void GameEngine::update(EntityManager *entityManager, AssetLoader *assetLoader,
 	entityManager->update(m_deltaTime, m_isDebugMode);
 }
 
-void GameEngine::render(SpriteRenderer *sRenderer, UIRenderer *uRenderer)
+void GameEngine::render(SpriteRenderer *sRenderer, UIRenderer *uRenderer,
+	TextRenderer *tRenderer)
 {
-	// Call the renderer.
+	// Render queued sprites.
 	sRenderer->render(m_windowSize, m_currentRoom.get());
 
 	// Draw hit boxes if debug modes is on.
 	if (m_isDebugMode)
+	{
 		uRenderer->render(m_camera.get(), m_windowSize);
+		tRenderer->addText("FPS: " + std::to_string(m_fps), m_font.get(), glm::vec2(32, 32));
+	}
+
+	// Render queued text.
+	tRenderer->render(m_windowSize);
 
 	// Swap the buffers to show the rendered visuals.
 	glfwSwapBuffers(m_window);

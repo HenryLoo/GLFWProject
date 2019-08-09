@@ -165,6 +165,15 @@
     <ClCompile Include="ITypeLoader.cpp">
       <Filter>Source Files\Asset Loader\Loaders</Filter>
     </ClCompile>
+    <ClCompile Include="TextRenderer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="FontLoader.cpp">
+      <Filter>Source Files\Asset Loader\Loaders</Filter>
+    </ClCompile>
+    <ClCompile Include="Font.cpp">
+      <Filter>Source Files\Asset Loader\Assets</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stb_image.h">
@@ -304,6 +313,15 @@
     </ClInclude>
     <ClInclude Include="Prefab.h">
       <Filter>Header Files\Asset Loader\Assets</Filter>
+    </ClInclude>
+    <ClInclude Include="TextRenderer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Font.h">
+      <Filter>Header Files\Asset Loader\Assets</Filter>
+    </ClInclude>
+    <ClInclude Include="FontLoader.h">
+      <Filter>Header Files\Asset Loader\Loaders</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

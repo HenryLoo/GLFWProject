@@ -188,7 +188,7 @@ void SpriteRenderer::addSpriteData(SpriteData &data, const GameComponent::Physic
 	data.texCoords.push_back(clipSize.y / texSize.y);
 
 	// Construct model view matrix for this sprite.
-	glm::mat4 modelMatrix = glm::mat4(1.0f);
+	glm::mat4 modelMatrix{ glm::mat4(1.0f) };
 
 	// Apply translation.
 	glm::vec3 translation{

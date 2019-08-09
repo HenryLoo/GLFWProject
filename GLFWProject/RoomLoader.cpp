@@ -26,7 +26,7 @@ RoomLoader::RoomLoader()
 
 std::shared_ptr<IAssetType> RoomLoader::loadFromStream(
 	const std::vector<IDataStream::Result> &streams, 
-	const std::string &name)
+	const std::string &name, int flag)
 {
 	const IDataStream::Result &layoutResult{ streams[0] };
 	const IDataStream::Result &tilesResult{ streams[1] };
@@ -49,7 +49,7 @@ std::shared_ptr<IAssetType> RoomLoader::loadFromStream(
 
 		if (room != nullptr)
 		{
-			std::cout << "RoomLoader::load: Loaded '" << name << "'\n" << std::endl;
+			std::cout << "RoomLoader::loadFromStream: Loaded '" << name << "'\n" << std::endl;
 			return room;
 		}
 	}

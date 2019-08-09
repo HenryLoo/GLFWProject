@@ -139,12 +139,6 @@ void EntityManager::update(float deltaTime, bool isDebugMode)
 	// Reset overlaps list.
 	m_collisions.clear();
 
-	if (isDebugMode && m_playerId != -1)
-	{
-		deleteEntity(m_playerId);
-		m_playerId = -1;
-	}
-
 	// Delete all flagged entities.
 	deleteFlaggedEntities();
 }
@@ -632,10 +626,11 @@ void EntityManager::createPlayer()
 		phys.hasFriction = true;
 	} };
 
-	auto skill1EnterAction{ [&phys]()
+	auto skill1EnterAction{ [&phys, &col]()
 	{
 		phys.speed.x = 0.f;
-		phys.speed.y = 0.f;
+		if (col.isInAir(phys))
+			phys.speed.y = 0.f;
 		phys.hasGravity = false;
 	} };
 

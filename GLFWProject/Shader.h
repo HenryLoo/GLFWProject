@@ -13,7 +13,7 @@ class Shader : public IAssetType
 {
 public:
 	Shader(GLuint programId);
-	~Shader();
+	virtual ~Shader();
 
 	// Use this program.
 	void use();
@@ -33,8 +33,6 @@ public:
 	void setMat4(const std::string& name, const glm::mat4& mat) const;
 
 private:
-	virtual void cleanup() {};
-
 	// The program's id.
 	GLuint m_id;
 };

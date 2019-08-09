@@ -17,7 +17,7 @@ protected:
 private:
 	virtual std::shared_ptr<IAssetType> loadFromStream(
 		const std::vector<IDataStream::Result> &streams,
-		const std::string &name);
+		const std::string &name, int flag);
 };
 
 #endif

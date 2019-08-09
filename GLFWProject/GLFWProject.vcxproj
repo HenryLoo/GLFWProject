@@ -103,7 +103,7 @@
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
-      <AdditionalDependencies>opengl32.lib;glfw3.lib;physfs.lib;physfs++_debug.lib;soloud_static_x64.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>opengl32.lib;glfw3.lib;physfs.lib;physfs++_debug.lib;soloud_static_x64.lib;freetype.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -151,6 +151,8 @@
     <ClCompile Include="EffectTypes.cpp" />
     <ClCompile Include="EntityConstants.cpp" />
     <ClCompile Include="EntityManager.cpp" />
+    <ClCompile Include="Font.cpp" />
+    <ClCompile Include="FontLoader.cpp" />
     <ClCompile Include="GameComponent.cpp" />
     <ClCompile Include="GameEngine.cpp" />
     <ClCompile Include="GameSystem.cpp" />
@@ -178,6 +180,7 @@
     <ClCompile Include="SpriteSheetLoader.cpp" />
     <ClCompile Include="SpriteSystem.cpp" />
     <ClCompile Include="StateMachine.cpp" />
+    <ClCompile Include="TextRenderer.cpp" />
     <ClCompile Include="Texture.cpp" />
     <ClCompile Include="TextureLoader.cpp" />
     <ClCompile Include="UIRenderer.cpp" />
@@ -198,6 +201,8 @@
     <ClInclude Include="EffectTypes.h" />
     <ClInclude Include="EntityConstants.h" />
     <ClInclude Include="EntityManager.h" />
+    <ClInclude Include="Font.h" />
+    <ClInclude Include="FontLoader.h" />
     <ClInclude Include="GameComponent.h" />
     <ClInclude Include="GameEngine.h" />
     <ClInclude Include="GameSystem.h" />
@@ -225,6 +230,7 @@
     <ClInclude Include="SpriteSystem.h" />
     <ClInclude Include="StateMachine.h" />
     <ClInclude Include="stb_image.h" />
+    <ClInclude Include="TextRenderer.h" />
     <ClInclude Include="Texture.h" />
     <ClInclude Include="TextureLoader.h" />
     <ClInclude Include="UIRenderer.h" />

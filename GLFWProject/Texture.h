@@ -13,7 +13,7 @@ class Texture : public IAssetType
 {
 public:
 	Texture(GLuint id, GLint width, GLint height, GLint numChannels);
-	~Texture();
+	virtual ~Texture();
 
 	// Bind to this texture.
 	void bind();
@@ -31,9 +31,6 @@ protected:
 
 	// This texture's number of colour channels.
 	GLint m_numChannels;
-
-private:
-	virtual void cleanup() {};
 };
 
 #endif

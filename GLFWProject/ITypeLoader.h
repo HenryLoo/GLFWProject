@@ -18,14 +18,17 @@ public:
 	// then load it from the stream.
 	// If the asset could not be loaded, return nullptr.
 	std::shared_ptr<IAssetType> loadFromCache(
-		const std::string &name);
+		const std::string &name, int flag);
 
 	// Load an asset from a stream and cache it, before returning a pointer 
 	// to it.
+	// The flag parameter is an optional setting for differentiating between
+	// assets with the same name.
 	// If the asset could not be loaded, return nullptr.
 	std::shared_ptr<IAssetType> load(
 		const std::vector<IDataStream::Result> &streams,
-		const std::string &name);
+		const std::string &name,
+		int flag);
 
 	// Get the number of streams required for this loader.
 	int getNumStreamsRequired() const;
@@ -42,7 +45,11 @@ private:
 	// This should be implemented by the subclass.
 	virtual std::shared_ptr<IAssetType> loadFromStream(
 		const std::vector<IDataStream::Result> &streams,
-		const std::string &name) = 0;
+		const std::string &name, int flag) = 0;
+
+	// Get the asset name, appended by the flag value.
+	void getFlaggedName(const std::string &name, int flag, 
+		std::string &output) const;
 
 	// Hold all loaded assets for a temporary duration of time.
 	// This is to avoid loading multiple copies of the same asset.

@@ -7,7 +7,7 @@
 
 std::shared_ptr<IAssetType> TextureLoader::loadFromStream(
 	const std::vector<IDataStream::Result> &streams,
-	const std::string &name)
+	const std::string &name, int flag)
 {
 	// If successfully created texture, instantiate the asset and return it.
 	GLuint textureId;
@@ -19,7 +19,7 @@ std::shared_ptr<IAssetType> TextureLoader::loadFromStream(
 			std::make_shared<Texture>(textureId, width, height, numChannels) };
 		if (texture != nullptr)
 		{
-			std::cout << "TextureLoader::load: Loaded '" << name << "'\n" << std::endl;
+			std::cout << "TextureLoader::loadFromStream: Loaded '" << name << "'\n" << std::endl;
 			return texture;
 		}
 	}
@@ -64,7 +64,7 @@ bool TextureLoader::loadValues(const IDataStream::Result &streamedData,
 
 	// Free the image memory after we're done with it.
 	stbi_image_free(data);
-	delete buffer;
+	delete[] buffer;
 
 	return success;
 }

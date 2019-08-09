@@ -27,10 +27,11 @@ public:
 	// relevant loader.
 	template <typename T>
 	std::shared_ptr<T> load(const std::string &name, 
-		const std::vector<std::string> &filePaths);
+		const std::vector<std::string> &filePaths,
+		int flag = 0);
 
 	template <typename T>
-	std::shared_ptr<T> load(const std::string &name);
+	std::shared_ptr<T> load(const std::string &name, int flag = 0);
 
 	void update(float deltaTime);
 
@@ -60,7 +61,7 @@ void AssetLoader::registerLoader(ITypeLoader *loader)
 
 template <typename T>
 std::shared_ptr<T> AssetLoader::load(const std::string &name,
-	const std::vector<std::string> &filePaths)
+	const std::vector<std::string> &filePaths, int flag)
 {
 	std::type_index type{ std::type_index(typeid(T)) };
 	auto it{ m_loaders.find(type) };
@@ -83,7 +84,7 @@ std::shared_ptr<T> AssetLoader::load(const std::string &name,
 
 	// Check the cache for the asset.
 	// If it already exists, then return it.
-	std::shared_ptr<IAssetType> asset{ it->second->loadFromCache(name) };
+	std::shared_ptr<IAssetType> asset{ it->second->loadFromCache(name, flag) };
 	if (asset != nullptr)
 		return std::dynamic_pointer_cast<T>(asset);
 
@@ -93,11 +94,11 @@ std::shared_ptr<T> AssetLoader::load(const std::string &name,
 
 	// Downcast result to the actual type.
 	return std::dynamic_pointer_cast<T>(
-		it->second->load(streams, name));
+		it->second->load(streams, name, flag));
 }
 
 template <typename T>
-std::shared_ptr<T> AssetLoader::load(const std::string &name)
+std::shared_ptr<T> AssetLoader::load(const std::string &name, int flag)
 {
 	// Get the file paths from the assets list.
 	std::type_index type{ std::type_index(typeid(T)) };
@@ -115,7 +116,7 @@ std::shared_ptr<T> AssetLoader::load(const std::string &name)
 		return nullptr;
 	}
 
-	return load<T>(name, assetIt->second);
+	return load<T>(name, assetIt->second, flag);
 }
 
 #endif

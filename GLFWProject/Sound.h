@@ -16,13 +16,11 @@ class Sound : public IAssetType
 {
 public:
 	Sound(SoLoud::Wav *wav);
-	~Sound();
+	virtual ~Sound();
 
 	void play(SoLoud::Soloud &engine) const;
 
 private:
-	virtual void cleanup() {};
-
 	std::unique_ptr<SoLoud::Wav> m_sound;
 };
 

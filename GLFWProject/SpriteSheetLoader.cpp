@@ -33,7 +33,7 @@ SpriteSheetLoader::SpriteSheetLoader()
 
 std::shared_ptr<IAssetType>SpriteSheetLoader::loadFromStream(
 	const std::vector<IDataStream::Result> &streams,
-	const std::string &name)
+	const std::string &name, int flag)
 {
 	// If successfully created texture, instantiate the asset and return it.
 	GLuint textureId;
@@ -55,7 +55,7 @@ std::shared_ptr<IAssetType>SpriteSheetLoader::loadFromStream(
 
 	if (spriteSheet != nullptr)
 	{
-		std::cout << "SpriteSheetLoader::load: Loaded '" << name << "'\n" << std::endl;
+		std::cout << "SpriteSheetLoader::loadFromStream: Loaded '" << name << "'\n" << std::endl;
 		return spriteSheet;
 	}
 

@@ -7,15 +7,15 @@
 #include "Shader.h"
 #include "Sound.h"
 #include "Prefab.h"
+#include "Font.h"
 
 #include <json/single_include/nlohmann/json.hpp>
-
-using json = nlohmann::json;
 
 namespace
 {
 	const std::string ASSETS_FILE{ "assets.json" };
 
+	const std::string LIST_FONTS{ "font" };
 	const std::string LIST_PREFABS{ "prefab" };
 	const std::string LIST_ROOMS{ "room" };
 	const std::string LIST_SHADERS{ "shader" };
@@ -28,6 +28,7 @@ namespace
 
 	const std::vector<std::pair<std::string, std::type_index>> ASSET_TYPES
 	{
+		{ LIST_FONTS, std::type_index(typeid(Font)) },
 		{ LIST_PREFABS, std::type_index(typeid(Prefab)) },
 		{ LIST_ROOMS, std::type_index(typeid(Room)) },
 		{ LIST_SHADERS, std::type_index(typeid(Shader)) },
@@ -48,7 +49,7 @@ AssetLoader::AssetLoader(IDataStream *stream)
 	try
 	{
 		// Read the contents into json.
-		json j;
+		nlohmann::json j;
 		*(result[0].stream) >> j;
 
 		// Load list of assets.
@@ -81,7 +82,7 @@ AssetLoader::AssetLoader(IDataStream *stream)
 	}
 }
 
-void AssetLoader::loadAssetList(json json, const std::string &assetLabel,
+void AssetLoader::loadAssetList(nlohmann::json json, const std::string &assetLabel,
 	const std::type_index &assetType)
 {
 	// Get listings from json.
