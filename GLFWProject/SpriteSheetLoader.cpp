@@ -92,59 +92,61 @@ void SpriteSheetLoader::loadAnimations(const IDataStream::Result &streamedData,
 			json animJson{ j.at(PROPERTY_ANIMATIONS) };
 			for (const auto &thisAnim : animJson)
 			{
+				SpriteAnimation anim;
+
 				// Type property.
 				std::string type;
 				if (JSONUtilities::hasEntry(PROPERTY_ANIM_TYPE, thisAnim))
 				{
 					type = thisAnim.at(PROPERTY_ANIM_TYPE).get<std::string>();
 				}
+				else
+				{
+					// No type attribute, so skip this.
+					continue;
+				}
 
 				// First index property.
-				int firstIndex;
 				if (JSONUtilities::hasEntry(PROPERTY_ANIM_FIRST, thisAnim))
 				{
-					firstIndex = thisAnim.at(PROPERTY_ANIM_FIRST).get<int>();
+					anim.firstIndex = thisAnim.at(PROPERTY_ANIM_FIRST).get<int>();
 				}
 
 				// Number of sprites property.
-				int numSprites;
 				if (JSONUtilities::hasEntry(PROPERTY_ANIM_NUM, thisAnim))
 				{
-					numSprites = thisAnim.at(PROPERTY_ANIM_NUM).get<int>();
+					anim.numSprites = thisAnim.at(PROPERTY_ANIM_NUM).get<int>();
 				}
 
 				// Looping property.
-				bool isLooping;
 				if (JSONUtilities::hasEntry(PROPERTY_ANIM_LOOP, thisAnim))
 				{
-					isLooping = thisAnim.at(PROPERTY_ANIM_LOOP).get<bool>();
+					anim.isLooping = thisAnim.at(PROPERTY_ANIM_LOOP).get<bool>();
 				}
 
 				// Offset property.
-				glm::vec2 offset{ 0.f };
 				if (JSONUtilities::hasEntry(PROPERTY_ANIM_OFFSET, thisAnim))
 				{
 					json offsetJson{ thisAnim.at(PROPERTY_ANIM_OFFSET) };
 					if (JSONUtilities::hasEntry(PROPERTY_X, offsetJson))
 					{
-						offset.x = offsetJson.at(PROPERTY_X).get<float>();
+						anim.offset.x = offsetJson.at(PROPERTY_X).get<float>();
 					}
 
 					if (JSONUtilities::hasEntry(PROPERTY_Y, offsetJson))
 					{
-						offset.y = offsetJson.at(PROPERTY_Y).get<float>();
+						anim.offset.y = offsetJson.at(PROPERTY_Y).get<float>();
 					}
 				}
 
 				// Durations property.
-				std::vector<float> durations;
 				if (JSONUtilities::hasEntry(PROPERTY_ANIM_DURATION, thisAnim))
 				{
-					durations = thisAnim.at(PROPERTY_ANIM_DURATION).get<std::vector<float>>();
+					anim.durations = thisAnim.at(PROPERTY_ANIM_DURATION).get<std::vector<float>>();
 				}
 
 				// Create the animation and insert it.
-				anims.insert({ type, { firstIndex, numSprites, isLooping, offset, durations } });
+				anims.insert({ type, anim });
 			}
 		}
 	}

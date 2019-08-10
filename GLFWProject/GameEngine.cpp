@@ -171,6 +171,7 @@ void GameEngine::update(EntityManager *entityManager, AssetLoader *assetLoader,
 	sRenderer->update(m_camera->getViewMatrix());
 
 	uRenderer->resetNumBoxes();
+	uRenderer->update(m_camera->getViewMatrix());
 
 	// Update all entities.
 	entityManager->update(m_deltaTime, m_isDebugMode);

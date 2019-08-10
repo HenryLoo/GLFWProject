@@ -9,13 +9,13 @@
 struct SpriteAnimation
 {
 	// The index of this animation's first frame on the sprite sheet.
-	int firstIndex;
+	int firstIndex{ 0 };
 
 	// The number of sprites in this animation.
-	int numSprites;
+	int numSprites{ 1 };
 
 	// Flag for if the sprite animation is looping.
-	bool isLooping;
+	bool isLooping{ false };
 
 	// The x, y-distances to offset the sprite.
 	glm::vec2 offset{ 0.f };

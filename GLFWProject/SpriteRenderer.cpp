@@ -200,8 +200,8 @@ void SpriteRenderer::addSpriteData(SpriteData &data, const GameComponent::Physic
 
 	// Apply scaling.
 	glm::vec3 scale{
-		physics.scale.x *clipSize.x,
-		physics.scale.y *clipSize.y,
+		physics.scale.x * clipSize.x,
+		physics.scale.y * clipSize.y,
 		1.f
 	};
 	modelMatrix = glm::scale(modelMatrix, scale);
@@ -219,8 +219,6 @@ void SpriteRenderer::addSpriteData(SpriteData &data, const GameComponent::Physic
 
 void SpriteRenderer::resetNumSprites()
 {
-	//m_numSprites = 0;
-
 	// Clear sprite data.
 	m_spriteData.clear();
 	m_spriteOrder.clear();
@@ -284,7 +282,6 @@ void SpriteRenderer::render(glm::ivec2 windowSize, Room *room = nullptr)
 		-halfScreenSize.x / zoom, halfScreenSize.x / zoom,
 		-halfScreenSize.y / zoom, halfScreenSize.y / zoom,
 		-1000.0f, 1000.0f) };
-	glm::mat4 viewProjectionMatrix{ projectionMatrix * m_viewMatrix };
 
 	// Render the background room tiles first.
 	// This should only render the tiles that are visible in the camera.
@@ -308,9 +305,10 @@ void SpriteRenderer::render(glm::ivec2 windowSize, Room *room = nullptr)
 		m_roomShader->setVec2("mapSizeInTiles", room->getSize());
 
 		// Set the camera uniforms.
-		m_roomShader->setVec3("cameraWorldRight", m_viewMatrix[0][0], m_viewMatrix[1][0], m_viewMatrix[2][0]);
-		m_roomShader->setVec3("cameraWorldUp", m_viewMatrix[0][1], m_viewMatrix[1][1], m_viewMatrix[2][1]);
-		m_roomShader->setMat4("viewProjection", viewProjectionMatrix);
+		glm::mat4 modelMatrix{ glm::mat4(1.f) };
+		glm::ivec2 roomSize{ room->getSize() * tileSize };
+		modelMatrix = glm::scale(modelMatrix, glm::vec3(roomSize.x, roomSize.y, 1.f));
+		m_roomShader->setMat4("mvp", projectionMatrix * m_viewMatrix * modelMatrix);
 
 		// Draw the room.
 		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
@@ -321,10 +319,10 @@ void SpriteRenderer::render(glm::ivec2 windowSize, Room *room = nullptr)
 
 	// Update the instance buffers.
 	glBindBuffer(GL_ARRAY_BUFFER, m_colourVBO);
-	glBufferData(GL_ARRAY_BUFFER, EntityConstants::MAX_ENTITIES * 4 * sizeof(GLubyte), NULL, GL_STREAM_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, static_cast<size_t>(EntityConstants::MAX_ENTITIES) * 4 * sizeof(GLubyte), NULL, GL_STREAM_DRAW);
 
 	glBindBuffer(GL_ARRAY_BUFFER, m_texCoordsVBO);
-	glBufferData(GL_ARRAY_BUFFER, EntityConstants::MAX_ENTITIES * 4 * sizeof(GLfloat), NULL, GL_STREAM_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, static_cast<size_t>(EntityConstants::MAX_ENTITIES) * 4 * sizeof(GLfloat), NULL, GL_STREAM_DRAW);
 
 	glBindBuffer(GL_ARRAY_BUFFER, m_modelViewsVBO);
 	glBufferData(GL_ARRAY_BUFFER, EntityConstants::MAX_ENTITIES * sizeof(glm::mat4), NULL, GL_STREAM_DRAW);
