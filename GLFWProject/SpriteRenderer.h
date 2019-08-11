@@ -2,6 +2,7 @@
 #ifndef SpriteRenderer_H
 #define SpriteRenderer_H
 
+#include "Renderer.h"
 #include "GameComponent.h"
 
 #include <glad/glad.h>
@@ -52,7 +53,7 @@ class Camera;
 class Room;
 class AssetLoader;
 
-class SpriteRenderer
+class SpriteRenderer : public Renderer
 {
 public:
 	SpriteRenderer(AssetLoader *assetLoader);
@@ -67,17 +68,10 @@ public:
 	// Set the number of sprites to render to 0.
 	// This should be called every frame from the update loop, so that
 	// the proper number of sprites can be recalculated.
-	void resetNumSprites();
-
-	// Sort the array of sprites with respect to camera distance and then
-	// populate the data buffers with their values for the GPU.
-	//void updateData();
-
-	// Update the view matrix.
-	void update(const glm::mat4 &viewMatrix);
+	virtual void resetData();
 
 	// Render the current room and all queued sprites.
-	void render(glm::ivec2 windowSize, Room *room);
+	void render(Camera* camera, glm::ivec2 windowSize, Room *room);
 
 private:
 	// Add vertex values to SpriteData.
@@ -104,9 +98,6 @@ private:
 
 	// Holds texture names, in order of insertion into m_spriteData.
 	std::vector<std::string> m_spriteOrder;
-
-	// Hold the camera's view matrix.
-	glm::mat4 m_viewMatrix;
 };
 
 #endif

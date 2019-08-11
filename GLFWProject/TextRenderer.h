@@ -2,6 +2,7 @@
 #ifndef TextRenderer_H
 #define TextRenderer_H
 
+#include "Renderer.h"
 #include "AABB.h"
 
 #include <glad/glad.h>
@@ -42,7 +43,7 @@ class AssetLoader;
 class Font;
 class Shader;
 
-class TextRenderer
+class TextRenderer : public Renderer
 {
 public:
 	TextRenderer(AssetLoader *assetLoader);
@@ -56,10 +57,12 @@ public:
 		TextAlign align = TextAlign::LEFT, bool isVerticalCenter = false,
 		GLfloat scale = 1.f);
 
+	virtual void resetData();
+
 	// Render the queued text strings in the map, where strings with the
 	// same font are rendered together.
 	// Call this after drawing all the text strings for this game loop.
-	void render(glm::vec2 screenSize);
+	void render(glm::ivec2 windowSize);
 
 	// Set the projection matrix based on current screen size.
 	void setProjectionMatrix(glm::vec2 screenSize);

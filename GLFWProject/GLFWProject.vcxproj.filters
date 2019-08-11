@@ -37,15 +37,18 @@
     <Filter Include="Source Files\Asset Loader\Assets">
       <UniqueIdentifier>{b971e3ee-31f6-4f26-8f69-d6975c982602}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Renderers">
+      <UniqueIdentifier>{c97b3aaf-ad38-493a-bb96-88ca8c8946d7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Renderer">
+      <UniqueIdentifier>{15a39328-de59-45e5-a16f-d9f251e7d40b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="glad.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Main.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Renderer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="GameEngine.cpp">
@@ -57,16 +60,10 @@
     <ClCompile Include="Camera.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SpriteRenderer.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="GameComponent.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="InputManager.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="UIRenderer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="CharStates.cpp">
@@ -165,21 +162,30 @@
     <ClCompile Include="ITypeLoader.cpp">
       <Filter>Source Files\Asset Loader\Loaders</Filter>
     </ClCompile>
-    <ClCompile Include="TextRenderer.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="FontLoader.cpp">
       <Filter>Source Files\Asset Loader\Loaders</Filter>
     </ClCompile>
     <ClCompile Include="Font.cpp">
       <Filter>Source Files\Asset Loader\Assets</Filter>
     </ClCompile>
+    <ClCompile Include="SpriteRenderer.cpp">
+      <Filter>Source Files\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="TextRenderer.cpp">
+      <Filter>Source Files\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="UIRenderer.cpp">
+      <Filter>Source Files\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="OLD_Renderer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderer.cpp">
+      <Filter>Source Files\Renderer</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stb_image.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Renderer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="GameEngine.h">
@@ -194,16 +200,10 @@
     <ClInclude Include="Camera.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="SpriteRenderer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="GameComponent.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="InputManager.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="UIRenderer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="CharStates.h">
@@ -314,14 +314,26 @@
     <ClInclude Include="Prefab.h">
       <Filter>Header Files\Asset Loader\Assets</Filter>
     </ClInclude>
-    <ClInclude Include="TextRenderer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Font.h">
       <Filter>Header Files\Asset Loader\Assets</Filter>
     </ClInclude>
     <ClInclude Include="FontLoader.h">
       <Filter>Header Files\Asset Loader\Loaders</Filter>
+    </ClInclude>
+    <ClInclude Include="SpriteRenderer.h">
+      <Filter>Header Files\Renderers</Filter>
+    </ClInclude>
+    <ClInclude Include="TextRenderer.h">
+      <Filter>Header Files\Renderers</Filter>
+    </ClInclude>
+    <ClInclude Include="UIRenderer.h">
+      <Filter>Header Files\Renderers</Filter>
+    </ClInclude>
+    <ClInclude Include="OLD_Renderer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderer.h">
+      <Filter>Header Files\Renderers</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

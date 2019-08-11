@@ -5,6 +5,7 @@
 #include "AssetLoader.h"
 #include "SpriteSheet.h"
 #include "Shader.h"
+#include "Camera.h"
 
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/norm.hpp>
@@ -37,9 +38,10 @@ SpriteRenderer::SpriteRenderer(AssetLoader *assetLoader)
 	glDepthFunc(GL_LESS);
 	glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 
-	// TODO: replace these hardcoded resources.
+	// Load resources.
 	m_spriteShader = assetLoader->load<Shader>("sprite");
 	m_roomShader = assetLoader->load<Shader>("room");
+	m_tileset = assetLoader->load<SpriteSheet>("tileset");
 
 	// Create the vertex array object and bind to it.
 	// All subsequent VBO configurations will be saved for this VAO.
@@ -119,9 +121,6 @@ SpriteRenderer::SpriteRenderer(AssetLoader *assetLoader)
 	// Set attribute for vertices.
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, (void *)0);
-
-	// Instantiate the tileset.
-	m_tileset = assetLoader->load<SpriteSheet>("tileset");
 }
 
 SpriteRenderer::~SpriteRenderer()
@@ -217,71 +216,21 @@ void SpriteRenderer::addSpriteData(SpriteData &data, const GameComponent::Physic
 	data.numSprites++;
 }
 
-void SpriteRenderer::resetNumSprites()
+void SpriteRenderer::resetData()
 {
 	// Clear sprite data.
 	m_spriteData.clear();
 	m_spriteOrder.clear();
 }
 
-//void SpriteRenderer::updateData()
-//{
-//	// Sort the sprites by camera distance to maintain proper
-//	// draw order.
-//	//std::sort(&m_sprites[0], &m_sprites[GameEngine::MAX_ENTITIES]);
-//
-//	// Update the data buffers with these components' values.
-//	for (int i = 0; i < m_numSprites; i++)
-//	{
-//		Sprite &spr{ m_sprites[i] };
-//
-//		m_positionData[3 * i] = spr.pos.x;
-//		m_positionData[3 * i + 1] = spr.pos.y;
-//		m_positionData[3 * i + 2] = spr.pos.z;
-//
-//		m_colourData[4 * i] = spr.r;
-//		m_colourData[4 * i + 1] = spr.g;
-//		m_colourData[4 * i + 2] = spr.b;
-//		m_colourData[4 * i + 3] = spr.a;
-//
-//		glm::vec2 texSize{ spr.spriteSheet->getSize() };
-//		glm::vec2 clipSize{ spr.spriteSheet->getClipSize() };
-//		int spriteIndex{ spr.frameIndex };
-//		int numSpritesPerRow{ static_cast<int>(glm::max(1.f, texSize.x / clipSize.x - 1)) };
-//		glm::vec2 rowColIndex{ spriteIndex % numSpritesPerRow, glm::floor(spriteIndex / numSpritesPerRow) };
-//
-//		m_texCoordsData[4 * i] = rowColIndex.x * clipSize.x / texSize.x;
-//		m_texCoordsData[4 * i + 1] = 1 - (rowColIndex.y + 1) * clipSize.y / texSize.y;
-//		m_texCoordsData[4 * i + 2] = clipSize.x / texSize.x;
-//		m_texCoordsData[4 * i + 3] = clipSize.y / texSize.y;
-//
-//		m_transformData[3 * i] = spr.scale.x * clipSize.x;
-//		m_transformData[3 * i + 1] = spr.scale.y * clipSize.y;
-//		m_transformData[3 * i + 2] = spr.rotation;
-//	}
-//}
-
-void SpriteRenderer::update(const glm::mat4 &viewMatrix)
-{
-	m_viewMatrix = viewMatrix;
-}
-
-void SpriteRenderer::render(glm::ivec2 windowSize, Room *room = nullptr)
+void SpriteRenderer::render(Camera *camera, glm::ivec2 windowSize, Room *room = nullptr)
 {
 	// Clear the screen
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	//glm::mat4 projectionMatrix{ glm::perspective(glm::radians(45.0f),
-	//	1024 / 768.f, 0.1f, 100.0f) };
-
 	// Orthographic projection with origin of the coordinate space defined at
 	// the center of the screen. Negative y-axis points down.
-	glm::vec2 halfScreenSize{ windowSize.x / 2.f, windowSize.y / 2.f };
-	float zoom{ 4.f };
-	glm::mat4 projectionMatrix{ glm::ortho(
-		-halfScreenSize.x / zoom, halfScreenSize.x / zoom,
-		-halfScreenSize.y / zoom, halfScreenSize.y / zoom,
-		-1000.0f, 1000.0f) };
+	glm::mat4 projectionMatrix{ getProjectionMatrix(camera->getZoom()) };
 
 	// Render the background room tiles first.
 	// This should only render the tiles that are visible in the camera.
@@ -330,9 +279,9 @@ void SpriteRenderer::render(glm::ivec2 windowSize, Room *room = nullptr)
 	// Use the shader.
 	m_spriteShader->use();
 
-	// Bind to the texture at texture unit 0 and set the shader's sampler to this.
-	glActiveTexture(GL_TEXTURE1);
-	m_spriteShader->setInt("textureSampler", 1);
+	// Bind to the texture at texture unit 2 and set the shader's sampler to this.
+	glActiveTexture(GL_TEXTURE2);
+	m_spriteShader->setInt("textureSampler", 2);
 
 	// Set the camera uniforms.
 	m_spriteShader->setMat4("projection", projectionMatrix);

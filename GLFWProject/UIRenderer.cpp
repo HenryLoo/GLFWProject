@@ -4,6 +4,7 @@
 #include "EntityConstants.h"
 #include "AssetLoader.h"
 #include "Shader.h"
+#include "Texture.h"
 
 #include <glm/gtc/matrix_transform.hpp>
 
@@ -17,34 +18,58 @@ namespace
 		 -0.5f,  0.5f,
 		  0.5f,  0.5f,
 	};
+
+	const glm::vec2 HUD_POSITION{ 16.f, 16.f };
+	const float HUD_SCALE{ 1.f };
 }
 
 UIRenderer::UIRenderer(AssetLoader *assetLoader)
 {
-	// TODO: replace these hardcoded resources.
+	// Load resources.
 	m_boxShader = assetLoader->load<Shader>("box");
+	m_hudShader = assetLoader->load<Shader>("hud");
+	m_hudFrame = assetLoader->load<Texture>("ui_frame");
+
+	initBox();
+	initHud();
+}
+
+UIRenderer::~UIRenderer()
+{
+	glDeleteBuffers(1, &m_boxVerticesVBO);
+	glDeleteBuffers(1, &m_boxColourVBO);
+	glDeleteBuffers(1, &m_boxModelViewsVBO);
+	glDeleteVertexArrays(1, &m_boxVAO);
+
+	glDeleteBuffers(1, &m_hudVerticesVBO);
+	glDeleteBuffers(1, &m_hudModelsVBO);
+	glDeleteVertexArrays(1, &m_hudVAO);
+}
+
+void UIRenderer::initBox()
+{
 
 	// Create the vertex array object and bind to it.
 	// All subsequent VBO configurations will be saved for this VAO.
-	glGenVertexArrays(1, &m_VAO);
-	glBindVertexArray(m_VAO);
+	glGenVertexArrays(1, &m_boxVAO);
+	glBindVertexArray(m_boxVAO);
 
 	// Define the vertex data for a sprite quad, for the VBO.
 	// This is shared by all instances.
-	glGenBuffers(1, &m_verticesVBO);
-	glBindBuffer(GL_ARRAY_BUFFER, m_verticesVBO);
+	glGenBuffers(1, &m_boxVerticesVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, m_boxVerticesVBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(QUAD_VERTICES), QUAD_VERTICES, GL_STATIC_DRAW);
 
 	// Set attribute for vertices.
 	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, (void *)0);
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, (void*)0);
 	glVertexAttribDivisor(0, 0);
 
 	// Create the VBO for instance colours.
 	// Each vertex holds 4 values: r, g, b, a.
 	// Initialize with an empty buffer and update its values in the game loop.
-	glGenBuffers(1, &m_colourVBO);
-	glBindBuffer(GL_ARRAY_BUFFER, m_colourVBO);
+	glGenBuffers(1, &m_boxColourVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, m_boxColourVBO);
 	glBufferData(GL_ARRAY_BUFFER, EntityConstants::MAX_ENTITIES * 4 * sizeof(GLubyte), NULL, GL_STREAM_DRAW);
 
 	// Set attribute for instance colours.
@@ -54,8 +79,8 @@ UIRenderer::UIRenderer(AssetLoader *assetLoader)
 
 	// Create the VBO for instance model view matrices.
 	// Initialize with an empty buffer and update its values in the game loop.
-	glGenBuffers(1, &m_modelViewsVBO);
-	glBindBuffer(GL_ARRAY_BUFFER, m_modelViewsVBO);
+	glGenBuffers(1, &m_boxModelViewsVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, m_boxModelViewsVBO);
 	glBufferData(GL_ARRAY_BUFFER, EntityConstants::MAX_ENTITIES * sizeof(glm::mat4), NULL, GL_STREAM_DRAW);
 
 	// Set attributes for instance model view matrices.
@@ -77,12 +102,47 @@ UIRenderer::UIRenderer(AssetLoader *assetLoader)
 	glVertexAttribDivisor(5, 1);
 }
 
-UIRenderer::~UIRenderer()
+void UIRenderer::initHud()
 {
-	glDeleteBuffers(1, &m_verticesVBO);
-	glDeleteBuffers(1, &m_colourVBO);
-	glDeleteBuffers(1, &m_modelViewsVBO);
-	glDeleteVertexArrays(1, &m_VAO);
+	// Create the vertex array object and bind to it.
+	// All subsequent VBO configurations will be saved for this VAO.
+	glGenVertexArrays(1, &m_hudVAO);
+	glBindVertexArray(m_hudVAO);
+
+	// Define the vertex data for a sprite quad, for the VBO.
+	// This is shared by all instances.
+	glGenBuffers(1, &m_hudVerticesVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, m_hudVerticesVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(QUAD_VERTICES), QUAD_VERTICES, GL_STATIC_DRAW);
+
+	// Set attribute for vertices.
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, (void*)0);
+	glVertexAttribDivisor(0, 0);
+
+	// Create the VBO for instance model view matrices.
+	// Initialize with an empty buffer and update its values in the game loop.
+	glGenBuffers(1, &m_hudModelsVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, m_hudModelsVBO);
+	glBufferData(GL_ARRAY_BUFFER, EntityConstants::MAX_ENTITIES * sizeof(glm::mat4), NULL, GL_STREAM_DRAW);
+
+	// Set attributes for instance model view matrices.
+	// A mat4 is equivalent to 4 vec4's.
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)0);
+	glVertexAttribDivisor(1, 1);
+
+	glEnableVertexAttribArray(2);
+	glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(sizeof(glm::vec4)));
+	glVertexAttribDivisor(2, 1);
+
+	glEnableVertexAttribArray(3);
+	glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(2 * sizeof(glm::vec4)));
+	glVertexAttribDivisor(3, 1);
+
+	glEnableVertexAttribArray(4);
+	glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(3 * sizeof(glm::vec4)));
+	glVertexAttribDivisor(4, 1);
 }
 
 void UIRenderer::addBox(const GameComponent::Physics &physics,
@@ -90,10 +150,10 @@ void UIRenderer::addBox(const GameComponent::Physics &physics,
 	unsigned char r, unsigned char g, unsigned char b, unsigned char a)
 {
 	// Push colour data.
-	m_colourData.push_back(r);
-	m_colourData.push_back(g);
-	m_colourData.push_back(b);
-	m_colourData.push_back(a);
+	m_boxColourData.push_back(r);
+	m_boxColourData.push_back(g);
+	m_boxColourData.push_back(b);
+	m_boxColourData.push_back(a);
 
 	// Construct model view matrix for this sprite.
 	glm::mat4 modelMatrix{ glm::mat4(1.0f) };
@@ -114,55 +174,85 @@ void UIRenderer::addBox(const GameComponent::Physics &physics,
 	};
 	modelMatrix = glm::scale(modelMatrix, scale);
 
-	// Apply rotation.
-	modelMatrix = glm::rotate(modelMatrix, physics.rotation, glm::vec3(0.f, 0.f, 1.f));
-
 	// Left-multiply by view matrix to get model view matrix.
 	glm::mat4 modelViewMatrix{ m_viewMatrix * modelMatrix };
 
-	m_modelViewsData.push_back(modelViewMatrix);
+	m_boxModelViewsData.push_back(modelViewMatrix);
 }
 
-void UIRenderer::resetNumBoxes()
+void UIRenderer::resetData()
 {
 	// Clear data.
-	m_colourData.clear();
-	m_modelViewsData.clear();
+	m_boxColourData.clear();
+	m_boxModelViewsData.clear();
 }
 
-void UIRenderer::update(const glm::mat4& viewMatrix)
+void UIRenderer::updateHud(glm::ivec2 windowSize)
 {
-	m_viewMatrix = viewMatrix;
+	// Construct model view matrix for this sprite.
+	glm::mat4 modelMatrix{ glm::mat4(1.0f) };
+
+	// Apply translation.
+	glm::vec2 hudSize{ glm::vec2(m_hudFrame->getSize()) * HUD_SCALE };
+	glm::vec3 translation{ (-windowSize.x + hudSize.x) / 2.f + HUD_POSITION.x,
+		(windowSize.y - hudSize.y) / 2.f - HUD_POSITION.x, 0.f };
+	modelMatrix = glm::translate(modelMatrix, translation);
+
+	// Apply scaling.
+	glm::vec3 scale{ hudSize.x, hudSize.y, 1.f };
+	modelMatrix = glm::scale(modelMatrix, scale);
+
+	// Left-multiply by view matrix to get model view matrix.
+	m_hudModelsData.push_back(modelMatrix);
+
+	// Set the HUD data.
+	glBindBuffer(GL_ARRAY_BUFFER, m_hudModelsVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(glm::mat4), &m_hudModelsData[0], GL_STREAM_DRAW);
 }
 
-void UIRenderer::render(Camera *camera, glm::ivec2 windowSize)
+void UIRenderer::renderHud(glm::ivec2 windowSize)
 {
+	// Render HUD elements.
+	glBindVertexArray(m_hudVAO);
+
+	// Use the shader.
+	m_hudShader->use();
+
+	// Bind to texture unit 4, since 1-3 are being used by SpriteRenderer.
+	glActiveTexture(GL_TEXTURE4);
+	m_hudShader->setInt("textureSampler", 4);
+
 	// Orthographic projection with origin of the coordinate space defined at
 	// the center of the screen. Negative y-axis points down.
-	glm::vec2 halfScreenSize{ windowSize.x / 2.f, windowSize.y / 2.f };
-	float zoom{ 4.f };
-	glm::mat4 projectionMatrix{ glm::ortho(
-		-halfScreenSize.x / zoom, halfScreenSize.x / zoom,
-		-halfScreenSize.y / zoom, halfScreenSize.y / zoom,
-		-1000.0f, 1000.0f) };
+	glm::mat4 projectionMatrix{ getProjectionMatrix(1.f) };
+	m_hudShader->setMat4("projection", projectionMatrix);
 
+	m_hudFrame->bind();
+	glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, static_cast<int>(m_hudModelsData.size()));
+}
+
+void UIRenderer::renderBoxes(Camera *camera, glm::ivec2 windowSize)
+{
 	// Render the entity sprites.
-	glBindVertexArray(m_VAO);
+	glBindVertexArray(m_boxVAO);
 
 	// Update the instance buffers.
-	size_t numBoxes{ m_modelViewsData.size() };
-	glBindBuffer(GL_ARRAY_BUFFER, m_colourVBO);
+	int numBoxes{ static_cast<int>(m_boxModelViewsData.size()) };
+	glBindBuffer(GL_ARRAY_BUFFER, m_boxColourVBO);
 	glBufferData(GL_ARRAY_BUFFER, static_cast<size_t>(EntityConstants::MAX_ENTITIES) * 4 * sizeof(GLubyte), NULL, GL_STREAM_DRAW);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, numBoxes * sizeof(GLubyte) * 4, &m_colourData[0]);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, numBoxes * sizeof(GLubyte) * 4, &m_boxColourData[0]);
 
-	glBindBuffer(GL_ARRAY_BUFFER, m_modelViewsVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, m_boxModelViewsVBO);
 	glBufferData(GL_ARRAY_BUFFER, EntityConstants::MAX_ENTITIES * sizeof(glm::mat4), NULL, GL_STREAM_DRAW);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, numBoxes * sizeof(glm::mat4), &m_modelViewsData[0]);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, numBoxes * sizeof(glm::mat4), &m_boxModelViewsData[0]);
 
 	// Use the shader.
 	m_boxShader->use();
 
 	// Set the camera uniforms.
+	// Orthographic projection with origin of the coordinate space defined at
+	// the center of the screen. Negative y-axis points down.
+	glm::mat4 projectionMatrix{ getProjectionMatrix(camera->getZoom()) };
 	m_boxShader->setMat4("projection", projectionMatrix);
 
 	// Draw the instances.

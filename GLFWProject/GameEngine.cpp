@@ -113,6 +113,7 @@ void GameEngine::start(EntityManager *entityManager, AssetLoader *assetLoader,
 			glfwGetWindowSize(m_window, &m_windowSize.x, &m_windowSize.y);
 			//renderer->createFramebuffer(width, height);
 			tRenderer->setProjectionMatrix(m_windowSize);
+			uRenderer->updateHud(m_windowSize);
 		}
 
 		float currentFrame{ static_cast<float>(glfwGetTime()) };
@@ -167,11 +168,10 @@ void GameEngine::update(EntityManager *entityManager, AssetLoader *assetLoader,
 			m_currentRoom->getSize());
 	}
 
-	sRenderer->resetNumSprites();
-	sRenderer->update(m_camera->getViewMatrix());
-
-	uRenderer->resetNumBoxes();
-	uRenderer->update(m_camera->getViewMatrix());
+	sRenderer->resetData();
+	uRenderer->resetData();
+	tRenderer->resetData();
+	Renderer::update(m_camera->getViewMatrix(), m_windowSize);
 
 	// Update all entities.
 	entityManager->update(m_deltaTime, m_isDebugMode);
@@ -181,14 +181,18 @@ void GameEngine::render(SpriteRenderer *sRenderer, UIRenderer *uRenderer,
 	TextRenderer *tRenderer)
 {
 	// Render queued sprites.
-	sRenderer->render(m_windowSize, m_currentRoom.get());
+	sRenderer->render(m_camera.get(), m_windowSize, m_currentRoom.get());
 
 	// Draw hit boxes if debug modes is on.
 	if (m_isDebugMode)
 	{
-		uRenderer->render(m_camera.get(), m_windowSize);
-		tRenderer->addText("FPS: " + std::to_string(m_fps), m_font.get(), glm::vec2(32, 32));
+		uRenderer->renderBoxes(m_camera.get(), m_windowSize);
+		tRenderer->addText("FPS: " + std::to_string(m_fps), m_font.get(), 
+			glm::vec2(16.f, m_windowSize.y - 32.f));
 	}
+
+	// Render UI elements.
+	uRenderer->renderHud(m_windowSize);
 
 	// Render queued text.
 	tRenderer->render(m_windowSize);

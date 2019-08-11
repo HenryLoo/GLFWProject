@@ -33,6 +33,9 @@ public:
 	// Get this camera's position.
 	glm::vec3 getPosition() const;
 
+	// Get the camera's zoom.
+	float getZoom() const;
+
 private:
 	// The camera's position.
 	glm::vec3 m_position{ 0.f, 0.f, 3.f };

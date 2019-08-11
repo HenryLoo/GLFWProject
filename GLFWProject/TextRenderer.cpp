@@ -134,7 +134,13 @@ void TextRenderer::addText(const std::string &text, Font *font,
 	}
 }
 
-void TextRenderer::render(glm::vec2 screenSize)
+void TextRenderer::resetData()
+{
+	// Clear text instances.
+	m_texts.clear();
+}
+
+void TextRenderer::render(glm::ivec2 windowSize)
 {
 	if (m_texts.empty())
 		return;
@@ -142,8 +148,8 @@ void TextRenderer::render(glm::vec2 screenSize)
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	// Set viewport.
-	glViewport(0, 0, static_cast<GLsizei>(screenSize.x), 
-		static_cast<GLsizei>(screenSize.y));
+	glViewport(0, 0, static_cast<GLsizei>(windowSize.x),
+		static_cast<GLsizei>(windowSize.y));
 
 	// Configure shader.
 	m_shader->use();
@@ -278,9 +284,6 @@ void TextRenderer::render(glm::vec2 screenSize)
 		// Unbind texture.
 		glBindTexture(GL_TEXTURE_2D, 0);
 	}
-
-	// Clear text instances.
-	m_texts.clear();
 }
 
 void TextRenderer::setProjectionMatrix(glm::vec2 screenSize)
