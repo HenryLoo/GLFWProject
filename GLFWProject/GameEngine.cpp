@@ -113,7 +113,6 @@ void GameEngine::start(EntityManager *entityManager, AssetLoader *assetLoader,
 			glfwGetWindowSize(m_window, &m_windowSize.x, &m_windowSize.y);
 			//renderer->createFramebuffer(width, height);
 			tRenderer->setProjectionMatrix(m_windowSize);
-			uRenderer->updateHud(m_windowSize);
 		}
 
 		float currentFrame{ static_cast<float>(glfwGetTime()) };

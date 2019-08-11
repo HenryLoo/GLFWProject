@@ -38,9 +38,6 @@ public:
 	// the proper number of boxes can be recalculated.
 	virtual void resetData();
 
-	// Update the HUD elements.
-	void updateHud(glm::ivec2 windowSize);
-
 	// Render the ui and all queued boxes.
 	void renderHud(glm::ivec2 windowSize);
 	void renderBoxes(Camera* camera, glm::ivec2 windowSize);
@@ -51,16 +48,16 @@ private:
 	std::shared_ptr<Shader> m_hudShader;
 
 	// Data to send to the GPU.
-	std::vector<GLubyte> m_boxColourData;
+	std::vector<GLubyte> m_boxColoursData;
 	std::vector<glm::mat4> m_boxModelViewsData;
-	std::vector<glm::mat4> m_hudModelsData;
 
 	// The vertex array object and vertex buffer object for instances.
-	GLuint m_boxVAO, m_boxVerticesVBO, m_boxColourVBO, m_boxModelViewsVBO;
-	GLuint m_hudVAO, m_hudVerticesVBO, m_hudModelsVBO;
+	GLuint m_boxVAO, m_boxVerticesVBO, m_boxColoursVBO, m_boxModelViewsVBO;
+	GLuint m_hudVAO, m_hudVerticesVBO, m_hudColoursVBO, m_hudTexCoordsVBO, m_hudModelsVBO;
 
 	// Hold HUD textures.
 	std::shared_ptr<Texture> m_hudFrame;
+	std::shared_ptr<SpriteSheet> m_hudBar;
 };
 
 #endif

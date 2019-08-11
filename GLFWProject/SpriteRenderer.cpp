@@ -64,7 +64,7 @@ SpriteRenderer::SpriteRenderer(AssetLoader *assetLoader)
 	// Initialize with an empty buffer and update its values in the game loop.
 	glGenBuffers(1, &m_colourVBO);
 	glBindBuffer(GL_ARRAY_BUFFER, m_colourVBO);
-	glBufferData(GL_ARRAY_BUFFER, EntityConstants::MAX_ENTITIES * 4 * sizeof(GLubyte), NULL, GL_STREAM_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, static_cast<size_t>(EntityConstants::MAX_ENTITIES) * 4 * sizeof(GLubyte), NULL, GL_STREAM_DRAW);
 
 	// Set attribute for instance colours.
 	glEnableVertexAttribArray(1);
@@ -77,7 +77,7 @@ SpriteRenderer::SpriteRenderer(AssetLoader *assetLoader)
 	// Initialize with an empty buffer and update its values in the game loop.
 	glGenBuffers(1, &m_texCoordsVBO);
 	glBindBuffer(GL_ARRAY_BUFFER, m_texCoordsVBO);
-	glBufferData(GL_ARRAY_BUFFER, EntityConstants::MAX_ENTITIES * 4 * sizeof(GLfloat), NULL, GL_STREAM_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, static_cast<size_t>(EntityConstants::MAX_ENTITIES) * 4 * sizeof(GLfloat), NULL, GL_STREAM_DRAW);
 
 	// Set attribute for instance texture coordinates.
 	glEnableVertexAttribArray(2);
