@@ -3,10 +3,9 @@
 #define SpriteSheetLoader_H
 
 #include "TextureLoader.h"
+#include "SpriteSheet.h"
 
 #include <unordered_map>
-
-struct SpriteAnimation;
 
 class SpriteSheetLoader : public TextureLoader
 {
@@ -19,8 +18,8 @@ private:
 		const std::string &name, int flag);
 
 	void loadAnimations(const IDataStream::Result &streamedData,
-		glm::ivec2 &clipSize,
-		std::unordered_map<std::string, SpriteAnimation> &anims) const;
+		GLint textureWidth, GLint textureHeight,
+		std::unordered_map<std::string, SpriteSheet::SpriteSet> &sprites) const;
 };
 
 #endif

@@ -225,7 +225,6 @@
     <ClInclude Include="ShaderLoader.h" />
     <ClInclude Include="Sound.h" />
     <ClInclude Include="SoundLoader.h" />
-    <ClInclude Include="SpriteAnimation.h" />
     <ClInclude Include="SpriteRenderer.h" />
     <ClInclude Include="SpriteSheet.h" />
     <ClInclude Include="SpriteSheetLoader.h" />

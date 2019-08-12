@@ -89,7 +89,7 @@ private:
 	GLuint m_roomVAO, m_roomVertsVBO;
 
 	// Hold the pointer to the map tileset.
-	std::shared_ptr<SpriteSheet> m_tileset;
+	std::shared_ptr<Texture> m_tileset;
 
 	// Map texture name to its data.
 	// This groups all vertex data with common textures so they can be

@@ -3,15 +3,13 @@
 #define GameComponent_H
 
 #include "AttackPattern.h"
-#include "SpriteAnimation.h"
 #include "StateMachine.h"
+#include "SpriteSheet.h"
 
 #include <set>
 #include <string>
 #include <vector>
 #include <unordered_map>
-
-class SpriteSheet;
 
 namespace GameComponent
 {
@@ -28,16 +26,6 @@ namespace GameComponent
 		COMPONENT_ENEMY = 64,
 		COMPONENT_CHARACTER = 128,
 	};
-
-	// Check if an entity has a component.
-	bool hasComponent(unsigned long entityCompMask, ComponentType comp);
-
-	// Add a component to an entity.
-	void addComponent(unsigned long &entityCompMask, ComponentType comp);
-
-	// Get the duration of the current sprite frame.
-	struct Sprite;
-	float getFrameDuration(const Sprite &sprite);
 
 	struct Physics
 	{
@@ -80,7 +68,7 @@ namespace GameComponent
 		bool isDead{ false };
 
 		// Hold all frames for this sprite.
-		SpriteAnimation currentAnimation;
+		SpriteSheet::SpriteSet currentSprite;
 		int currentFrame{ 0 };
 		float currentFrameTime{ 0.f };
 
@@ -135,23 +123,6 @@ namespace GameComponent
 		bool isCollidingGhost{ false };
 		bool isCollidingSlope{ false };
 		bool wasOnGround{ false };
-
-		bool isColliding() const
-		{
-			return (isCollidingFloor || isCollidingGhost || isCollidingSlope);
-		}
-
-		bool isInAir(const Physics &phys) const
-		{
-			bool isCollide{ isColliding() };
-			return (!isCollide || (isCollide && phys.speed.y == 0.f));
-		}
-		
-		bool isOnGround(const Physics &phys) const
-		{
-			bool isCollide{ isColliding() };
-			return (isCollide && phys.speed.y < 0.f);
-		}
 	};
 
 	struct Weapon
@@ -162,7 +133,7 @@ namespace GameComponent
 		// Hold all frames for this sprite.
 		// The weapon's frame timer will be dependent on the entity's sprite
 		// component.
-		SpriteAnimation currentAnimation;
+		SpriteSheet::SpriteSet currentSprite;
 		int currentFrame{ 0 };
 
 		// Distance from the sprite to the camera.
@@ -231,18 +202,31 @@ namespace GameComponent
 
 		// Character stats.
 		int health, resource, power, agility, endurance, focus;
-
-		bool hasHitStop(unsigned long &entityMask)
-		{
-			bool hasHitStop{ false };
-			if (GameComponent::hasComponent(entityMask, GameComponent::COMPONENT_CHARACTER))
-			{
-				hasHitStop = hitStopTimer > 0.f;
-			}
-
-			return hasHitStop;
-		}
 	};
+
+	// Check if an entity has a component.
+	bool hasComponent(unsigned long entityCompMask, ComponentType comp);
+
+	// Add a component to an entity.
+	void addComponent(unsigned long& entityCompMask, ComponentType comp);
+
+	// Get the duration of the current sprite frame.
+	float getFrameDuration(const Sprite& spr);
+
+	// Get the number of sprites for the current sprite set.
+	int getNumSprites(const Sprite& spr);
+
+	// Check if colliding against a wall.
+	bool isColliding(const Collision& col);
+
+	// Check if in the air.
+	bool isInAir(const Physics& phys, const Collision& col);
+
+	// Check if on the ground.
+	bool isOnGround(const Physics& phys, const Collision& col);
+
+	// Check if character has hit stop.
+	bool hasHitStop(unsigned long &entityMask, const Character& character);
 }
 
 #endif

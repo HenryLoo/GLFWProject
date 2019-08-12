@@ -1,5 +1,4 @@
 #include "GameComponent.h"
-#include "SpriteSheet.h"
 
 bool GameComponent::hasComponent(unsigned long entityCompMask, ComponentType comp)
 {
@@ -11,18 +10,41 @@ void GameComponent::addComponent(unsigned long &entityCompMask, ComponentType co
 	entityCompMask |= comp;
 }
 
-float GameComponent::getFrameDuration(const Sprite &sprite)
+float GameComponent::getFrameDuration(const Sprite &spr)
 {
-	int numDurations{ static_cast<int>(sprite.currentAnimation.durations.size()) };
+	return spr.currentSprite.clips[spr.currentFrame].duration;
+}
 
-	// If there are more frames than durations, just return the last duration value.
-	float duration{ 0.f };
-	if (sprite.currentAnimation.durations.size() > 0)
+int GameComponent::getNumSprites(const Sprite& spr)
+{
+	return static_cast<int>(spr.currentSprite.clips.size());
+}
+
+bool GameComponent::isColliding(const Collision& col)
+{
+	return (col.isCollidingFloor || col.isCollidingGhost || col.isCollidingSlope);
+}
+
+bool GameComponent::isInAir(const Physics& phys, const Collision& col)
+{
+	bool isCollide{ isColliding(col) };
+	return (!isCollide || (isCollide && phys.speed.y == 0.f));
+}
+
+bool GameComponent::isOnGround(const Physics& phys, const Collision& col)
+{
+	bool isCollide{ isColliding(col) };
+	return (isCollide && phys.speed.y < 0.f);
+}
+
+bool GameComponent::hasHitStop(unsigned long& entityMask, 
+	const Character& character)
+{
+	bool hasHitStop{ false };
+	if (GameComponent::hasComponent(entityMask, COMPONENT_CHARACTER))
 	{
-		duration = (sprite.currentFrame < numDurations) ?
-			sprite.currentAnimation.durations[sprite.currentFrame] :
-			sprite.currentAnimation.durations.back();
+		hasHitStop = character.hitStopTimer > 0.f;
 	}
 
-	return duration;
+	return hasHitStop;
 }

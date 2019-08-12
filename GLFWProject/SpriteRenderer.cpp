@@ -41,7 +41,7 @@ SpriteRenderer::SpriteRenderer(AssetLoader *assetLoader)
 	// Load resources.
 	m_spriteShader = assetLoader->load<Shader>("sprite");
 	m_roomShader = assetLoader->load<Shader>("room");
-	m_tileset = assetLoader->load<SpriteSheet>("tileset");
+	m_tileset = assetLoader->load<Texture>("tileset");
 
 	// Create the vertex array object and bind to it.
 	// All subsequent VBO configurations will be saved for this VAO.
@@ -175,14 +175,12 @@ void SpriteRenderer::addSpriteData(SpriteData &data, const GameComponent::Physic
 	data.colours.push_back(sprite.b);
 	data.colours.push_back(sprite.a);
 
-	glm::vec2 texSize{ sprite.spriteSheet->getSize() };
-	glm::vec2 clipSize{ sprite.spriteSheet->getClipSize() };
-	int spriteIndex{ sprite.currentAnimation.firstIndex + sprite.currentFrame };
-	int numSpritesPerRow{ static_cast<int>(glm::max(1.f, texSize.x / clipSize.x)) };
-	glm::vec2 rowColIndex{ spriteIndex % numSpritesPerRow, glm::floor(spriteIndex / numSpritesPerRow) };
+	const glm::vec2 &texSize{ sprite.spriteSheet->getSize() };
+	const SpriteSheet::SpriteClip& thisClip{ sprite.currentSprite.clips[sprite.currentFrame] };
+	const glm::vec2 &clipSize{ thisClip.clipSize };
 
-	data.texCoords.push_back(rowColIndex.x * clipSize.x / texSize.x);
-	data.texCoords.push_back(1 - (rowColIndex.y + 1) * clipSize.y / texSize.y);
+	data.texCoords.push_back(thisClip.topLeft.x / texSize.x);
+	data.texCoords.push_back(1 - thisClip.topLeft.y / texSize.y);
 	data.texCoords.push_back(clipSize.x / texSize.x);
 	data.texCoords.push_back(clipSize.y / texSize.y);
 
@@ -191,8 +189,8 @@ void SpriteRenderer::addSpriteData(SpriteData &data, const GameComponent::Physic
 
 	// Apply translation.
 	glm::vec3 translation{
-		physics.pos.x + physics.scale.x * sprite.currentAnimation.offset.x,
-		physics.pos.y + physics.scale.y * sprite.currentAnimation.offset.y,
+		physics.pos.x + physics.scale.x * thisClip.offset.x,
+		physics.pos.y + physics.scale.y * thisClip.offset.y,
 		physics.pos.z
 	};
 	modelMatrix = glm::translate(modelMatrix, translation);
@@ -247,7 +245,7 @@ void SpriteRenderer::render(Camera *camera, glm::ivec2 windowSize, Room *room = 
 		// Set the room uniforms.
 		m_roomShader->setInt("tilesetTexture", 0);
 		m_roomShader->setInt("layoutTexture", 1);
-		int tileSize{ m_tileset->getClipSize().x };
+		int tileSize{ Room::TILE_SIZE };
 		int textureSize{ m_tileset->getSize().x };
 		int numTilesInTilesetRow{ textureSize / tileSize };
 		m_roomShader->setVec3("tileSetVals", glm::vec3(tileSize, numTilesInTilesetRow, textureSize));

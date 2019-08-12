@@ -24,6 +24,10 @@ namespace
 	const glm::vec2 HEALTH_BAR_OFFSET{ 74.f, 3.f };
 	const glm::vec2 RESOURCE_BAR_OFFSET{ HEALTH_BAR_OFFSET.x, 35.f };
 	const float MAX_BAR_WIDTH{ 259.f };
+	const std::string HUD_FRAME{ "frame" };
+	const std::string HUD_HEALTHBAR{ "health_bar" };
+	const std::string HUD_RESOURCEBAR{ "resource_bar" };
+	const std::string HUD_SKILLICON{ "skill_icon" };
 }
 
 UIRenderer::UIRenderer(AssetLoader *assetLoader)
@@ -31,8 +35,7 @@ UIRenderer::UIRenderer(AssetLoader *assetLoader)
 	// Load resources.
 	m_boxShader = assetLoader->load<Shader>("box");
 	m_hudShader = assetLoader->load<Shader>("sprite");
-	m_hudFrame = assetLoader->load<Texture>("ui_frame");
-	m_hudBar = assetLoader->load<SpriteSheet>("ui_bar");
+	m_hudTexture = assetLoader->load<SpriteSheet>("hud");
 
 	initBox();
 	initHud();
@@ -235,8 +238,91 @@ void UIRenderer::renderHud(glm::ivec2 windowSize)
 	glm::mat4 projectionMatrix{ getProjectionMatrix(1.f) };
 	m_hudShader->setMat4("projection", projectionMatrix);
 
+	// Draw the frame.
+	const std::vector<GLubyte> HUD_COLOURS{ 255, 255, 255, 255,  255, 255, 255,
+		255, 255, 255, 255, 255 };
+
+	// Construct model matrix for this sprite.
+	glm::mat4 hudModel{ glm::mat4(1.0f) };
+
+	// Apply translation.
+	SpriteSheet::SpriteSet thisSprite;
+	bool hasHud{ m_hudTexture->getSprite(HUD_FRAME, thisSprite) };
+	const SpriteSheet::SpriteClip &thisClip{ thisSprite.clips[0] };
+	glm::vec2 scaledHudSize{ glm::vec2(thisClip.clipSize) * HUD_SCALE };
+	glm::vec3 hudTrans{ (-windowSize.x + scaledHudSize.x) / 2.f + HUD_POSITION.x,
+		(windowSize.y - scaledHudSize.y) / 2.f - HUD_POSITION.x, 0.f };
+	hudModel = glm::translate(hudModel, hudTrans);
+
+	// Apply scaling.
+	glm::vec3 hudScale{ scaledHudSize.x, scaledHudSize.y, 1.f };
+	hudModel = glm::scale(hudModel, hudScale);
+
+	std::vector<glm::mat4> hudModels{ hudModel };
+
+	glm::vec2 hudSize{ m_hudTexture->getSize() };
+	std::vector<GLfloat> hudTexCoords{ 
+		thisClip.topLeft.x / hudSize.x,
+		1.f - thisClip.topLeft.y / hudSize.y,
+		thisClip.clipSize.x / hudSize.x,
+		thisClip.clipSize.y / hudSize.y
+	};
+
+	// Draw the health bar.
+	hudModel = glm::mat4(1.0f);
+
+	// Apply translation.
+	hasHud = m_hudTexture->getSprite(HUD_HEALTHBAR, thisSprite);
+	const SpriteSheet::SpriteClip &healthClip{ thisSprite.clips[0] };
+	scaledHudSize = glm::vec2(healthClip.clipSize) * HUD_SCALE;
+	const float CURRENT_HEALTH{ 100.f };
+	const float MAX_HEALTH{ 100.f };
+	float healthAmount{ CURRENT_HEALTH / MAX_HEALTH * MAX_BAR_WIDTH };
+	hudTrans = {
+		(-windowSize.x + scaledHudSize.x + healthAmount) / 2.f + HUD_POSITION.x + HEALTH_BAR_OFFSET.x,
+		(windowSize.y - scaledHudSize.y) / 2.f - HUD_POSITION.x - HEALTH_BAR_OFFSET.y, 0.f
+	};
+	hudModel = glm::translate(hudModel, hudTrans);
+
+	// Apply scaling.
+	hudScale = {scaledHudSize.x * healthAmount, scaledHudSize.y, 1.f };
+	hudModel = glm::scale(hudModel, hudScale);
+
+	hudModels.push_back(hudModel);
+	hudTexCoords.push_back(healthClip.topLeft.x / hudSize.x);
+	hudTexCoords.push_back(1.f - healthClip.topLeft.y / hudSize.y);
+	hudTexCoords.push_back(healthClip.clipSize.x / hudSize.x);
+	hudTexCoords.push_back(healthClip.clipSize.y / hudSize.y);
+
+	// Draw the resource bar.
+
+	// Apply translation.
+	hudModel = glm::mat4(1.0f);
+
+	hasHud = m_hudTexture->getSprite(HUD_RESOURCEBAR, thisSprite);
+	const SpriteSheet::SpriteClip &resourceClip{ thisSprite.clips[0] };
+	scaledHudSize = glm::vec2(resourceClip.clipSize) * HUD_SCALE;
+	const float CURRENT_RESOURCE{ 100.f };
+	const float MAX_RESOURCE{ 100.f };
+	float resourceAmount{ CURRENT_RESOURCE / MAX_RESOURCE * MAX_BAR_WIDTH };
+	hudTrans = {
+		(-windowSize.x + scaledHudSize.x + resourceAmount) / 2.f + HUD_POSITION.x + RESOURCE_BAR_OFFSET.x,
+		(windowSize.y - scaledHudSize.y) / 2.f - HUD_POSITION.x - RESOURCE_BAR_OFFSET.y, 0.f
+	};
+	hudModel = glm::translate(hudModel, hudTrans);
+
+	// Apply scaling.
+	hudScale = { scaledHudSize.x * resourceAmount, scaledHudSize.y, 1.f };
+	hudModel = glm::scale(hudModel, hudScale);
+
+	hudModels.push_back(hudModel);
+	hudTexCoords.push_back(resourceClip.topLeft.x / hudSize.x);
+	hudTexCoords.push_back(1.f - resourceClip.topLeft.y / hudSize.y);
+	hudTexCoords.push_back(resourceClip.clipSize.x / hudSize.x);
+	hudTexCoords.push_back(resourceClip.clipSize.y / hudSize.y);
+
 	// Set the HUD data.
-	const int numElements{ 2 };
+	int numElements{ static_cast<int>(hudModels.size()) };
 	glBindBuffer(GL_ARRAY_BUFFER, m_hudColoursVBO);
 	glBufferData(GL_ARRAY_BUFFER, numElements * sizeof(GLubyte) * 4, NULL, GL_STREAM_DRAW);
 
@@ -246,99 +332,32 @@ void UIRenderer::renderHud(glm::ivec2 windowSize)
 	glBindBuffer(GL_ARRAY_BUFFER, m_hudModelsVBO);
 	glBufferData(GL_ARRAY_BUFFER, numElements * sizeof(glm::mat4), NULL, GL_STREAM_DRAW);
 
-	// Draw the frame.
-	const std::vector<GLubyte> FRAME_COLOUR{ 255, 255, 255, 255 };
-	const std::vector<GLfloat> FRAME_TEXCOORDS{ 0.f, 0.f, 1.f, 1.f };
-
-	// Construct model matrix for this sprite.
-	glm::mat4 hudModel{ glm::mat4(1.0f) };
-
-	// Apply translation.
-	glm::vec2 hudSize{ glm::vec2(m_hudFrame->getSize()) * HUD_SCALE };
-	glm::vec3 hudTrans{ (-windowSize.x + hudSize.x) / 2.f + HUD_POSITION.x,
-		(windowSize.y - hudSize.y) / 2.f - HUD_POSITION.x, 0.f };
-	hudModel = glm::translate(hudModel, hudTrans);
-
-	// Apply scaling.
-	glm::vec3 hudScale{ hudSize.x, hudSize.y, 1.f };
-	hudModel = glm::scale(hudModel, hudScale);
-
-	std::vector<glm::mat4> hudModels{ hudModel };
-
 	glBindBuffer(GL_ARRAY_BUFFER, m_hudColoursVBO);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(GLubyte) * 4, &FRAME_COLOUR[0]);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, numElements * sizeof(GLubyte) * 4, &HUD_COLOURS[0]);
 
 	glBindBuffer(GL_ARRAY_BUFFER, m_hudTexCoordsVBO);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(GLfloat) * 4, &FRAME_TEXCOORDS[0]);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, numElements * sizeof(GLfloat) * 4, &hudTexCoords[0]);
 
 	glBindBuffer(GL_ARRAY_BUFFER, m_hudModelsVBO);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(glm::mat4), &hudModels[0]);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, numElements * sizeof(glm::mat4), &hudModels[0]);
 
-	m_hudFrame->bind();
-	glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, 1);
+	m_hudTexture->bind();
+	glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, numElements);
 
-	// Draw the health and resource bars.
-	std::vector<GLubyte> barColours{ 255, 255, 255, 255, 255, 255, 255, 255 };
+	
 
-	glm::vec2 barSize{ m_hudBar->getSize() };
-	glm::vec2 clipSize{ m_hudBar->getClipSize() };
-	float barNormalizedClipW{ clipSize.x / barSize.x };
-	float barNormalizedClipH{ clipSize.y / barSize.y };
-	std::vector<GLfloat> barTexCoords{ 
-		0.f, 0.f, barNormalizedClipW, barNormalizedClipH, // health
-		barNormalizedClipW + 0.001f, 0.f, barNormalizedClipW, barNormalizedClipH // resource
-	};
+	//int numBars{ static_cast<int>(barModels.size()) };
+	//glBindBuffer(GL_ARRAY_BUFFER, m_hudColoursVBO);
+	//glBufferSubData(GL_ARRAY_BUFFER, 0, numBars * sizeof(GLubyte) * 4, &barColours[0]);
 
-	// Construct model matrix for this sprite.
-	glm::mat4 healthModel{ glm::mat4(1.0f) };
+	//glBindBuffer(GL_ARRAY_BUFFER, m_hudTexCoordsVBO);
+	//glBufferSubData(GL_ARRAY_BUFFER, 0, numBars * sizeof(GLfloat) * 4, &barTexCoords[0]);
 
-	// Apply translation.
-	glm::vec2 scaledHealthSize{ clipSize * HUD_SCALE };
-	const float CURRENT_HEALTH{ 100.f };
-	const float MAX_HEALTH{ 100.f };
-	float healthAmount{ CURRENT_HEALTH / MAX_HEALTH * MAX_BAR_WIDTH };
-	glm::vec3 healthTrans{ 
-		(-windowSize.x + scaledHealthSize.x + healthAmount) / 2.f + HUD_POSITION.x + HEALTH_BAR_OFFSET.x,
-		(windowSize.y - scaledHealthSize.y) / 2.f - HUD_POSITION.x - HEALTH_BAR_OFFSET.y, 0.f };
-	healthModel = glm::translate(healthModel, healthTrans);
+	//glBindBuffer(GL_ARRAY_BUFFER, m_hudModelsVBO);
+	//glBufferSubData(GL_ARRAY_BUFFER, 0, numBars * sizeof(glm::mat4), &barModels[0]);
 
-	// Apply scaling.
-	glm::vec3 healthScale{ scaledHealthSize.x * healthAmount, scaledHealthSize.y, 1.f };
-	healthModel = glm::scale(healthModel, healthScale);
-
-	std::vector<glm::mat4> barModels{ healthModel };
-
-	// Construct model matrix for this sprite.
-	glm::mat4 resourceModel{ glm::mat4(1.0f) };
-
-	// Apply translation.
-	glm::vec2 scaledResourceSize{ clipSize * HUD_SCALE };
-	const float CURRENT_RESOURCE{ 100.f };
-	const float MAX_RESOURCE{ 100.f };
-	float resourceAmount{ CURRENT_RESOURCE / MAX_RESOURCE * MAX_BAR_WIDTH };
-	glm::vec3 resourceTrans{ 
-		(-windowSize.x + scaledResourceSize.x + resourceAmount) / 2.f + HUD_POSITION.x + RESOURCE_BAR_OFFSET.x,
-		(windowSize.y - scaledResourceSize.y) / 2.f - HUD_POSITION.x - RESOURCE_BAR_OFFSET.y, 0.f };
-	resourceModel = glm::translate(resourceModel, resourceTrans);
-
-	// Apply scaling.
-	glm::vec3 resourceScale{ scaledResourceSize.x * resourceAmount, scaledResourceSize.y, 1.f };
-	resourceModel = glm::scale(resourceModel, resourceScale);
-
-	barModels.push_back(resourceModel);
-
-	int numBars{ static_cast<int>(barModels.size()) };
-	glBindBuffer(GL_ARRAY_BUFFER, m_hudColoursVBO);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, numBars * sizeof(GLubyte) * 4, &barColours[0]);
-
-	glBindBuffer(GL_ARRAY_BUFFER, m_hudTexCoordsVBO);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, numBars * sizeof(GLfloat) * 4, &barTexCoords[0]);
-
-	glBindBuffer(GL_ARRAY_BUFFER, m_hudModelsVBO);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, numBars * sizeof(glm::mat4), &barModels[0]);
-
-	m_hudBar->bind();
-	glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, numBars);
+	//m_hudBar->bind();
+	//glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, numBars);
 }
 
 void UIRenderer::renderBoxes(Camera *camera, glm::ivec2 windowSize)

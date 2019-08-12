@@ -24,7 +24,7 @@ void PhysicsSystem::process(float deltaTime, int entityId,
 {
 	// Skip this if the entity is hit stopped.
 	GameComponent::Character &character{ m_characters[entityId] };
-	if (character.hasHitStop(entityMask))
+	if (GameComponent::hasHitStop(entityMask, character))
 		return;
 
 	GameComponent::Physics &phys{ m_physics[entityId] };
@@ -39,7 +39,7 @@ void PhysicsSystem::process(float deltaTime, int entityId,
 	
 	// Only decelerate horizontally if on the ground or if a horizontal
 	// collision occurs.
-	if ((phys.hasFriction && col.isOnGround(phys) &&
+	if ((phys.hasFriction && GameComponent::isOnGround(phys, col) &&
 		phys.speed.x != 0.f) || col.isCollidingHorizontal)
 	{
 		float decel{ phys.speed.x > 0 ? FRICTION : -FRICTION };

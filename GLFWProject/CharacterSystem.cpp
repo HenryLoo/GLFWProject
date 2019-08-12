@@ -37,7 +37,7 @@ void CharacterSystem::process(float deltaTime, int entityId,
 	}
 
 	// If hit stopped, then skip this.
-	if (character.hasHitStop(entityMask))
+	if (GameComponent::hasHitStop(entityMask, character))
 		return;
 
 	GameComponent::Sprite &sprite{ m_sprites[entityId] };
@@ -53,7 +53,7 @@ void CharacterSystem::process(float deltaTime, int entityId,
 	if (currentState != character.previousState || sprite.isResetAnimation)
 	{
 		sprite.isResetAnimation = false;
-		sprite.spriteSheet->setAnimation(currentState, sprite);
+		sprite.spriteSheet->setSprite(currentState, sprite);
 
 		// Weapon component is optional.
 		if (GameComponent::hasComponent(entityMask, GameComponent::COMPONENT_WEAPON))
@@ -62,10 +62,10 @@ void CharacterSystem::process(float deltaTime, int entityId,
 			// sprite animation. Set the animation if it exists.
 			GameComponent::Weapon &weapon{ m_weapons[entityId] };
 			GameComponent::Sprite weaponSprite;
-			weapon.isVisible = weapon.spriteSheet->setAnimation(currentState, weaponSprite);
+			weapon.isVisible = weapon.spriteSheet->setSprite(currentState, weaponSprite);
 			if (weapon.isVisible)
 			{
-				weapon.currentAnimation = weaponSprite.currentAnimation;
+				weapon.currentSprite = weaponSprite.currentSprite;
 			}
 		}
 

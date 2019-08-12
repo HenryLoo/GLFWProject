@@ -55,9 +55,8 @@ private:
 	GLuint m_boxVAO, m_boxVerticesVBO, m_boxColoursVBO, m_boxModelViewsVBO;
 	GLuint m_hudVAO, m_hudVerticesVBO, m_hudColoursVBO, m_hudTexCoordsVBO, m_hudModelsVBO;
 
-	// Hold HUD textures.
-	std::shared_ptr<Texture> m_hudFrame;
-	std::shared_ptr<SpriteSheet> m_hudBar;
+	// Hold HUD texture.
+	std::shared_ptr<SpriteSheet> m_hudTexture;
 };
 
 #endif

@@ -209,9 +209,6 @@
     <ClInclude Include="CharStates.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="SpriteAnimation.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="AttackPattern.h">
       <Filter>Header Files</Filter>
     </ClInclude>

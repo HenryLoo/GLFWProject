@@ -41,7 +41,7 @@ void PlayerSystem::process(float deltaTime, int entityId,
 	GameComponent::Collision &col{ m_collisions[entityId] };
 
 	// While on the ground.
-	if (col.isOnGround(phys))
+	if (GameComponent::isOnGround(phys, col))
 	{
 		// If the player landed on the ground, reset the remaining jumps and evades.
 		m_player.numRemainingJumps = m_player.numMaxJumps;

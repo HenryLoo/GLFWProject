@@ -76,7 +76,7 @@ void AttackCollisionSystem::update(float deltaTime, int numEntities,
 			GameComponent::Collision &col{ m_collisions[targetId] };
 			GameComponent::Physics &phys{ m_physics[targetId] };
 			glm::vec2 knockback{ attack.pattern.knockback };
-			if (col.isInAir(phys))
+			if (GameComponent::isInAir(phys, col))
 			{
 				knockback.y = glm::max(knockback.y, MIN_KNOCKBACK_Y);
 			}
@@ -93,7 +93,7 @@ void AttackCollisionSystem::update(float deltaTime, int numEntities,
 
 			// Set the hit stun timer.
 			float hitStun{ 1.f }; // TODO: change fixed value
-			if (col.isInAir(phys) || knockback.y != 0)
+			if (GameComponent::isInAir(phys, col) || knockback.y != 0)
 			{
 				// Reset hit stun if knocked into the air.
 				hitStun = hitStopDuration + MIN_HIT_STUN;

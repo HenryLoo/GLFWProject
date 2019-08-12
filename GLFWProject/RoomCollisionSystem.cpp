@@ -28,7 +28,7 @@ void RoomCollisionSystem::process(float deltaTime, int entityId,
 {
 	// Skip this if the entity is hit stopped.
 	GameComponent::Character &character{ m_characters[entityId] };
-	if (character.hasHitStop(entityMask))
+	if (GameComponent::hasHitStop(entityMask, character))
 		return;
 
 	// Skip this if the current room has not been initialized.
@@ -40,7 +40,7 @@ void RoomCollisionSystem::process(float deltaTime, int entityId,
 	GameComponent::Collision &col{ m_collisions[entityId] };
 
 	// Reset collision flags.
-	col.wasOnGround = col.isOnGround(phys);
+	col.wasOnGround = GameComponent::isOnGround(phys, col);
 	col.isCollidingFloor = false;
 	col.isCollidingGhost = false;
 	col.isCollidingHorizontal = false;
@@ -236,7 +236,7 @@ void RoomCollisionSystem::process(float deltaTime, int entityId,
 			}
 	
 			// Collision was found, so there is no need to keep checking. 
-			if (col.isColliding())
+			if (GameComponent::isColliding(col))
 			{
 				// If the entity is within a slope's tile but not yet 
 				// colliding with it, then discard any floor collisions that 
@@ -257,7 +257,7 @@ void RoomCollisionSystem::process(float deltaTime, int entityId,
 		}
 	
 		// If not colliding, then just apply velocity as usual.
-		if (!col.isColliding())
+		if (!GameComponent::isColliding(col))
 		{
 			phys.pos.y += phys.speed.y * deltaTime;
 		}
