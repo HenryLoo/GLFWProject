@@ -12,9 +12,6 @@ void StateMachine::update()
 		isNewState = false;
 	}
 
-	// Call update action.
-	m_currentState->updateAction();
-
 	// Edge is defined by {state label, condition function}.
 	for (const Edge &e : m_currentState->edges)
 	{
@@ -41,6 +38,9 @@ void StateMachine::update()
 			break;
 		}
 	}
+
+	// Call update action.
+	m_currentState->updateAction();
 }
 
 const std::string &StateMachine::getState() const

@@ -576,6 +576,16 @@ void EntityManager::createPlayer()
 		bool isRunningRight{ m_inputManager->isKeyPressing(InputManager::INPUT_RIGHT) };
 		bool isRunning{ isRunningLeft != isRunningRight };
 
+		// Stopping while turning.
+		bool isStopRunningLeft{ m_inputManager->isKeyReleased(InputManager::INPUT_LEFT) };
+		bool isStopRunningRight{ m_inputManager->isKeyReleased(InputManager::INPUT_RIGHT) };
+		bool isTurning{ character.states.getState() == CharState::TURN };
+		if (isTurning && ((isStopRunningLeft && isStopRunningRight) || !isRunning))
+		{
+			phys.hasFriction = true;
+			return;
+		}
+
 		// If current speed is greater than the character's movement speed,
 		// start applying friction to gradually bring it back down to
 		// the character's movement speed.
@@ -626,6 +636,11 @@ void EntityManager::createPlayer()
 		phys.hasFriction = true;
 	} };
 
+	auto turnEnterAction{ [&spr]()
+	{
+		spr.isResetAnimation = true;
+	} };
+
 	auto skill1EnterAction{ [&phys, &col]()
 	{
 		phys.speed.x = 0.f;
@@ -661,7 +676,7 @@ void EntityManager::createPlayer()
 	states.addState(CharState::RUN_STOP, enableFriction);
 	states.addState(CharState::ALERT);
 	states.addState(CharState::ALERT_STOP);
-	states.addState(CharState::TURN, runUpdateAction);
+	states.addState(CharState::TURN, runUpdateAction, turnEnterAction);
 	states.addState(CharState::CROUCH, []() {}, enableFriction);
 	states.addState(CharState::CROUCH_STOP);
 	states.addState(CharState::ATTACK, []() {}, enableFriction);
@@ -935,7 +950,7 @@ void EntityManager::createPlayer()
 
 		return isRunning;
 	} };
-	auto isTurning{ [&phys, this]() -> bool
+	auto isTurning{ [&character, &spr, &phys, this]() -> bool
 	{
 		bool isRunningLeft{ m_inputManager->isKeyPressing(InputManager::INPUT_LEFT) };
 		bool isRunningRight{ m_inputManager->isKeyPressing(InputManager::INPUT_RIGHT) };
@@ -947,6 +962,8 @@ void EntityManager::createPlayer()
 			((phys.scale.x < 0 && isRunningRight) || (phys.scale.x > 0 && isRunningLeft));
 	} };
 	states.addEdge(CharState::IDLE, CharState::TURN, isTurning);
+	states.addEdge(CharState::TURN, CharState::TURN, isTurning);
+	states.addEdge(CharState::RUN_START, CharState::TURN, isTurning);
 	states.addEdge(CharState::RUN, CharState::TURN, isTurning);
 	states.addEdge(CharState::RUN_STOP, CharState::TURN, isTurning);
 	states.addEdge(CharState::ALERT, CharState::TURN, isTurning);
@@ -974,7 +991,6 @@ void EntityManager::createPlayer()
 	} };
 	states.addEdge(CharState::RUN, CharState::RUN_STOP, isStopRunning);
 	states.addEdge(CharState::RUN_START, CharState::RUN_STOP, isStopRunning);
-	states.addEdge(CharState::TURN, CharState::RUN_STOP, isStopRunning);
 }
 
 void EntityManager::createEnemy()
