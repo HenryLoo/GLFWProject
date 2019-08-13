@@ -24,10 +24,11 @@ namespace
 	const glm::vec2 HEALTH_BAR_OFFSET{ 74.f, 3.f };
 	const glm::vec2 RESOURCE_BAR_OFFSET{ HEALTH_BAR_OFFSET.x, 35.f };
 	const float MAX_BAR_WIDTH{ 259.f };
+	const glm::vec2 SKILL_ICON_OFFSET{ 52.f, 78.f };
 	const std::string HUD_FRAME{ "frame" };
-	const std::string HUD_HEALTHBAR{ "health_bar" };
-	const std::string HUD_RESOURCEBAR{ "resource_bar" };
-	const std::string HUD_SKILLICON{ "skill_icon" };
+	const std::string HUD_HEALTH_BAR{ "health_bar" };
+	const std::string HUD_RESOURCE_BAR{ "resource_bar" };
+	const std::string HUD_SKILL_ICON{ "skill_icon" };
 }
 
 UIRenderer::UIRenderer(AssetLoader *assetLoader)
@@ -180,8 +181,7 @@ void UIRenderer::initHud()
 }
 
 void UIRenderer::addBox(const GameComponent::Physics &physics,
-	const AABB &aabb,
-	unsigned char r, unsigned char g, unsigned char b, unsigned char a)
+	const AABB &aabb, GLubyte r, GLubyte g, GLubyte b, GLubyte a)
 {
 	// Push colour data.
 	m_boxColoursData.push_back(r);
@@ -221,6 +221,50 @@ void UIRenderer::resetData()
 	m_boxModelViewsData.clear();
 }
 
+void UIRenderer::addHudElement(glm::ivec2 windowSize, std::string elementType,
+	glm::vec2 offset, glm::vec2 scale,
+	GLubyte r, GLubyte g, GLubyte b, GLubyte a)
+{
+	// Check if the hud element exists.
+	SpriteSheet::SpriteSet thisSprite;
+	bool hasHud{ m_hudTexture->getSprite(elementType, thisSprite) };
+	if (!hasHud)
+		return;
+
+	// Push colour data.
+	m_hudColoursData.push_back(r);
+	m_hudColoursData.push_back(g);
+	m_hudColoursData.push_back(b);
+	m_hudColoursData.push_back(a);
+
+	// Construct model matrix for this sprite.
+	glm::mat4 hudModel{ glm::mat4(1.0f) };
+
+	// Apply translation.
+	const SpriteSheet::SpriteClip &thisClip{ thisSprite.clips[0] };
+	glm::vec2 scaledHudSize{ glm::vec2(thisClip.clipSize) * HUD_SCALE };
+	glm::vec3 hudTrans{ 
+		(-windowSize.x + scaledHudSize.x + scale.x) / 2.f + HUD_POSITION.x + offset.x,
+		(windowSize.y - scaledHudSize.y) / 2.f - HUD_POSITION.x - offset.y, 
+		0.f 
+	};
+	hudModel = glm::translate(hudModel, hudTrans);
+
+	// Apply scaling.
+	glm::vec3 hudScale{ scaledHudSize.x * scale.x, scaledHudSize.y, 1.f };
+	hudModel = glm::scale(hudModel, hudScale);
+
+	// Push model data.
+	m_hudModelsData.push_back(hudModel);
+
+	// Push texture coordinate data.
+	glm::vec2 hudSize{ m_hudTexture->getSize() };
+	m_hudTexCoordsData.push_back(thisClip.topLeft.x / hudSize.x);
+	m_hudTexCoordsData.push_back(1.f - thisClip.topLeft.y / hudSize.y);
+	m_hudTexCoordsData.push_back(thisClip.clipSize.x / hudSize.x);
+	m_hudTexCoordsData.push_back(thisClip.clipSize.y / hudSize.y);
+}
+
 void UIRenderer::renderHud(glm::ivec2 windowSize)
 {
 	// Render HUD elements.
@@ -232,97 +276,39 @@ void UIRenderer::renderHud(glm::ivec2 windowSize)
 	// Bind to texture unit 4, since 1-3 are being used by SpriteRenderer.
 	glActiveTexture(GL_TEXTURE4);
 	m_hudShader->setInt("textureSampler", 4);
+	m_hudShader->setVec2("textureSize", m_hudTexture->getSize());
 
 	// Orthographic projection with origin of the coordinate space defined at
 	// the center of the screen. Negative y-axis points down.
 	glm::mat4 projectionMatrix{ getProjectionMatrix(1.f) };
 	m_hudShader->setMat4("projection", projectionMatrix);
 
-	// Draw the frame.
-	const std::vector<GLubyte> HUD_COLOURS{ 255, 255, 255, 255,  255, 255, 255,
-		255, 255, 255, 255, 255 };
+	// Add frame.
+	addHudElement(windowSize, HUD_FRAME);
 
-	// Construct model matrix for this sprite.
-	glm::mat4 hudModel{ glm::mat4(1.0f) };
-
-	// Apply translation.
-	SpriteSheet::SpriteSet thisSprite;
-	bool hasHud{ m_hudTexture->getSprite(HUD_FRAME, thisSprite) };
-	const SpriteSheet::SpriteClip &thisClip{ thisSprite.clips[0] };
-	glm::vec2 scaledHudSize{ glm::vec2(thisClip.clipSize) * HUD_SCALE };
-	glm::vec3 hudTrans{ (-windowSize.x + scaledHudSize.x) / 2.f + HUD_POSITION.x,
-		(windowSize.y - scaledHudSize.y) / 2.f - HUD_POSITION.x, 0.f };
-	hudModel = glm::translate(hudModel, hudTrans);
-
-	// Apply scaling.
-	glm::vec3 hudScale{ scaledHudSize.x, scaledHudSize.y, 1.f };
-	hudModel = glm::scale(hudModel, hudScale);
-
-	std::vector<glm::mat4> hudModels{ hudModel };
-
-	glm::vec2 hudSize{ m_hudTexture->getSize() };
-	std::vector<GLfloat> hudTexCoords{ 
-		thisClip.topLeft.x / hudSize.x,
-		1.f - thisClip.topLeft.y / hudSize.y,
-		thisClip.clipSize.x / hudSize.x,
-		thisClip.clipSize.y / hudSize.y
-	};
-
-	// Draw the health bar.
-	hudModel = glm::mat4(1.0f);
-
-	// Apply translation.
-	hasHud = m_hudTexture->getSprite(HUD_HEALTHBAR, thisSprite);
-	const SpriteSheet::SpriteClip &healthClip{ thisSprite.clips[0] };
-	scaledHudSize = glm::vec2(healthClip.clipSize) * HUD_SCALE;
+	// Add health bar.
 	const float CURRENT_HEALTH{ 100.f };
 	const float MAX_HEALTH{ 100.f };
 	float healthAmount{ CURRENT_HEALTH / MAX_HEALTH * MAX_BAR_WIDTH };
-	hudTrans = {
-		(-windowSize.x + scaledHudSize.x + healthAmount) / 2.f + HUD_POSITION.x + HEALTH_BAR_OFFSET.x,
-		(windowSize.y - scaledHudSize.y) / 2.f - HUD_POSITION.x - HEALTH_BAR_OFFSET.y, 0.f
-	};
-	hudModel = glm::translate(hudModel, hudTrans);
+	addHudElement(windowSize, HUD_HEALTH_BAR, HEALTH_BAR_OFFSET, glm::vec2(healthAmount, 1.f));
 
-	// Apply scaling.
-	hudScale = {scaledHudSize.x * healthAmount, scaledHudSize.y, 1.f };
-	hudModel = glm::scale(hudModel, hudScale);
-
-	hudModels.push_back(hudModel);
-	hudTexCoords.push_back(healthClip.topLeft.x / hudSize.x);
-	hudTexCoords.push_back(1.f - healthClip.topLeft.y / hudSize.y);
-	hudTexCoords.push_back(healthClip.clipSize.x / hudSize.x);
-	hudTexCoords.push_back(healthClip.clipSize.y / hudSize.y);
-
-	// Draw the resource bar.
-
-	// Apply translation.
-	hudModel = glm::mat4(1.0f);
-
-	hasHud = m_hudTexture->getSprite(HUD_RESOURCEBAR, thisSprite);
-	const SpriteSheet::SpriteClip &resourceClip{ thisSprite.clips[0] };
-	scaledHudSize = glm::vec2(resourceClip.clipSize) * HUD_SCALE;
+	// Add resource bar.
 	const float CURRENT_RESOURCE{ 100.f };
 	const float MAX_RESOURCE{ 100.f };
 	float resourceAmount{ CURRENT_RESOURCE / MAX_RESOURCE * MAX_BAR_WIDTH };
-	hudTrans = {
-		(-windowSize.x + scaledHudSize.x + resourceAmount) / 2.f + HUD_POSITION.x + RESOURCE_BAR_OFFSET.x,
-		(windowSize.y - scaledHudSize.y) / 2.f - HUD_POSITION.x - RESOURCE_BAR_OFFSET.y, 0.f
-	};
-	hudModel = glm::translate(hudModel, hudTrans);
+	addHudElement(windowSize, HUD_RESOURCE_BAR, RESOURCE_BAR_OFFSET, glm::vec2(resourceAmount, 1.f));
 
-	// Apply scaling.
-	hudScale = { scaledHudSize.x * resourceAmount, scaledHudSize.y, 1.f };
-	hudModel = glm::scale(hudModel, hudScale);
-
-	hudModels.push_back(hudModel);
-	hudTexCoords.push_back(resourceClip.topLeft.x / hudSize.x);
-	hudTexCoords.push_back(1.f - resourceClip.topLeft.y / hudSize.y);
-	hudTexCoords.push_back(resourceClip.clipSize.x / hudSize.x);
-	hudTexCoords.push_back(resourceClip.clipSize.y / hudSize.y);
+	// Add skill icons.
+	const int NUM_ICONS{ 4 };
+	for (int i = 0; i < NUM_ICONS; ++i)
+	{
+		glm::vec2 offset{ SKILL_ICON_OFFSET };
+		offset.x *= i;
+		addHudElement(windowSize, HUD_SKILL_ICON, offset);
+	}
 
 	// Set the HUD data.
-	int numElements{ static_cast<int>(hudModels.size()) };
+	int numElements{ static_cast<int>(m_hudModelsData.size()) };
 	glBindBuffer(GL_ARRAY_BUFFER, m_hudColoursVBO);
 	glBufferData(GL_ARRAY_BUFFER, numElements * sizeof(GLubyte) * 4, NULL, GL_STREAM_DRAW);
 
@@ -333,31 +319,16 @@ void UIRenderer::renderHud(glm::ivec2 windowSize)
 	glBufferData(GL_ARRAY_BUFFER, numElements * sizeof(glm::mat4), NULL, GL_STREAM_DRAW);
 
 	glBindBuffer(GL_ARRAY_BUFFER, m_hudColoursVBO);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, numElements * sizeof(GLubyte) * 4, &HUD_COLOURS[0]);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, numElements * sizeof(GLubyte) * 4, &m_hudColoursData[0]);
 
 	glBindBuffer(GL_ARRAY_BUFFER, m_hudTexCoordsVBO);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, numElements * sizeof(GLfloat) * 4, &hudTexCoords[0]);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, numElements * sizeof(GLfloat) * 4, &m_hudTexCoordsData[0]);
 
 	glBindBuffer(GL_ARRAY_BUFFER, m_hudModelsVBO);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, numElements * sizeof(glm::mat4), &hudModels[0]);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, numElements * sizeof(glm::mat4), &m_hudModelsData[0]);
 
 	m_hudTexture->bind();
 	glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, numElements);
-
-	
-
-	//int numBars{ static_cast<int>(barModels.size()) };
-	//glBindBuffer(GL_ARRAY_BUFFER, m_hudColoursVBO);
-	//glBufferSubData(GL_ARRAY_BUFFER, 0, numBars * sizeof(GLubyte) * 4, &barColours[0]);
-
-	//glBindBuffer(GL_ARRAY_BUFFER, m_hudTexCoordsVBO);
-	//glBufferSubData(GL_ARRAY_BUFFER, 0, numBars * sizeof(GLfloat) * 4, &barTexCoords[0]);
-
-	//glBindBuffer(GL_ARRAY_BUFFER, m_hudModelsVBO);
-	//glBufferSubData(GL_ARRAY_BUFFER, 0, numBars * sizeof(glm::mat4), &barModels[0]);
-
-	//m_hudBar->bind();
-	//glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, numBars);
 }
 
 void UIRenderer::renderBoxes(Camera *camera, glm::ivec2 windowSize)

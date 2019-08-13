@@ -7,7 +7,7 @@
 
 namespace
 {
-	const int ALPHA_FADEOUT{ 255 / 4 };
+	const int ALPHA_FADEOUT{ 255 * 2 };
 }
 
 SpriteSystem::SpriteSystem(EntityManager &manager,
@@ -82,7 +82,7 @@ void SpriteSystem::process(float deltaTime, int entityId,
 		// Fade out the sprite.
 		if (spr.a > 0)
 		{
-			spr.a = static_cast<unsigned char>(spr.a - ALPHA_FADEOUT * deltaTime);
+			spr.a = static_cast<unsigned char>(glm::max(0.f, spr.a - ALPHA_FADEOUT * deltaTime));
 		}
 		// Done fading out, so delete the entity.
 		else

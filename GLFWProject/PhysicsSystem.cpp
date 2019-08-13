@@ -2,6 +2,8 @@
 
 #include <glm/glm.hpp>
 
+#include <iostream>
+
 namespace
 {
 	const float GRAVITY{ -480.f };
@@ -43,11 +45,12 @@ void PhysicsSystem::process(float deltaTime, int entityId,
 		phys.speed.x != 0.f) || col.isCollidingHorizontal)
 	{
 		float decel{ phys.speed.x > 0 ? FRICTION : -FRICTION };
+		float oldSpeedX{ phys.speed.x };
 		phys.speed.x += (decel * deltaTime);
 	
 		// Round to 0.
-		if ((phys.speed.x > 0.f && phys.speed.x < 1.f) || 
-			(phys.speed.x < 0.f && phys.speed.x > -1.f))
+		if ((oldSpeedX > 0 && phys.speed.x <= 0) ||
+			oldSpeedX < 0 && phys.speed.x >= 0)
 		{
 			phys.speed.x = 0.f;
 		}

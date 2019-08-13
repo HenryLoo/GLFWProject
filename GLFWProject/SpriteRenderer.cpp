@@ -304,6 +304,7 @@ void SpriteRenderer::render(Camera *camera, glm::ivec2 windowSize, Room *room = 
 
 			// Draw the instances.
 			data.spriteSheet->bind();
+			m_spriteShader->setVec2("textureSize", data.spriteSheet->getSize());
 			glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, data.numSprites);
 		}
 		else
