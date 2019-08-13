@@ -221,7 +221,7 @@ void SpriteRenderer::resetData()
 	m_spriteOrder.clear();
 }
 
-void SpriteRenderer::render(Camera *camera, glm::ivec2 windowSize, Room *room = nullptr)
+void SpriteRenderer::render(Camera *camera, Room *room = nullptr)
 {
 	// Clear the screen
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);

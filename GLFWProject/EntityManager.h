@@ -18,6 +18,7 @@ class Sound;
 class InputManager;
 class SpriteRenderer;
 class UIRenderer;
+class TextRenderer;
 class Prefab;
 
 namespace SoLoud
@@ -34,7 +35,8 @@ public:
 	~EntityManager();
 
 	// Update all appropriate values for the game loop's current iteration.
-	void update(float deltaTime, bool isDebugMode);
+	void update(float deltaTime, AssetLoader *assetLoader, 
+		UIRenderer *uRenderer, TextRenderer *tRenderer, bool isDebugMode);
 
 	// Create a new entity, given a list of component types.
 	// Return the new entity's id.

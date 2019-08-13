@@ -7,7 +7,7 @@
 
 namespace
 {
-	const int ALPHA_FADEOUT{ 255 * 2 };
+	const int ALPHA_FADEOUT{ 255 * 4 };
 }
 
 SpriteSystem::SpriteSystem(EntityManager &manager,

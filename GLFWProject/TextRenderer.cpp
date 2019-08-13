@@ -106,13 +106,13 @@ TextRenderer::~TextRenderer()
 void TextRenderer::addText(const std::string &text, Font *font,
 	glm::vec2 pos, glm::vec4 colour, GLfloat scale)
 {
-	addText(text, font, { pos.x, pos.y, 0.f, 0.f }, colour,
-	TextAlign::LEFT, false, scale);
+	addText(text, font, { pos, { 0.f, 0.f } },
+		TextAlign::LEFT, false, colour, scale);
 }
 
 void TextRenderer::addText(const std::string &text, Font *font,
-	const TextBox &quad, glm::vec4 colour, TextAlign align,
-	bool isVerticalCenter, GLfloat scale)
+	const TextBox &quad, TextAlign align, bool isVerticalCenter, 
+	glm::vec4 colour,  GLfloat scale)
 {
 	if (font == nullptr)
 		return;
@@ -140,7 +140,7 @@ void TextRenderer::resetData()
 	m_texts.clear();
 }
 
-void TextRenderer::render(glm::ivec2 windowSize)
+void TextRenderer::render()
 {
 	if (m_texts.empty())
 		return;
@@ -148,11 +148,17 @@ void TextRenderer::render(glm::ivec2 windowSize)
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	// Set viewport.
-	glViewport(0, 0, static_cast<GLsizei>(windowSize.x),
-		static_cast<GLsizei>(windowSize.y));
+	glViewport(0, 0, static_cast<GLsizei>(m_windowSize.x),
+		static_cast<GLsizei>(m_windowSize.y));
 
-	// Configure shader.
+	// Use orthographic projection, since we won't be needing perspective for text.
+	// This allows us to use vertex coordinates as screen coordinates.
 	m_shader->use();
+	m_shader->setMat4("projection", glm::ortho(
+		0.0f,
+		static_cast<float>(m_windowSize.x),
+		static_cast<float>(m_windowSize.y),
+		0.0f));
 
 	// Iterate through in-use fonts.
 	for (auto it = m_texts.begin(); it != m_texts.end(); ++it)
@@ -192,18 +198,18 @@ void TextRenderer::render(glm::ivec2 windowSize)
 				// Calculate alignment offsets.
 				if (thisText.align == TextAlign::CENTER)
 				{
-					alignOffsetX = (thisText.quad.w - textWidth) / 2;
+					alignOffsetX = (thisText.quad.size.x - textWidth) / 2;
 				}
 				else if (thisText.align == TextAlign::RIGHT)
 				{
-					alignOffsetX = thisText.quad.w - textWidth;
+					alignOffsetX = thisText.quad.size.x - textWidth;
 				}
 			}
 
 			// Iterate through each char in the text string to construct
 			// its instance data.
 			int index{ 0 };
-			float x{ thisText.quad.x + alignOffsetX };
+			float x{ thisText.quad.pos.x + alignOffsetX };
 			for (c = thisText.text.begin(); c != thisText.text.end(); ++c)
 			{
 				// The current character.
@@ -225,11 +231,11 @@ void TextRenderer::render(glm::ivec2 windowSize)
 				// Glyphs are already vertically aligned when constructing the texture 
 				// atlas, so bearing.y is unnecessary.
 				GLfloat posX{ x + character.bearing.x * thisText.scale };
-				GLfloat posY{ thisText.quad.y * thisText.scale };
+				GLfloat posY{ thisText.quad.pos.y * thisText.scale };
 
 				if (thisText.isVerticalCenter)
 				{
-					posY += ((thisText.quad.h - clip.w) / 2.f * thisText.scale);
+					posY += ((thisText.quad.size.y - clip.w) / 2.f * thisText.scale);
 					posY = roundf(posY); // removes some artifacts
 				}
 
@@ -284,12 +290,4 @@ void TextRenderer::render(glm::ivec2 windowSize)
 		// Unbind texture.
 		glBindTexture(GL_TEXTURE_2D, 0);
 	}
-}
-
-void TextRenderer::setProjectionMatrix(glm::vec2 screenSize)
-{
-	// Use orthographic projection, since we won't be needing perspective for text.
-	// This allows us to use vertex coordinates as screen coordinates.
-	m_shader->use();
-	m_shader->setMat4("projection", glm::ortho(0.0f, screenSize.x, screenSize.y, 0.0f));
 }

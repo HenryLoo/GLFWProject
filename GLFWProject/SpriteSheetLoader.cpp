@@ -197,7 +197,7 @@ void SpriteSheetLoader::loadAnimations(const IDataStream::Result& streamedData,
 						continue;
 					}
 
-					int i = 0;
+					int i{ 0 };
 					for (const auto &thisClip : clipsJson)
 					{
 						SpriteSheet::SpriteClip clip;

@@ -14,6 +14,8 @@ class Camera;
 class Shader;
 class AssetLoader;
 class Texture;
+class TextRenderer;
+class Font;
 
 class UIRenderer : public Renderer
 {
@@ -34,9 +36,13 @@ public:
 
 	// Add data for a HUD element to prepare for rendering.
 	// The rgba colour values range from 0-255.
-	void addHudElement(glm::ivec2 windowSize, std::string elementType,
+	void addHudElement(std::string elementType,
 		glm::vec2 offset = { 0.f, 0.f }, glm::vec2 scale = { 1.f, 1.f },
 		GLubyte r = 255, GLubyte g = 255, GLubyte b = 255, GLubyte a = 255 );
+
+	// Update the HUD with dynamic values.
+	void updateHud(AssetLoader *assetLoader, TextRenderer *tRenderer, 
+		int currentHealth, int maxHealth, int currentResource, int maxResource);
 
 	// Set the number of boxes to render to 0.
 	// This should be called every frame from the update loop, so that
@@ -44,8 +50,8 @@ public:
 	virtual void resetData();
 
 	// Render the ui and all queued boxes.
-	void renderHud(glm::ivec2 windowSize);
-	void renderBoxes(Camera* camera, glm::ivec2 windowSize);
+	void renderHud();
+	void renderBoxes(Camera* camera);
 
 private:
 	// Shaders to render with.
@@ -63,8 +69,9 @@ private:
 	GLuint m_boxVAO, m_boxVerticesVBO, m_boxColoursVBO, m_boxModelViewsVBO;
 	GLuint m_hudVAO, m_hudVerticesVBO, m_hudColoursVBO, m_hudTexCoordsVBO, m_hudModelsVBO;
 
-	// Hold HUD texture.
+	// Hold HUD assets.
 	std::shared_ptr<SpriteSheet> m_hudTexture;
+	std::shared_ptr<Font> m_hudFont;
 };
 
 #endif

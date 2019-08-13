@@ -71,7 +71,7 @@ public:
 	virtual void resetData();
 
 	// Render the current room and all queued sprites.
-	void render(Camera* camera, glm::ivec2 windowSize, Room *room);
+	void render(Camera* camera, Room *room);
 
 private:
 	// Add vertex values to SpriteData.

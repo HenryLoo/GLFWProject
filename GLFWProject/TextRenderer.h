@@ -15,10 +15,11 @@
 
 struct TextBox
 {
-	float x;
-	float y;
-	float w;
-	float h;
+	// Top-left position.
+	glm::vec2 pos;
+
+	// Width and height.
+	glm::vec2 size;
 };
 
 enum class TextAlign
@@ -53,8 +54,8 @@ public:
 	void addText(const std::string &text, Font *font, glm::vec2 pos,
 		glm::vec4 colour = glm::vec4(1.f), GLfloat scale = 1.f);
 	void addText(const std::string &text, Font *font,
-		const TextBox &quad, glm::vec4 colour = glm::vec4(1.f),
-		TextAlign align = TextAlign::LEFT, bool isVerticalCenter = false,
+		const TextBox &quad, TextAlign align = TextAlign::LEFT, 
+		bool isVerticalCenter = false, glm::vec4 colour = glm::vec4(1.f),
 		GLfloat scale = 1.f);
 
 	virtual void resetData();
@@ -62,10 +63,7 @@ public:
 	// Render the queued text strings in the map, where strings with the
 	// same font are rendered together.
 	// Call this after drawing all the text strings for this game loop.
-	void render(glm::ivec2 windowSize);
-
-	// Set the projection matrix based on current screen size.
-	void setProjectionMatrix(glm::vec2 screenSize);
+	void render();
 
 private:
 	// Hold the text shader.

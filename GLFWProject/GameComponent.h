@@ -201,7 +201,8 @@ namespace GameComponent
 		float jumpSpeed{ 256.f };
 
 		// Character stats.
-		int health, resource, power, agility, endurance, focus;
+		int health, maxHealth, resource, maxResource, power, agility, 
+			endurance, focus;
 	};
 
 	// Check if an entity has a component.

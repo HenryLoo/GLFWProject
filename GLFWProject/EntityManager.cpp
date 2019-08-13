@@ -8,6 +8,7 @@
 #include "InputManager.h"
 #include "Prefab.h"
 #include "JSONUtilities.h"
+#include "UIRenderer.h"
 
 #include "AttackCollisionSystem.h"
 #include "AttackSystem.h"
@@ -49,6 +50,8 @@ namespace
 	const std::string PROPERTY_OFFSET{ "offset" };
 	const std::string PROPERTY_X{ "x" };
 	const std::string PROPERTY_Y{ "y" };
+	const std::string PROPERTY_HEALTH{ "health" };
+	const std::string PROPERTY_RESOURCE{ "resource" };
 	const std::string PROPERTY_ATTACKPATTERNS{ "attackPatterns" };
 	const std::string PROPERTY_TYPE{ "type" };
 	const std::string PROPERTY_FRAMERANGE{ "frameRange" };
@@ -115,7 +118,8 @@ EntityManager::~EntityManager()
 
 }
 
-void EntityManager::update(float deltaTime, bool isDebugMode)
+void EntityManager::update(float deltaTime, AssetLoader *assetLoader,
+	UIRenderer *uRenderer, TextRenderer *tRenderer, bool isDebugMode)
 {
 	m_deltaTime = deltaTime;
 
@@ -141,6 +145,11 @@ void EntityManager::update(float deltaTime, bool isDebugMode)
 
 	// Delete all flagged entities.
 	deleteFlaggedEntities();
+
+	// Update the hud with entity values.
+	const GameComponent::Character &playerChar{ m_compCharacters[m_playerId] };
+	uRenderer->updateHud(assetLoader, tRenderer, playerChar.health, 
+		playerChar.maxHealth, playerChar.resource, playerChar.maxResource);
 }
 
 int EntityManager::createEntity(std::vector<GameComponent::ComponentType> types)
@@ -286,6 +295,16 @@ void EntityManager::initializeAttack(int entityId, const nlohmann::json &json)
 void EntityManager::initializeCharacter(int entityId, const nlohmann::json &json)
 {
 	GameComponent::Character &character{ m_compCharacters[entityId] };
+	if (JSONUtilities::hasEntry(PROPERTY_HEALTH, json))
+	{
+		character.maxHealth = character.health = json.at(PROPERTY_HEALTH).get<int>();
+	}
+
+	if (JSONUtilities::hasEntry(PROPERTY_RESOURCE, json))
+	{
+		character.maxResource = character.resource = json.at(PROPERTY_RESOURCE).get<int>();
+	}
+
 	if (JSONUtilities::hasEntry(PROPERTY_ATTACKPATTERNS, json))
 	{
 		nlohmann::json patterns{ json.at(PROPERTY_ATTACKPATTERNS) };

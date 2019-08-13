@@ -5,6 +5,8 @@
 #include "AssetLoader.h"
 #include "Shader.h"
 #include "SpriteSheet.h"
+#include "TextRenderer.h"
+#include "Font.h"
 
 #include <glm/gtc/matrix_transform.hpp>
 
@@ -21,14 +23,21 @@ namespace
 
 	const glm::vec2 HUD_POSITION{ 16.f, 16.f };
 	const float HUD_SCALE{ 1.f };
+	const std::string HUD_FRAME{ "frame" };
+
 	const glm::vec2 HEALTH_BAR_OFFSET{ 74.f, 3.f };
 	const glm::vec2 RESOURCE_BAR_OFFSET{ HEALTH_BAR_OFFSET.x, 35.f };
-	const float MAX_BAR_WIDTH{ 259.f };
-	const glm::vec2 SKILL_ICON_OFFSET{ 52.f, 78.f };
-	const std::string HUD_FRAME{ "frame" };
+	const glm::vec2 MAX_BAR_SIZE{ 259.f, 28.f };
 	const std::string HUD_HEALTH_BAR{ "health_bar" };
 	const std::string HUD_RESOURCE_BAR{ "resource_bar" };
+
+	const glm::vec2 SKILL_ICON_OFFSET{ 52.f, 78.f };
+	const glm::vec2 SKILL_ICON_INNER_OFFSET{ 3.f, 3.f };
 	const std::string HUD_SKILL_ICON{ "skill_icon" };
+	const std::vector<std::string> SERAH_SKILL_ICONS{ "serah_skill1_icon" };
+
+	const std::string SERAH_PORTRAIT_ICON{ "serah_portrait_icon" };
+	const glm::vec2 PORTRAIT_ICON_OFFSET{ 5.f, 5.f };
 }
 
 UIRenderer::UIRenderer(AssetLoader *assetLoader)
@@ -37,6 +46,7 @@ UIRenderer::UIRenderer(AssetLoader *assetLoader)
 	m_boxShader = assetLoader->load<Shader>("box");
 	m_hudShader = assetLoader->load<Shader>("sprite");
 	m_hudTexture = assetLoader->load<SpriteSheet>("hud");
+	m_hudFont = assetLoader->load<Font>("default", 16);
 
 	initBox();
 	initHud();
@@ -219,9 +229,13 @@ void UIRenderer::resetData()
 	// Clear data.
 	m_boxColoursData.clear();
 	m_boxModelViewsData.clear();
+
+	m_hudColoursData.clear();
+	m_hudTexCoordsData.clear();
+	m_hudModelsData.clear();
 }
 
-void UIRenderer::addHudElement(glm::ivec2 windowSize, std::string elementType,
+void UIRenderer::addHudElement(std::string elementType,
 	glm::vec2 offset, glm::vec2 scale,
 	GLubyte r, GLubyte g, GLubyte b, GLubyte a)
 {
@@ -244,8 +258,8 @@ void UIRenderer::addHudElement(glm::ivec2 windowSize, std::string elementType,
 	const SpriteSheet::SpriteClip &thisClip{ thisSprite.clips[0] };
 	glm::vec2 scaledHudSize{ glm::vec2(thisClip.clipSize) * HUD_SCALE };
 	glm::vec3 hudTrans{ 
-		(-windowSize.x + scaledHudSize.x + scale.x) / 2.f + HUD_POSITION.x + offset.x,
-		(windowSize.y - scaledHudSize.y) / 2.f - HUD_POSITION.x - offset.y, 
+		(-m_windowSize.x + scaledHudSize.x + scale.x) / 2.f + HUD_POSITION.x + offset.x,
+		(m_windowSize.y - scaledHudSize.y) / 2.f - HUD_POSITION.x - offset.y,
 		0.f 
 	};
 	hudModel = glm::translate(hudModel, hudTrans);
@@ -265,7 +279,59 @@ void UIRenderer::addHudElement(glm::ivec2 windowSize, std::string elementType,
 	m_hudTexCoordsData.push_back(thisClip.clipSize.y / hudSize.y);
 }
 
-void UIRenderer::renderHud(glm::ivec2 windowSize)
+void UIRenderer::updateHud(AssetLoader *assetLoader, TextRenderer *tRenderer, 
+	int currentHealth, int maxHealth, int currentResource, int maxResource)
+{
+	// Add frame.
+	addHudElement(HUD_FRAME);
+
+	// Add portrait icon.
+	addHudElement(SERAH_PORTRAIT_ICON, PORTRAIT_ICON_OFFSET);
+
+	// Add health bar.
+	const float CURRENT_HEALTH{ static_cast<float>(currentHealth) };
+	const float MAX_HEALTH{ static_cast<float>(glm::max(1, maxHealth)) };
+	float healthAmount{ CURRENT_HEALTH / MAX_HEALTH * MAX_BAR_SIZE.x };
+	addHudElement(HUD_HEALTH_BAR, HEALTH_BAR_OFFSET, glm::vec2(healthAmount, 1.f));
+
+	// Add resource bar.
+	const float CURRENT_RESOURCE{ static_cast<float>(currentResource) };
+	const float MAX_RESOURCE{ static_cast<float>(glm::max(1, maxResource)) };
+	float resourceAmount{ CURRENT_RESOURCE / MAX_RESOURCE * MAX_BAR_SIZE.x };
+	addHudElement(HUD_RESOURCE_BAR, RESOURCE_BAR_OFFSET, glm::vec2(resourceAmount, 1.f));
+
+	// Add skill icons.
+	const int NUM_ICONS{ 4 };
+	for (int i = 0; i < NUM_ICONS; ++i)
+	{
+		glm::vec2 offset{ SKILL_ICON_OFFSET };
+		offset.x *= i;
+		addHudElement(HUD_SKILL_ICON, offset);
+	}
+
+	int i{ 0 };
+	for (const std::string &icon : SERAH_SKILL_ICONS)
+	{
+		glm::vec2 offset{ SKILL_ICON_OFFSET };
+		offset.x *= i;
+		offset += SKILL_ICON_INNER_OFFSET;
+		addHudElement(icon, offset);
+		++i;
+	}
+
+	// Add health and resource text.
+	std::string healthStr{ std::to_string(currentHealth) + " / " +
+		std::to_string(maxHealth) };
+	glm::vec2 healthPos{ HUD_POSITION + HEALTH_BAR_OFFSET };
+	tRenderer->addText(healthStr, m_hudFont.get(), { healthPos, MAX_BAR_SIZE }, TextAlign::CENTER, true);
+
+	std::string resourceStr{ std::to_string(currentResource) + " / " +
+		std::to_string(maxResource) };
+	glm::vec2 resourcePos{ HUD_POSITION + RESOURCE_BAR_OFFSET };
+	tRenderer->addText(resourceStr, m_hudFont.get(), { resourcePos, MAX_BAR_SIZE }, TextAlign::CENTER, true);
+}
+
+void UIRenderer::renderHud()
 {
 	// Render HUD elements.
 	glBindVertexArray(m_hudVAO);
@@ -282,30 +348,6 @@ void UIRenderer::renderHud(glm::ivec2 windowSize)
 	// the center of the screen. Negative y-axis points down.
 	glm::mat4 projectionMatrix{ getProjectionMatrix(1.f) };
 	m_hudShader->setMat4("projection", projectionMatrix);
-
-	// Add frame.
-	addHudElement(windowSize, HUD_FRAME);
-
-	// Add health bar.
-	const float CURRENT_HEALTH{ 100.f };
-	const float MAX_HEALTH{ 100.f };
-	float healthAmount{ CURRENT_HEALTH / MAX_HEALTH * MAX_BAR_WIDTH };
-	addHudElement(windowSize, HUD_HEALTH_BAR, HEALTH_BAR_OFFSET, glm::vec2(healthAmount, 1.f));
-
-	// Add resource bar.
-	const float CURRENT_RESOURCE{ 100.f };
-	const float MAX_RESOURCE{ 100.f };
-	float resourceAmount{ CURRENT_RESOURCE / MAX_RESOURCE * MAX_BAR_WIDTH };
-	addHudElement(windowSize, HUD_RESOURCE_BAR, RESOURCE_BAR_OFFSET, glm::vec2(resourceAmount, 1.f));
-
-	// Add skill icons.
-	const int NUM_ICONS{ 4 };
-	for (int i = 0; i < NUM_ICONS; ++i)
-	{
-		glm::vec2 offset{ SKILL_ICON_OFFSET };
-		offset.x *= i;
-		addHudElement(windowSize, HUD_SKILL_ICON, offset);
-	}
 
 	// Set the HUD data.
 	int numElements{ static_cast<int>(m_hudModelsData.size()) };
@@ -331,7 +373,7 @@ void UIRenderer::renderHud(glm::ivec2 windowSize)
 	glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, numElements);
 }
 
-void UIRenderer::renderBoxes(Camera *camera, glm::ivec2 windowSize)
+void UIRenderer::renderBoxes(Camera *camera)
 {
 	// Render the entity sprites.
 	glBindVertexArray(m_boxVAO);
