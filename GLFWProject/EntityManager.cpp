@@ -45,6 +45,8 @@ namespace
 	const std::string PROPERTY_COMPONENTS{ "components" };
 	const std::string PROPERTY_SPRITESHEET{ "spritesheet" };
 	const std::string PROPERTY_EVADEDURATION{ "evadeDuration" };
+	const std::string PROPERTY_PORTRAITICON{ "portraitIcon" };
+	const std::string PROPERTY_SKILLICONS{ "skillIcons" };
 	const std::string PROPERTY_BOXES{ "boxes" };
 	const std::string PROPERTY_HALFSIZE{ "halfSize" };
 	const std::string PROPERTY_OFFSET{ "offset" };
@@ -149,9 +151,9 @@ void EntityManager::update(float deltaTime, AssetLoader *assetLoader,
 
 	// Update the hud with entity values.
 	const GameComponent::Character &playerChar{ m_compCharacters[m_playerId] };
-	uRenderer->updateHud(assetLoader, tRenderer, playerChar.health, 
-		playerChar.maxHealth, playerChar.resource, playerChar.maxResource,
-		m_compPlayer.skillTimers);
+	uRenderer->updateHud(assetLoader, tRenderer, m_compPlayer.portraitIcon, 
+		m_compPlayer.skillIcons, playerChar.health, playerChar.maxHealth, 
+		playerChar.resource, playerChar.maxResource, m_compPlayer.skillTimers);
 }
 
 int EntityManager::createEntity(std::vector<GameComponent::ComponentType> types)
@@ -232,8 +234,17 @@ void EntityManager::initializePlayer(const nlohmann::json &json)
 	GameComponent::Player &player{ m_compPlayer };
 	if (JSONUtilities::hasEntry(PROPERTY_EVADEDURATION, json))
 	{
-		float evadeDuration{ json.at(PROPERTY_EVADEDURATION).get<float>() };
-		player.evadeDuration = evadeDuration;
+		player.evadeDuration = json.at(PROPERTY_EVADEDURATION).get<float>();
+	}
+
+	if (JSONUtilities::hasEntry(PROPERTY_PORTRAITICON, json))
+	{
+		player.portraitIcon = json.at(PROPERTY_PORTRAITICON).get<std::string>();
+	}
+
+	if (JSONUtilities::hasEntry(PROPERTY_SKILLICONS, json))
+	{
+		player.skillIcons = json.at(PROPERTY_SKILLICONS).get<std::vector<std::string>>();
 	}
 }
 

@@ -87,6 +87,10 @@ namespace GameComponent
 
 	struct Player
 	{
+		// Asset labels.
+		std::string portraitIcon;
+		std::vector<std::string> skillIcons;
+
 		// The maximum number of jumps that the player can perform.
 		int numMaxJumps{ 1 };
 

@@ -36,9 +36,7 @@ namespace
 	const glm::vec2 SKILL_ICON_OFFSET{ 52.f, 78.f };
 	const glm::vec2 SKILL_ICON_INNER_OFFSET{ 3.f, 3.f };
 	const std::string HUD_SKILL_ICON{ "skill_icon" };
-	const std::vector<std::string> SERAH_SKILL_ICONS{ "serah_skill1_icon" };
 
-	const std::string SERAH_PORTRAIT_ICON{ "serah_portrait_icon" };
 	const glm::vec2 PORTRAIT_ICON_OFFSET{ 5.f, 5.f };
 }
 
@@ -282,7 +280,9 @@ void UIRenderer::addHudElement(std::string elementType,
 	m_hudTexCoordsData.push_back(thisClip.clipSize.y / hudSize.y);
 }
 
-void UIRenderer::updateHud(AssetLoader *assetLoader, TextRenderer *tRenderer, 
+void UIRenderer::updateHud(AssetLoader *assetLoader, TextRenderer *tRenderer,
+	const std::string &portraitIcon,
+	const std::vector<std::string> &skillIcons,
 	int currentHealth, int maxHealth, int currentResource, int maxResource,
 	const std::vector<float> &cooldowns)
 {
@@ -290,7 +290,7 @@ void UIRenderer::updateHud(AssetLoader *assetLoader, TextRenderer *tRenderer,
 	addHudElement(HUD_FRAME);
 
 	// Add portrait icon.
-	addHudElement(SERAH_PORTRAIT_ICON, PORTRAIT_ICON_OFFSET);
+	addHudElement(portraitIcon, PORTRAIT_ICON_OFFSET);
 
 	// Add health bar.
 	const float CURRENT_HEALTH{ static_cast<float>(currentHealth) };
@@ -312,8 +312,7 @@ void UIRenderer::updateHud(AssetLoader *assetLoader, TextRenderer *tRenderer,
 		addHudElement(HUD_SKILL_ICON, offset);
 	}
 
-	int i{ 0 };
-	for (const std::string &icon : SERAH_SKILL_ICONS)
+	for (int i = 0; i < skillIcons.size(); ++i)
 	{
 		glm::vec2 offset{ SKILL_ICON_OFFSET };
 		offset.x *= i;
@@ -325,6 +324,7 @@ void UIRenderer::updateHud(AssetLoader *assetLoader, TextRenderer *tRenderer,
 		{
 			alpha = 100;
 		}
+		const std::string &icon{ skillIcons[i] };
 		addHudElement(icon, offset, glm::vec2(1.f), 255, 255, 255, alpha);
 
 		++i;

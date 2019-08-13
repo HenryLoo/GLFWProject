@@ -42,6 +42,8 @@ public:
 
 	// Update the HUD with dynamic values.
 	void updateHud(AssetLoader *assetLoader, TextRenderer *tRenderer, 
+		const std::string &portraitIcon, 
+		const std::vector<std::string> &skillIcons,
 		int currentHealth, int maxHealth, int currentResource, int maxResource,
 		const std::vector<float> &cooldowns);
 
