@@ -110,6 +110,9 @@ namespace GameComponent
 		// the evade state.
 		float evadeTimer{ 0.f };
 		float evadeDuration{ 0.f };
+
+		// The remaining cooldowns in seconds for player skills.
+		std::vector<float> skillTimers{ 0.f, 0.f, 0.f, 0.f };
 	};
 
 	struct Collision
@@ -228,6 +231,9 @@ namespace GameComponent
 
 	// Check if character has hit stop.
 	bool hasHitStop(unsigned long &entityMask, const Character& character);
+
+	// Update a given timer's remaining duration.
+	void updateTimer(float deltaTime, float &timer);
 }
 
 #endif

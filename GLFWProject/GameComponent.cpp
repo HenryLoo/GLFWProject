@@ -48,3 +48,12 @@ bool GameComponent::hasHitStop(unsigned long& entityMask,
 
 	return hasHitStop;
 }
+
+void GameComponent::updateTimer(float deltaTime, float &timer)
+{
+	if (timer > 0.f)
+	{
+		timer -= deltaTime;
+		timer = glm::max(0.f, timer);
+	}
+}

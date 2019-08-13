@@ -42,7 +42,8 @@ public:
 
 	// Update the HUD with dynamic values.
 	void updateHud(AssetLoader *assetLoader, TextRenderer *tRenderer, 
-		int currentHealth, int maxHealth, int currentResource, int maxResource);
+		int currentHealth, int maxHealth, int currentResource, int maxResource,
+		const std::vector<float> &cooldowns);
 
 	// Set the number of boxes to render to 0.
 	// This should be called every frame from the update loop, so that

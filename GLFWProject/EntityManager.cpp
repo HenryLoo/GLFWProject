@@ -60,6 +60,7 @@ namespace
 	const std::string PROPERTY_COMBOFRAME{ "comboFrame" };
 	const std::string PROPERTY_HITSOUND{ "hitSound" };
 	const std::string PROPERTY_HITEFFECT{ "hitEffect" };
+	const std::string PROPERTY_COOLDOWN{ "cooldown" };
 	const std::string PROPERTY_DAMAGE{ "damage" };
 	const std::string PROPERTY_KNOCKBACK{ "knockback" };
 }
@@ -149,7 +150,8 @@ void EntityManager::update(float deltaTime, AssetLoader *assetLoader,
 	// Update the hud with entity values.
 	const GameComponent::Character &playerChar{ m_compCharacters[m_playerId] };
 	uRenderer->updateHud(assetLoader, tRenderer, playerChar.health, 
-		playerChar.maxHealth, playerChar.resource, playerChar.maxResource);
+		playerChar.maxHealth, playerChar.resource, playerChar.maxResource,
+		m_compPlayer.skillTimers);
 }
 
 int EntityManager::createEntity(std::vector<GameComponent::ComponentType> types)
@@ -374,6 +376,11 @@ void EntityManager::initializeCharacter(int entityId, const nlohmann::json &json
 				if (JSONUtilities::hasEntry(PROPERTY_HITEFFECT, thisPattern))
 				{
 					atkPattern.hitSpark = thisPattern.at(PROPERTY_HITEFFECT).get<std::string>();
+				}
+
+				if (JSONUtilities::hasEntry(PROPERTY_COOLDOWN, thisPattern))
+				{
+					atkPattern.cooldown = thisPattern.at(PROPERTY_COOLDOWN).get<float>();
 				}
 
 				if (JSONUtilities::hasEntry(PROPERTY_DAMAGE, thisPattern))
@@ -660,8 +667,9 @@ void EntityManager::createPlayer()
 		spr.isResetAnimation = true;
 	} };
 
-	auto skill1EnterAction{ [&phys, &col]()
+	auto skill1EnterAction{ [&phys, &col, &atk, this]()
 	{
+		m_compPlayer.skillTimers[0] = atk.pattern.cooldown;
 		phys.speed.x = 0.f;
 		if (GameComponent::isInAir(phys, col))
 			phys.speed.y = 0.f;
@@ -761,8 +769,8 @@ void EntityManager::createPlayer()
 	// Skill 1.
 	auto isSkill1{ [this]() -> bool
 	{
-		bool isSkill1 { m_inputManager->isKeyPressed(InputManager::INPUT_SKILL1) };
-		return isSkill1;
+		return m_inputManager->isKeyPressed(InputManager::INPUT_SKILL1) &&
+			m_compPlayer.skillTimers[0] == 0.f;
 	} };
 	states.addEdge(CharState::IDLE, CharState::SKILL1, isSkill1);
 	states.addEdge(CharState::ALERT, CharState::SKILL1, isSkill1);

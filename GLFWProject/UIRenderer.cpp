@@ -10,7 +10,9 @@
 
 #include <glm/gtc/matrix_transform.hpp>
 
+#include <iomanip>
 #include <iostream>
+#include <sstream>
 
 namespace
 {
@@ -27,7 +29,7 @@ namespace
 
 	const glm::vec2 HEALTH_BAR_OFFSET{ 74.f, 3.f };
 	const glm::vec2 RESOURCE_BAR_OFFSET{ HEALTH_BAR_OFFSET.x, 35.f };
-	const glm::vec2 MAX_BAR_SIZE{ 259.f, 28.f };
+	const float MAX_BAR_WIDTH{ 259.f };
 	const std::string HUD_HEALTH_BAR{ "health_bar" };
 	const std::string HUD_RESOURCE_BAR{ "resource_bar" };
 
@@ -255,6 +257,7 @@ void UIRenderer::addHudElement(std::string elementType,
 	glm::mat4 hudModel{ glm::mat4(1.0f) };
 
 	// Apply translation.
+	// Only one sprite per set, so just take the first clip.
 	const SpriteSheet::SpriteClip &thisClip{ thisSprite.clips[0] };
 	glm::vec2 scaledHudSize{ glm::vec2(thisClip.clipSize) * HUD_SCALE };
 	glm::vec3 hudTrans{ 
@@ -280,7 +283,8 @@ void UIRenderer::addHudElement(std::string elementType,
 }
 
 void UIRenderer::updateHud(AssetLoader *assetLoader, TextRenderer *tRenderer, 
-	int currentHealth, int maxHealth, int currentResource, int maxResource)
+	int currentHealth, int maxHealth, int currentResource, int maxResource,
+	const std::vector<float> &cooldowns)
 {
 	// Add frame.
 	addHudElement(HUD_FRAME);
@@ -291,18 +295,17 @@ void UIRenderer::updateHud(AssetLoader *assetLoader, TextRenderer *tRenderer,
 	// Add health bar.
 	const float CURRENT_HEALTH{ static_cast<float>(currentHealth) };
 	const float MAX_HEALTH{ static_cast<float>(glm::max(1, maxHealth)) };
-	float healthAmount{ CURRENT_HEALTH / MAX_HEALTH * MAX_BAR_SIZE.x };
+	float healthAmount{ CURRENT_HEALTH / MAX_HEALTH * MAX_BAR_WIDTH };
 	addHudElement(HUD_HEALTH_BAR, HEALTH_BAR_OFFSET, glm::vec2(healthAmount, 1.f));
 
 	// Add resource bar.
 	const float CURRENT_RESOURCE{ static_cast<float>(currentResource) };
 	const float MAX_RESOURCE{ static_cast<float>(glm::max(1, maxResource)) };
-	float resourceAmount{ CURRENT_RESOURCE / MAX_RESOURCE * MAX_BAR_SIZE.x };
+	float resourceAmount{ CURRENT_RESOURCE / MAX_RESOURCE * MAX_BAR_WIDTH };
 	addHudElement(HUD_RESOURCE_BAR, RESOURCE_BAR_OFFSET, glm::vec2(resourceAmount, 1.f));
 
 	// Add skill icons.
-	const int NUM_ICONS{ 4 };
-	for (int i = 0; i < NUM_ICONS; ++i)
+	for (int i = 0; i < cooldowns.size(); ++i)
 	{
 		glm::vec2 offset{ SKILL_ICON_OFFSET };
 		offset.x *= i;
@@ -315,20 +318,58 @@ void UIRenderer::updateHud(AssetLoader *assetLoader, TextRenderer *tRenderer,
 		glm::vec2 offset{ SKILL_ICON_OFFSET };
 		offset.x *= i;
 		offset += SKILL_ICON_INNER_OFFSET;
-		addHudElement(icon, offset);
+
+		// Lower opacity if the skill is on cooldown.
+		GLubyte alpha{ 255 };
+		if (cooldowns[i] > 0.f)
+		{
+			alpha = 100;
+		}
+		addHudElement(icon, offset, glm::vec2(1.f), 255, 255, 255, alpha);
+
 		++i;
 	}
 
 	// Add health and resource text.
+	SpriteSheet::SpriteSet barSprite;
+	m_hudTexture->getSprite(HUD_HEALTH_BAR, barSprite);
+	const int BAR_HEIGHT{ barSprite.clips[0].clipSize.y };
+
 	std::string healthStr{ std::to_string(currentHealth) + " / " +
 		std::to_string(maxHealth) };
 	glm::vec2 healthPos{ HUD_POSITION + HEALTH_BAR_OFFSET };
-	tRenderer->addText(healthStr, m_hudFont.get(), { healthPos, MAX_BAR_SIZE }, TextAlign::CENTER, true);
+	tRenderer->addText(healthStr, m_hudFont.get(), 
+		{ healthPos, { MAX_BAR_WIDTH, BAR_HEIGHT } }, TextAlign::CENTER, true);
 
 	std::string resourceStr{ std::to_string(currentResource) + " / " +
 		std::to_string(maxResource) };
 	glm::vec2 resourcePos{ HUD_POSITION + RESOURCE_BAR_OFFSET };
-	tRenderer->addText(resourceStr, m_hudFont.get(), { resourcePos, MAX_BAR_SIZE }, TextAlign::CENTER, true);
+	tRenderer->addText(resourceStr, m_hudFont.get(), 
+		{ resourcePos, { MAX_BAR_WIDTH, BAR_HEIGHT } }, TextAlign::CENTER, true);
+
+	// Add skill cooldown text.
+	SpriteSheet::SpriteSet iconSprite;
+	m_hudTexture->getSprite(HUD_SKILL_ICON, iconSprite);
+	const glm::vec2 ICON_SIZE{ iconSprite.clips[0].clipSize };
+	for (int i = 0; i < cooldowns.size(); ++i)
+	{
+		float cd{ cooldowns[i] };
+
+		// Only show text if skill is on cooldown.
+		if (cd == 0.f)
+			continue;
+
+		// Show up to 1 decimal place.
+		std::stringstream ss;
+		ss << std::fixed << std::setprecision(1) << cd;
+		std::string cdStr{ ss.str() + "s" };
+
+		glm::vec2 cdPos{ SKILL_ICON_OFFSET };
+		cdPos.x *= i;
+		cdPos += HUD_POSITION;
+		tRenderer->addText(cdStr, m_hudFont.get(),
+			{ cdPos, ICON_SIZE }, TextAlign::CENTER, true);
+	}
 }
 
 void UIRenderer::renderHud()

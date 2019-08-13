@@ -28,13 +28,10 @@ CharacterSystem::CharacterSystem(EntityManager &manager,
 void CharacterSystem::process(float deltaTime, int entityId,
 	unsigned long &entityMask)
 {
-	// Update the hit stop timer.
 	GameComponent::Character &character{ m_characters[entityId] };
-	if (character.hitStopTimer > 0.f)
-	{
-		character.hitStopTimer -= deltaTime;
-		character.hitStopTimer = glm::max(0.f, character.hitStopTimer);
-	}
+
+	// Update the hit stop timer.
+	GameComponent::updateTimer(deltaTime, character.hitStopTimer);
 
 	// If hit stopped, then skip this.
 	if (GameComponent::hasHitStop(entityMask, character))
@@ -88,18 +85,10 @@ void CharacterSystem::process(float deltaTime, int entityId,
 	}
 
 	// Update the hit stun timer.
-	if (character.hitStunTimer > 0.f)
-	{
-		character.hitStunTimer -= deltaTime;
-		character.hitStunTimer = glm::max(0.f, character.hitStunTimer);
-	}
+	GameComponent::updateTimer(deltaTime, character.hitStunTimer);
 
 	// Update the fallen timer.
-	if (character.fallenTimer > 0.f)
-	{
-		character.fallenTimer -= deltaTime;
-		character.fallenTimer = glm::max(0.f, character.fallenTimer);
-	}
+	GameComponent::updateTimer(deltaTime, character.fallenTimer);
 
 	// Update the previous state, so that it will be ready for the next 
 	// iteration.

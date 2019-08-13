@@ -73,9 +73,11 @@ void PlayerSystem::process(float deltaTime, int entityId,
 	}
 
 	// Update evade timer.
-	if (m_player.evadeTimer > 0)
+	GameComponent::updateTimer(deltaTime, m_player.evadeTimer);
+
+	// Update skill timers.
+	for (float &timer : m_player.skillTimers)
 	{
-		m_player.evadeTimer -= deltaTime;
-		m_player.evadeTimer = glm::max(0.f, m_player.evadeTimer);
+		GameComponent::updateTimer(deltaTime, timer);
 	}
 }
