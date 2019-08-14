@@ -12,7 +12,6 @@ class RoomCollisionSystem : public GameSystem
 {
 public:
 	RoomCollisionSystem(EntityManager &manager,
-		GameEngine *game,
 		std::vector<GameComponent::Physics> &physics,
 		std::vector<GameComponent::Collision> &collisions,
 		std::vector<GameComponent::Character> &characters);
@@ -20,9 +19,6 @@ public:
 private:
 	virtual void process(float deltaTime, int entityId,
 		unsigned long &entityMask);
-
-	// Pointer to the game engine.
-	GameEngine *m_game;
 
 	// References to the relevant components.
 	std::vector<GameComponent::Physics> &m_physics;

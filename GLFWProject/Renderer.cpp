@@ -6,10 +6,13 @@
 glm::mat4 Renderer::m_viewMatrix;
 glm::ivec2 Renderer::m_windowSize;
 
-void Renderer::update(const glm::mat4& viewMatrix, 
-	const glm::ivec2& windowSize)
+void Renderer::updateViewMatrix(const glm::mat4& viewMatrix)
 {
 	m_viewMatrix = viewMatrix;
+}
+
+void Renderer::updateWindowSize(const glm::ivec2 &windowSize)
+{
 	m_windowSize = windowSize;
 }
 

@@ -11,6 +11,8 @@
 #include "InputManager.h"
 #include "TextRenderer.h"
 
+#include "PlayState.h"
+
 #include "SpriteSheet.h"
 #include "Shader.h"
 #include "Sound.h"
@@ -77,6 +79,7 @@ int main()
 	srand(static_cast<unsigned> (time(0)));
 
 	// Start the game loop.
+	game->pushState(PlayState::instance(), assetLoader.get());
 	game->start(entityManager.get(), assetLoader.get(), inputManager.get(),
 		sRenderer.get(), uRenderer.get(), tRenderer.get());
 

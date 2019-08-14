@@ -71,7 +71,10 @@ public:
 	virtual void resetData();
 
 	// Render the current room and all queued sprites.
-	void render(Camera* camera, Room *room);
+	void render(Camera* camera, Room *room, Shader *postShader = nullptr);
+
+	// Create the frame buffer for post-processing effects.
+	void createFramebuffer(glm::ivec2 windowSize);
 
 private:
 	// Add vertex values to SpriteData.
@@ -87,6 +90,9 @@ private:
 
 	// The vertex array object and vertex buffer object for the room.
 	GLuint m_roomVAO, m_roomVertsVBO;
+
+	// The framebuffer used for post-processing.
+	GLuint m_screenVAO, m_screenVBO, m_screenFBO, m_screenTexture, m_screenRBO;
 
 	// Hold the pointer to the map tileset.
 	std::shared_ptr<Texture> m_tileset;

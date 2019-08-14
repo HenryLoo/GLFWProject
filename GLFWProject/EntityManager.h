@@ -36,7 +36,8 @@ public:
 
 	// Update all appropriate values for the game loop's current iteration.
 	void update(float deltaTime, AssetLoader *assetLoader, 
-		UIRenderer *uRenderer, TextRenderer *tRenderer, bool isDebugMode);
+		UIRenderer *uRenderer, TextRenderer *tRenderer);
+	void updateDebug(float deltaTime);
 
 	// Create a new entity, given a list of component types.
 	// Return the new entity's id.

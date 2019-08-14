@@ -9,8 +9,11 @@ class Camera;
 class Renderer
 {
 public:
-	// Update the view matrix and window size.
-	static void update(const glm::mat4 &viewMatrix, const glm::ivec2 &windowSize);
+	// Update the view matrix.
+	static void updateViewMatrix(const glm::mat4 &viewMatrix);
+
+	// Update the window size.
+	static void updateWindowSize(const glm::ivec2 &windowSize);
 
 	// Get the projection matrix, given a zoom value.
 	// Larger zoom = more zoomed in.

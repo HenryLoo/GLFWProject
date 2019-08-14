@@ -18,6 +18,7 @@ class SpriteRenderer;
 class UIRenderer;
 class TextRenderer;
 class Font;
+class GameState;
 
 class GameEngine
 {
@@ -31,21 +32,28 @@ public:
 		InputManager *inputManager, SpriteRenderer *sRenderer, 
 		UIRenderer *uRenderer, TextRenderer *tRenderer);
 
-	// Update the camera to look at a position on the screen.
-	void updateCameraLook(glm::vec2 screenPos);
-
 	// Update the screen size for the renderer on the next iteration of the game loop.
 	void updateRendererSize();
 
+	// Pop the last state from the stack and push on a new one.
+	void changeState(GameState *state, AssetLoader *assetLoader);
+
+	// Push a new state onto the stack.
+	void pushState(GameState *state, AssetLoader *assetLoader);
+
+	// Pop the top-most state from the stack.
+	void popState();
+
 	// Getter functions.
 	GLFWwindow *getWindow() const;
-	Camera *getCamera() const;
-	Room *getCurrentRoom() const;
+
+	// Quit the game.
+	void quit() const;
 
 private:
 	// Constructor is private to prevent instantiating singleton.
 	// Handle all user inputs for the game loop's current iteration.
-	void processInput(InputManager *inputManager);
+	void processInput(InputManager *inputManager, AssetLoader *assetLoader);
 
 	// Update all appropriate values for the game loop's current iteration.
 	void update(EntityManager *entityManager, AssetLoader *assetLoader,
@@ -66,21 +74,18 @@ private:
 	// The time of the last frame.
 	float m_lastFrame{ 0.0f };
 
-	// The camera to get the view matrix from.
-	std::unique_ptr<Camera> m_camera;
+	// The state stack.
+	std::vector<GameState *> m_states{};
 
 	// Flag for if the window size was changed.
 	bool m_hasNewWindowSize{ true };
 
 	// Flag for if debug mode is enabled.
 	bool m_isDebugMode{ false };
+	std::shared_ptr<Font> m_debugFont;
 
 	// Hold the frame rate.
 	int m_fps;
-
-	// TODO: remove this later for a more flexible implementation.
-	std::shared_ptr<Room> m_currentRoom;
-	std::shared_ptr<Font> m_font;
 };
 
 #endif

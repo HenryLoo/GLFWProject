@@ -1,6 +1,6 @@
 #include "RoomCollisionSystem.h"
 
-#include "GameEngine.h"
+#include "PlayState.h"
 #include "Room.h"
 
 namespace
@@ -11,13 +11,12 @@ namespace
 }
 
 RoomCollisionSystem::RoomCollisionSystem(EntityManager &manager,
-	GameEngine *game,
 	std::vector<GameComponent::Physics> &physics,
 	std::vector<GameComponent::Collision> &collisions,
 	std::vector<GameComponent::Character> &characters) :
 	GameSystem(manager, { GameComponent::COMPONENT_PHYSICS,
 		GameComponent::COMPONENT_COLLISION }),
-	m_game(game), m_physics(physics), m_collisions(collisions), 
+	m_physics(physics), m_collisions(collisions), 
 	m_characters(characters)
 {
 
@@ -32,7 +31,7 @@ void RoomCollisionSystem::process(float deltaTime, int entityId,
 		return;
 
 	// Skip this if the current room has not been initialized.
-	Room *room{ m_game->getCurrentRoom() };
+	Room *room{ PlayState::instance()->getCurrentRoom() };
 	if (room == nullptr)
 		return;
 

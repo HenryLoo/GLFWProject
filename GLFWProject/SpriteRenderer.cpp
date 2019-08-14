@@ -28,6 +28,19 @@ namespace
 		0.f, 1.f,
 		1.f, 1.f,
 	};
+
+	// Vertex attributes for a quad that fills the entire screen in 
+	// Normalized Device Coordinates.
+	const GLfloat SCREEN_VERTICES[] = {
+		// positions   // texCoords
+		-1.0f,  1.0f,  0.0f, 1.0f,
+		-1.0f, -1.0f,  0.0f, 0.0f,
+		 1.0f, -1.0f,  1.0f, 0.0f,
+
+		-1.0f,  1.0f,  0.0f, 1.0f,
+		 1.0f, -1.0f,  1.0f, 0.0f,
+		 1.0f,  1.0f,  1.0f, 1.0f
+	};
 }
 
 SpriteRenderer::SpriteRenderer(AssetLoader *assetLoader)
@@ -36,7 +49,6 @@ SpriteRenderer::SpriteRenderer(AssetLoader *assetLoader)
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glDepthFunc(GL_LESS);
-	glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 
 	// Load resources.
 	m_spriteShader = assetLoader->load<Shader>("sprite");
@@ -121,6 +133,18 @@ SpriteRenderer::SpriteRenderer(AssetLoader *assetLoader)
 	// Set attribute for vertices.
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, (void *)0);
+
+	// Create the vertex array and buffer objects for post-processing.
+	glGenVertexArrays(1, &m_screenVAO);
+	glGenBuffers(1, &m_screenVBO);
+	glBindVertexArray(m_screenVAO);
+	glBindBuffer(GL_ARRAY_BUFFER, m_screenVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(SCREEN_VERTICES), SCREEN_VERTICES, GL_STATIC_DRAW);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void *)0);
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void *)(2 * sizeof(float)));
+	glBindVertexArray(0);
 }
 
 SpriteRenderer::~SpriteRenderer()
@@ -133,6 +157,12 @@ SpriteRenderer::~SpriteRenderer()
 
 	glDeleteBuffers(1, &m_roomVertsVBO);
 	glDeleteVertexArrays(1, &m_roomVAO);
+
+	glDeleteBuffers(1, &m_screenVAO);
+	glDeleteBuffers(1, &m_screenVBO);
+	glDeleteFramebuffers(1, &m_screenFBO);
+	glDeleteTextures(1, &m_screenTexture);
+	glDeleteRenderbuffers(1, &m_screenRBO);
 }
 
 void SpriteRenderer::addSprite(const GameComponent::Physics &physics, 
@@ -221,10 +251,18 @@ void SpriteRenderer::resetData()
 	m_spriteOrder.clear();
 }
 
-void SpriteRenderer::render(Camera *camera, Room *room = nullptr)
+void SpriteRenderer::render(Camera *camera, Room *room = nullptr,
+	Shader *postShader)
 {
-	// Clear the screen
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	// If using post-processing shader, bind to the framebuffer object 
+	// before drawing. This will draw the scene on the attached texture.
+	bool isUsingPostShader{ m_screenFBO && postShader != nullptr };
+	if (isUsingPostShader)
+	{
+		glBindFramebuffer(GL_FRAMEBUFFER, m_screenFBO);
+		glClearColor(0.f, 0.f, 0.f, 0.f);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	}
 
 	// Orthographic projection with origin of the coordinate space defined at
 	// the center of the screen. Negative y-axis points down.
@@ -312,4 +350,57 @@ void SpriteRenderer::render(Camera *camera, Room *room = nullptr)
 			std::cout << "SpriteRenderer::render: Could not find added sprite!" << std::endl;
 		}
 	}
+
+	if (isUsingPostShader)
+	{
+		// Unbind and use the normal frame buffer to render to the main window.
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+		// Set the texture sampler to use texture id 2, to match the above 
+		// sprite shader.
+		postShader->use();
+		postShader->setInt("screenTexture", 2);
+
+		glBindVertexArray(m_screenVAO);
+
+		// Bind to the texture that the scene was drawn on, and render it
+		// onto a screen-wide quad.
+		glBindTexture(GL_TEXTURE_2D, m_screenTexture);
+		glDrawArrays(GL_TRIANGLES, 0, 6);
+	}
+}
+
+void SpriteRenderer::createFramebuffer(glm::ivec2 windowSize)
+{
+	// Delete any existing old buffers.
+	if (m_screenFBO) glDeleteFramebuffers(1, &m_screenFBO);
+	if (m_screenTexture) glDeleteTextures(1, &m_screenTexture);
+	if (m_screenRBO) glDeleteRenderbuffers(1, &m_screenRBO);
+
+	// Create the frame buffer and bind to it.
+	glGenFramebuffers(1, &m_screenFBO);
+	glBindFramebuffer(GL_FRAMEBUFFER, m_screenFBO);
+
+	// Attach a texture to the frame buffer.
+	// All rendering commands will write to this texture.
+	glGenTextures(1, &m_screenTexture);
+	glBindTexture(GL_TEXTURE_2D, m_screenTexture);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, windowSize.x, windowSize.y, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_screenTexture, 0);
+
+	// Create the render buffer for depth and stencil testing.
+	glGenRenderbuffers(1, &m_screenRBO);
+	glBindRenderbuffer(GL_RENDERBUFFER, m_screenRBO);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, windowSize.x, windowSize.y);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, m_screenRBO);
+
+	// Check if the framebuffer is complete.
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+	{
+		std::cout << "SpriteRenderer::createFramebuffer: Framebuffer not complete." << std::endl;
+	}
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }

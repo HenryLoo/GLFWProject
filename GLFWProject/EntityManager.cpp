@@ -105,7 +105,7 @@ EntityManager::EntityManager(GameEngine *game, AssetLoader *assetLoader,
 	m_gameSystems.emplace_back(std::make_unique<SpriteSystem>(*this,
 		sRenderer, m_compPhysics, m_compSprites, m_compWeapons));
 	m_gameSystems.emplace_back(std::make_unique<RoomCollisionSystem>(*this,
-		game, m_compPhysics, m_compCollisions, m_compCharacters));
+		m_compPhysics, m_compCollisions, m_compCharacters));
 	m_gameSystems.emplace_back(std::make_unique<PlayerSystem>(*this,
 		m_compPlayer, m_compPhysics, m_compCollisions));
 	m_gameSystems.emplace_back(std::make_unique<CharacterSystem>(*this,
@@ -122,7 +122,7 @@ EntityManager::~EntityManager()
 }
 
 void EntityManager::update(float deltaTime, AssetLoader *assetLoader,
-	UIRenderer *uRenderer, TextRenderer *tRenderer, bool isDebugMode)
+	UIRenderer *uRenderer, TextRenderer *tRenderer)
 {
 	m_deltaTime = deltaTime;
 
@@ -137,12 +137,6 @@ void EntityManager::update(float deltaTime, AssetLoader *assetLoader,
 		system->update(deltaTime, m_numEntities, m_entities);
 	}
 
-	// Only process debug system if in debug mode.
-	if (isDebugMode)
-	{
-		m_debugSystem->update(deltaTime, m_numEntities, m_entities);
-	}
-
 	// Reset overlaps list.
 	m_collisions.clear();
 
@@ -154,6 +148,11 @@ void EntityManager::update(float deltaTime, AssetLoader *assetLoader,
 	uRenderer->updateHud(assetLoader, tRenderer, m_compPlayer.portraitIcon, 
 		m_compPlayer.skillIcons, playerChar.health, playerChar.maxHealth, 
 		playerChar.resource, playerChar.maxResource, m_compPlayer.skillTimers);
+}
+
+void EntityManager::updateDebug(float deltaTime)
+{
+	m_debugSystem->update(deltaTime, m_numEntities, m_entities);
 }
 
 int EntityManager::createEntity(std::vector<GameComponent::ComponentType> types)

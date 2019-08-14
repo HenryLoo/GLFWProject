@@ -11,6 +11,7 @@
 #include "UIRenderer.h"
 #include "TextRenderer.h"
 #include "Font.h"
+#include "PlayState.h"
 
 #include <iostream>
 
@@ -66,9 +67,6 @@ GameEngine::GameEngine()
 	// when the window is resized.
 	glfwSetFramebufferSizeCallback(m_window, framebufferSizeCallback);
 
-	// Initialize the camera.
-	m_camera = std::make_unique<Camera>();
-
 	// Set the callback function for listening to mouse inputs.
 	//glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 	//glfwSetCursorPosCallback(m_window, mouseCallback);
@@ -88,9 +86,7 @@ void GameEngine::start(EntityManager *entityManager, AssetLoader *assetLoader,
 	double previousTime = glfwGetTime();
 	int frameCount = 0;
 
-	// TODO: remove this later for more flexible approach.
-	m_currentRoom = assetLoader->load<Room>("test");
-	m_font = assetLoader->load<Font>("default", 16);
+	m_debugFont = assetLoader->load<Font>("default", 16);
 
 	// The game loop.
 	while (!glfwWindowShouldClose(m_window))
@@ -99,8 +95,6 @@ void GameEngine::start(EntityManager *entityManager, AssetLoader *assetLoader,
 		frameCount++;
 		if (currentTime - previousTime >= 1.0)
 		{
-			//std::cout << "FPS: " << frameCount << std::endl;
-
 			m_fps = frameCount;
 			frameCount = 0;
 			previousTime = currentTime;
@@ -111,7 +105,8 @@ void GameEngine::start(EntityManager *entityManager, AssetLoader *assetLoader,
 		{
 			m_hasNewWindowSize = false;
 			glfwGetWindowSize(m_window, &m_windowSize.x, &m_windowSize.y);
-			//renderer->createFramebuffer(width, height);
+			sRenderer->createFramebuffer(m_windowSize);
+			Renderer::updateWindowSize(m_windowSize);
 		}
 
 		float currentFrame{ static_cast<float>(glfwGetTime()) };
@@ -119,7 +114,7 @@ void GameEngine::start(EntityManager *entityManager, AssetLoader *assetLoader,
 		m_lastFrame = currentFrame;
 
 		// Handle user inputs.
-		processInput(inputManager);
+		processInput(inputManager, assetLoader);
 
 		// Update values.
 		update(entityManager, assetLoader, sRenderer, uRenderer, tRenderer);
@@ -129,29 +124,69 @@ void GameEngine::start(EntityManager *entityManager, AssetLoader *assetLoader,
 	}
 }
 
-void GameEngine::updateCameraLook(glm::vec2 screenPos)
-{
-	m_camera->lookAt(screenPos);
-}
-
 void GameEngine::updateRendererSize()
 {
 	m_hasNewWindowSize = true;
 }
 
-void GameEngine::processInput(InputManager *inputManager)
+void GameEngine::changeState(GameState *state, AssetLoader *assetLoader)
+{
+	// Clean up the current state and pop it.
+	if (!m_states.empty())
+	{
+		m_states.back()->cleanUp();
+		m_states.pop_back();
+	}
+
+	// Push the new state onto the stack.
+	m_states.push_back(state);
+	m_states.back()->init(assetLoader);
+}
+
+void GameEngine::pushState(GameState *state, AssetLoader *assetLoader)
+{
+	// Pause the current state.
+	if (!m_states.empty())
+	{
+		m_states.back()->pause();
+	}
+
+	// Push the new state onto the stack.
+	m_states.push_back(state);
+	m_states.back()->init(assetLoader);
+}
+
+void GameEngine::popState()
+{
+	// Clean up the current state and pop it.
+	if (!m_states.empty())
+	{
+		m_states.back()->cleanUp();
+		m_states.pop_back();
+	}
+
+	// Resume the previous state.
+	if (!m_states.empty())
+	{
+		m_states.back()->resume();
+	}
+}
+
+void GameEngine::processInput(InputManager *inputManager, AssetLoader *assetLoader)
 {
 	glfwPollEvents();
 
 	inputManager->update(m_deltaTime);
 
-	// Exit game.
-	if (inputManager->isKeyPressed(InputManager::INPUT_CANCEL, true))
-		glfwSetWindowShouldClose(m_window, true);
-
 	// Toggle debug mode.
 	if (inputManager->isKeyPressed(InputManager::INPUT_DEBUG, true))
 		m_isDebugMode = !m_isDebugMode;
+
+	// Process inputs for the current game state.
+	if (!m_states.empty())
+	{
+		m_states.back()->processInput(this, inputManager, assetLoader);
+	}
 }
 
 void GameEngine::update(EntityManager *entityManager, AssetLoader *assetLoader,
@@ -159,42 +194,39 @@ void GameEngine::update(EntityManager *entityManager, AssetLoader *assetLoader,
 {
 	assetLoader->update(m_deltaTime);
 
-	glm::vec3 playerPos{ entityManager->getPlayerPos() };
-	if (m_currentRoom != nullptr)
+	// Update the current game state.
+	if (!m_states.empty())
 	{
-		m_camera->update(m_deltaTime, playerPos, m_windowSize,
-			m_currentRoom->getSize());
+		m_states.back()->update(m_deltaTime, m_windowSize,
+			entityManager, assetLoader, sRenderer, uRenderer, tRenderer);
 	}
 
-	sRenderer->resetData();
-	uRenderer->resetData();
-	tRenderer->resetData();
-	Renderer::update(m_camera->getViewMatrix(), m_windowSize);
-
-	// Update all entities.
-	entityManager->update(m_deltaTime, assetLoader, uRenderer, tRenderer,
-		m_isDebugMode);
+	if (m_isDebugMode)
+	{
+		entityManager->updateDebug(m_deltaTime);
+		tRenderer->addText("FPS: " + std::to_string(m_fps), m_debugFont.get(),
+			glm::vec2(16.f, m_windowSize.y - 32.f));
+	}
 }
 
 void GameEngine::render(SpriteRenderer *sRenderer, UIRenderer *uRenderer,
 	TextRenderer *tRenderer)
 {
-	// Render queued sprites.
-	sRenderer->render(m_camera.get(), m_currentRoom.get());
+	// Clear the screen.
+	glClearColor(0.f, 0.f, 0.f, 0.f);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	// Draw the current game state.
+	if (!m_states.empty())
+	{
+		m_states.back()->render(m_windowSize, sRenderer, uRenderer, tRenderer);
+	}
 
 	// Draw hit boxes if debug modes is on.
 	if (m_isDebugMode)
 	{
-		uRenderer->renderBoxes(m_camera.get());
-		tRenderer->addText("FPS: " + std::to_string(m_fps), m_font.get(), 
-			glm::vec2(16.f, m_windowSize.y - 32.f));
+		uRenderer->renderBoxes(PlayState::instance()->getCamera());
 	}
-
-	// Render UI elements.
-	uRenderer->renderHud();
-
-	// Render queued text.
-	tRenderer->render();
 
 	// Swap the buffers to show the rendered visuals.
 	glfwSwapBuffers(m_window);
@@ -205,12 +237,7 @@ GLFWwindow *GameEngine::getWindow() const
 	return m_window;
 }
 
-Camera *GameEngine::getCamera() const
+void GameEngine::quit() const
 {
-	return m_camera.get();
-}
-
-Room *GameEngine::getCurrentRoom() const
-{
-	return m_currentRoom.get();
+	glfwSetWindowShouldClose(m_window, true);
 }
