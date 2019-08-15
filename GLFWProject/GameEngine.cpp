@@ -114,7 +114,7 @@ void GameEngine::start(EntityManager *entityManager, AssetLoader *assetLoader,
 		m_lastFrame = currentFrame;
 
 		// Handle user inputs.
-		processInput(inputManager, assetLoader);
+		processInput(inputManager, entityManager, assetLoader);
 
 		// Update values.
 		update(entityManager, assetLoader, sRenderer, uRenderer, tRenderer);
@@ -172,7 +172,8 @@ void GameEngine::popState()
 	}
 }
 
-void GameEngine::processInput(InputManager *inputManager, AssetLoader *assetLoader)
+void GameEngine::processInput(InputManager *inputManager, 
+	EntityManager *entityManager, AssetLoader *assetLoader)
 {
 	glfwPollEvents();
 
@@ -185,7 +186,7 @@ void GameEngine::processInput(InputManager *inputManager, AssetLoader *assetLoad
 	// Process inputs for the current game state.
 	if (!m_states.empty())
 	{
-		m_states.back()->processInput(this, inputManager, assetLoader);
+		m_states.back()->processInput(this, inputManager, entityManager, assetLoader);
 	}
 }
 
@@ -204,7 +205,9 @@ void GameEngine::update(EntityManager *entityManager, AssetLoader *assetLoader,
 	if (m_isDebugMode)
 	{
 		entityManager->updateDebug(m_deltaTime);
-		tRenderer->addText("FPS: " + std::to_string(m_fps), m_debugFont.get(),
+		int numEntities{ entityManager->getNumEntities() };
+		tRenderer->addText("FPS: " + std::to_string(m_fps) + ", Entities: " + 
+			std::to_string(numEntities), m_debugFont.get(),
 			glm::vec2(16.f, m_windowSize.y - 32.f));
 	}
 }

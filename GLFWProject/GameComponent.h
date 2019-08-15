@@ -173,7 +173,16 @@ namespace GameComponent
 
 	struct Enemy
 	{
+		// Flag for if the enemy is pursuing the player.
+		// If false, then the enemy is "patrolling".
+		bool isTargetingPlayer{ false };
 
+		// The detection range for this enemy to "see" the player.
+		glm::vec2 targetRange;
+
+		// The duration of time in seconds between each enemy action.
+		float actionTimer{ 0.f };
+		float actionDuration{ 3.f };
 	};
 
 	struct Character
@@ -200,12 +209,13 @@ namespace GameComponent
 		// target are briefly frozen in place to emphasize the strength of the
 		// attack.
 		float hitStopTimer{ 0.f };
+		bool isFirstHitStopFrame{ false };
 
 		// The character's horizontal speed in pixels per second.
-		float movementSpeed{ 128.f };
+		float movementSpeed{ 0.f };
 
 		// The character's vertical speed in pixels per second.
-		float jumpSpeed{ 256.f };
+		float jumpSpeed{ 0.f };
 
 		// Character stats.
 		int health, maxHealth, resource, maxResource, power, agility, 
@@ -238,6 +248,12 @@ namespace GameComponent
 
 	// Update a given timer's remaining duration.
 	void updateTimer(float deltaTime, float &timer);
+
+	// Check if character is dead.
+	bool isDead(const Character &character);
+
+	// Set the enemy's action timer, with some variation.
+	void setActionTimer(Enemy &enemy);
 }
 
 #endif

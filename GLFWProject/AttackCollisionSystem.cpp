@@ -58,6 +58,13 @@ void AttackCollisionSystem::update(float deltaTime, int numEntities,
 			int targetId{ isFirstAttack ? secondId : firstId };
 			int attackId{ isFirstAttack ? firstId : secondId };
 
+			// If the target is already dead, then skip this collision response.
+			GameComponent::Character &character{ m_characters[targetId] };
+			if (GameComponent::isDead(character))
+			{
+				continue;
+			}
+
 			// If the target has already been hit, then skip this collision response.
 			GameComponent::Attack &attack{ m_attacks[attackId] };
 			std::set<int> &hitEntities{ attack.hitEntities };
@@ -83,11 +90,11 @@ void AttackCollisionSystem::update(float deltaTime, int numEntities,
 
 			// Apply hit stop to the attacker and target if the attack launches.
 			// The duration of hit stop depends on the strength of the knockback.
-			GameComponent::Character &character{ m_characters[targetId] };
 			float hitStopDuration{ knockback.y * HIT_STOP_MULTIPLIER };
 			if (knockback.y > 0.f)
 			{
 				character.hitStopTimer = hitStopDuration;
+				character.isFirstHitStopFrame = true;
 				m_characters[attackId].hitStopTimer = hitStopDuration;
 			}
 
@@ -112,6 +119,10 @@ void AttackCollisionSystem::update(float deltaTime, int numEntities,
 			{
 				phys.speed.y = knockback.y;
 			}
+
+			// Deal damage to target.
+			character.health -= attack.pattern.damage;
+			character.health = glm::max(0, character.health);
 
 			// Create hit spark effect.
 			if (!attack.pattern.hitSpark.empty())

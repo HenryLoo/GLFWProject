@@ -51,11 +51,15 @@ public:
 	int getPlayerId() const;
 	glm::vec3 getPlayerPos() const;
 	const std::vector<std::pair<AABBSource, AABBSource>> &getCollisions() const;
+	int getNumEntities() const;
 
 	// Create an effect.
 	void createEffect(const std::string &type, glm::vec3 pos, glm::vec2 scale,
 		unsigned char r = 255, unsigned char g = 255, unsigned char b = 255,
 		unsigned char a = 255, float rotation = 0.f);
+
+	// TODO: test function for generating entities, remove this later.
+	void createEnemy();
 
 private:
 	// Component initializers.
@@ -72,7 +76,6 @@ private:
 	// TODO: test function for generating entities, remove this later.
 	//void createNewEntities();
 	void createPlayer();
-	void createEnemy();
 
 	// Hold bitmasks that determines each entity's components.
 	// If the value is 0, then the entity is dead.

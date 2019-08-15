@@ -5,7 +5,7 @@
 CollisionBroadPhase::CollisionBroadPhase()
 {
 	// Initialize AABB list's size.
-	m_aabbList.resize(EntityConstants::MAX_ENTITIES);
+	//m_aabbList.resize(EntityConstants::MAX_ENTITIES);
 }
 
 void CollisionBroadPhase::updateAABBList(int numEntities,
@@ -14,7 +14,8 @@ void CollisionBroadPhase::updateAABBList(int numEntities,
 	const std::vector<GameComponent::Attack> &atks,
 	const std::vector<GameComponent::Physics> &phys)
 {
-	int totalSize{ 0 };
+	//int totalSize{ 0 };
+	m_aabbList.clear();
 	for (int i = 0; i < numEntities; ++i)
 	{
 		bool hasPhysics{ GameComponent::hasComponent(entities[i], 
@@ -27,29 +28,34 @@ void CollisionBroadPhase::updateAABBList(int numEntities,
 
 		if (hasCollision)
 		{
-			AABBData &data = m_aabbList[totalSize];
+			AABBData data;
+			//AABBData &data = m_aabbList[totalSize];
 			data.src.entityId = i;
 			data.src.type = AABBSource::Type::Collision;
 			data.pos = phys[i].pos;
 			data.scale = phys[i].scale;
 			data.aabb = cols[i].aabb;
-			++totalSize;
+			//++totalSize;
+			m_aabbList.push_back(data);
 		}
 
 		if (hasAttack)
 		{
-			AABBData &data = m_aabbList[totalSize];
+			AABBData data;
+			//AABBData &data = m_aabbList[totalSize];
 			data.src.entityId = i;
 			data.src.type = AABBSource::Type::Attack;
 			data.pos = phys[i].pos;
 			data.scale = phys[i].scale;
 			data.aabb = atks[i].pattern.aabb;
-			++totalSize;
+			//++totalSize;
+			m_aabbList.push_back(data);
 		}
 	}
 
 	// Update the size of the AABB list.
-	m_aabbList.resize(totalSize);
+	//m_aabbList.resize(totalSize);
+	int totalSize{ static_cast<int>(m_aabbList.size()) };
 
 	// Update endpoints if new points were added or points were removed.
 	int numPoints{ 2 * totalSize };
@@ -113,12 +119,12 @@ void CollisionBroadPhase::generateOverlapList(
 	}
 
 	// Output the AABBSource of the overlapping endpoints.
-	int numEndpoints{ static_cast<int>(m_endpointsX.size()) };
+	int numAABBs{ static_cast<int>(m_aabbList.size()) };
 	for (auto it = m_overlapsSet.begin(); it != m_overlapsSet.end();)
 	{
 		// Prune overlap pairs that include endpoints belonging to entities
 		// that no longer exist.
-		if (it->first >= numEndpoints || it->second >= numEndpoints)
+		if (it->first >= numAABBs || it->second >= numAABBs)
 		{
 			it = m_overlapsSet.erase(it);
 		}

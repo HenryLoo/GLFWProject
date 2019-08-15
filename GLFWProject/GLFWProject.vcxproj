@@ -149,6 +149,7 @@
     <ClCompile Include="DebugSystem.cpp" />
     <ClCompile Include="DiskStream.cpp" />
     <ClCompile Include="EffectTypes.cpp" />
+    <ClCompile Include="EnemySystem.cpp" />
     <ClCompile Include="EntityConstants.cpp" />
     <ClCompile Include="EntityManager.cpp" />
     <ClCompile Include="Font.cpp" />
@@ -202,6 +203,7 @@
     <ClInclude Include="DebugSystem.h" />
     <ClInclude Include="DiskStream.h" />
     <ClInclude Include="EffectTypes.h" />
+    <ClInclude Include="EnemySystem.h" />
     <ClInclude Include="EntityConstants.h" />
     <ClInclude Include="EntityManager.h" />
     <ClInclude Include="Font.h" />

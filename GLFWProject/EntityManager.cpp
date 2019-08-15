@@ -17,6 +17,7 @@
 #include "PlayerSystem.h"
 #include "RoomCollisionSystem.h"
 #include "SpriteSystem.h"
+#include "EnemySystem.h"
 
 #include <iostream>
 
@@ -28,6 +29,7 @@ namespace
 	const std::string COMPONENT_SPRITE{ "sprite" };
 	const std::string COMPONENT_PHYSICS{ "physics" };
 	const std::string COMPONENT_PLAYER{ "player" };
+	const std::string COMPONENT_ENEMY{ "enemy" };
 	const std::string COMPONENT_COLLISION{ "collision" };
 	const std::string COMPONENT_WEAPON{ "weapon" };
 	const std::string COMPONENT_ATTACK{ "attack" };
@@ -36,6 +38,7 @@ namespace
 		{ COMPONENT_SPRITE, GameComponent::COMPONENT_SPRITE },
 		{ COMPONENT_PHYSICS, GameComponent::COMPONENT_PHYSICS },
 		{ COMPONENT_PLAYER, GameComponent::COMPONENT_PLAYER },
+		{ COMPONENT_ENEMY, GameComponent::COMPONENT_ENEMY },
 		{ COMPONENT_COLLISION, GameComponent::COMPONENT_COLLISION },
 		{ COMPONENT_WEAPON, GameComponent::COMPONENT_WEAPON },
 		{ COMPONENT_ATTACK, GameComponent::COMPONENT_ATTACK },
@@ -54,6 +57,8 @@ namespace
 	const std::string PROPERTY_Y{ "y" };
 	const std::string PROPERTY_HEALTH{ "health" };
 	const std::string PROPERTY_RESOURCE{ "resource" };
+	const std::string PROPERTY_MOVESPEED{ "movementSpeed" };
+	const std::string PROPERTY_JUMPSPEED{ "jumpSpeed" };
 	const std::string PROPERTY_ATTACKPATTERNS{ "attackPatterns" };
 	const std::string PROPERTY_TYPE{ "type" };
 	const std::string PROPERTY_FRAMERANGE{ "frameRange" };
@@ -108,6 +113,8 @@ EntityManager::EntityManager(GameEngine *game, AssetLoader *assetLoader,
 		m_compPhysics, m_compCollisions, m_compCharacters));
 	m_gameSystems.emplace_back(std::make_unique<PlayerSystem>(*this,
 		m_compPlayer, m_compPhysics, m_compCollisions));
+	m_gameSystems.emplace_back(std::make_unique<EnemySystem>(*this,
+		m_compEnemies));
 	m_gameSystems.emplace_back(std::make_unique<CharacterSystem>(*this,
 		m_compSprites, m_compWeapons, m_compCollisions, m_compAttacks,
 		m_compCharacters));
@@ -317,6 +324,16 @@ void EntityManager::initializeCharacter(int entityId, const nlohmann::json &json
 		character.maxResource = character.resource = json.at(PROPERTY_RESOURCE).get<int>();
 	}
 
+	if (JSONUtilities::hasEntry(PROPERTY_MOVESPEED, json))
+	{
+		character.movementSpeed = character.movementSpeed = json.at(PROPERTY_MOVESPEED).get<float>();
+	}
+
+	if (JSONUtilities::hasEntry(PROPERTY_JUMPSPEED, json))
+	{
+		character.jumpSpeed = character.jumpSpeed = json.at(PROPERTY_JUMPSPEED).get<float>();
+	}
+
 	if (JSONUtilities::hasEntry(PROPERTY_ATTACKPATTERNS, json))
 	{
 		nlohmann::json patterns{ json.at(PROPERTY_ATTACKPATTERNS) };
@@ -469,6 +486,11 @@ void EntityManager::createEffect(const std::string &type, glm::vec3 pos,
 	spr.spriteSheet->setSprite(type, spr);
 }
 
+int EntityManager::getNumEntities() const
+{
+	return m_numEntities;
+}
+
 void EntityManager::deleteFlaggedEntities()
 {
 	for (int id : m_entitiesToDelete)
@@ -572,7 +594,7 @@ void EntityManager::createPlayer()
 	{
 		// By default, just evade in the direction that
 		// the player is facing.
-		float dir{ phys.scale.x > 0 ? 1.f : -1.f };
+		float dir{ glm::sign(phys.scale.x) };
 
 		// If left/right is held down, then evade in that direction
 		// instead.
@@ -695,7 +717,7 @@ void EntityManager::createPlayer()
 	{
 		if (spr.currentFrame == atk.pattern.frameRange.x && !phys.hasGravity)
 		{
-			float dir{ phys.scale.x > 0 ? 1.f : -1.f };
+			float dir{ glm::sign(phys.scale.x) };
 			phys.speed.x = dir * 16.f;
 			phys.speed.y = atk.pattern.knockback.y - 16.f;
 			phys.isLockedDirection = true;
@@ -1035,6 +1057,8 @@ void EntityManager::createEnemy()
 	std::shared_ptr<Prefab> enemyPrefab{ m_assetLoader->load<Prefab>("clamper") };
 	int enemyId{ createEntity(enemyPrefab.get()) };
 
+	GameComponent::Enemy &enemy = m_compEnemies[enemyId];
+
 	GameComponent::Physics &phys = m_compPhysics[enemyId];
 	phys.pos = glm::vec3(128.f, 800.f, 0.f);
 
@@ -1050,7 +1074,16 @@ void EntityManager::createEnemy()
 		character.fallenTimer = 3.f;
 	} };
 
-	auto runUpdateAction{ [&spr, &col, &phys]()
+	auto fallenUpdateAction{ [&spr, &character]()
+	{
+		// If dead, make sprite translucent.
+		if (GameComponent::isDead(character))
+		{
+			spr.a = 100;
+		}
+	} };
+
+	auto runUpdateAction{ [&enemy, &spr, &col, &phys]()
 	{
 		// If in the air, fix the frame to the last running frame.
 		if (GameComponent::isInAir(phys, col))
@@ -1058,13 +1091,43 @@ void EntityManager::createEnemy()
 			spr.currentFrame = GameComponent::getNumSprites(spr) - 1;
 			spr.currentFrameTime = 0.f;
 		}
+
+		// Move if on the ground.
+		if (GameComponent::isOnGround(phys, col))
+		{
+			phys.hasFriction = false;
+
+			// Move in the other direction if colliding.
+			if (col.isCollidingHorizontal)
+			{
+				phys.speed.x *= -1;
+			}
+
+			// Face the direction of movement.
+			if (phys.speed.x != 0.f)
+			{
+				phys.scale.x = glm::sign(phys.speed.x);
+			}
+		}
 	} };
 
-	states.addState(CharState::IDLE);
-	states.addState(CharState::RUN, runUpdateAction);
+	auto runExitAction{ [&phys]()
+	{
+		phys.hasFriction = true;
+	} };
+
+	auto idleEnterAction{ [&enemy, &phys]()
+	{
+		GameComponent::setActionTimer(enemy);
+	} };
+
+	states.addState(CharState::IDLE, []() {}, idleEnterAction);
+	states.addState(CharState::RUN, runUpdateAction, []() {}, runExitAction);
 	states.addState(CharState::HURT);
 	states.addState(CharState::HURT_AIR);
-	states.addState(CharState::FALLEN, []() {}, fallenEnterAction);
+	states.addState(CharState::FALLEN, fallenUpdateAction, fallenEnterAction);
+	states.addState(CharState::ALERT);
+	states.addState(CharState::ATTACK);
 
 	// Hurt while on ground.
 	auto isHurting{ [&character, &col, &phys]() -> bool
@@ -1098,27 +1161,52 @@ void EntityManager::createEnemy()
 	} };
 	states.addEdge(CharState::HURT_AIR, CharState::FALLEN, isFallen);
 
+	// Dead while on ground.
+	auto isDead{ [&character]() -> bool
+	{
+		return GameComponent::isDead(character);
+	} };
+	states.addEdge(CharState::HURT, CharState::FALLEN, isDead);
+
 	// Stop fallen.
 	auto isStopFallen{ [&character, &col]() -> bool
 	{
-		return character.fallenTimer == 0.f;
+		return character.fallenTimer == 0.f && !GameComponent::isDead(character);
 	} };
 	states.addEdge(CharState::FALLEN, CharState::IDLE, isStopFallen);
 
-	// Moving.
-	auto isMoving{ [&character, &col, &phys]() -> bool
+	// Falling.
+	auto isFalling{ [&character, &col, &phys]() -> bool
 	{
-		return (character.hitStunTimer == 0.f &&
-			(phys.speed.x != 0.f || GameComponent::isInAir(phys, col)));
+		return (character.hitStunTimer == 0.f && GameComponent::isInAir(phys, col));
 	} };
-	states.addEdge(CharState::IDLE, CharState::RUN, isMoving);
+	states.addEdge(CharState::IDLE, CharState::RUN, isFalling);
 
 	// Stop moving.
-	auto isStopMoving{ [&col, &phys]() -> bool
+	auto isStopMoving{ [&enemy, &col, &phys]() -> bool
 	{
-		return (GameComponent::isOnGround(phys, col) && phys.speed.x == 0.f);
+		bool isLanding{ GameComponent::isOnGround(phys, col) && phys.speed.x == 0.f };
+		bool isStoppedPatrolling{ phys.speed.x != 0.f && enemy.actionTimer == 0.f };
+
+		return isLanding || isStoppedPatrolling;
 	} };
 	states.addEdge(CharState::RUN, CharState::IDLE, isStopMoving);
+
+	// Start patrolling.
+	auto isPatrolling{ [&enemy, &phys, &character]() -> bool
+	{
+		bool isReady{ enemy.actionTimer == 0.f };
+		if (isReady)
+		{
+			// Move in random direction.
+			int dir{ rand() % 2 == 0 ? -1 : 1 };
+			phys.speed.x = character.movementSpeed * dir;
+			GameComponent::setActionTimer(enemy);
+		}
+
+		return isReady;
+	} };
+	states.addEdge(CharState::IDLE, CharState::RUN, isPatrolling);
 }
 
 //void GameEngine::createNewEntities()

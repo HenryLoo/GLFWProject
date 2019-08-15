@@ -26,7 +26,8 @@ public:
 	// Constructor is private to prevent instantiating singleton.
 	// Handle all user inputs for the game loop's current iteration.
 	virtual void processInput(GameEngine *game, 
-		InputManager *inputManager, AssetLoader *assetLoader) = 0;
+		InputManager *inputManager, EntityManager *entityManager, 
+		AssetLoader *assetLoader) = 0;
 
 	// Update all appropriate values for the game loop's current iteration.
 	virtual void update(float deltaTime, const glm::ivec2 &windowSize, 

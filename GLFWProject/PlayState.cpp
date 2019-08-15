@@ -49,12 +49,18 @@ void PlayState::resume()
 }
 
 void PlayState::processInput(GameEngine *game, InputManager *inputManager,
-	AssetLoader *assetLoader)
+	EntityManager *entityManager, AssetLoader *assetLoader)
 {
 	// Pause game.
 	if (inputManager->isKeyPressed(InputManager::INPUT_CANCEL, true))
 	{
 		game->pushState(MenuState::instance(), assetLoader);
+	}
+
+	// Debug 2: create enemy.
+	if (inputManager->isKeyPressed(InputManager::INPUT_DEBUG2, true))
+	{
+		entityManager->createEnemy();
 	}
 }
 

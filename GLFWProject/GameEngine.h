@@ -53,7 +53,8 @@ public:
 private:
 	// Constructor is private to prevent instantiating singleton.
 	// Handle all user inputs for the game loop's current iteration.
-	void processInput(InputManager *inputManager, AssetLoader *assetLoader);
+	void processInput(InputManager *inputManager, EntityManager *entityManager, 
+		AssetLoader *assetLoader);
 
 	// Update all appropriate values for the game loop's current iteration.
 	void update(EntityManager *entityManager, AssetLoader *assetLoader,

@@ -43,7 +43,7 @@ void MenuState::resume()
 }
 
 void MenuState::processInput(GameEngine *game, InputManager *inputManager, 
-	AssetLoader *assetLoader)
+	EntityManager *entityManager, AssetLoader *assetLoader)
 {
 	// Unpause game.
 	if (inputManager->isKeyPressed(InputManager::INPUT_CANCEL, true))

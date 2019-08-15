@@ -4,6 +4,7 @@
 #include "SpriteSheet.h"
 
 #include <glm/glm.hpp>
+#include <iostream>
 
 namespace
 {
@@ -35,7 +36,12 @@ void CharacterSystem::process(float deltaTime, int entityId,
 
 	// If hit stopped, then skip this.
 	if (GameComponent::hasHitStop(entityMask, character))
+	{
 		return;
+	}
+
+	// Process only the first frame when hit stop begins.
+	character.isFirstHitStopFrame = false;
 
 	GameComponent::Sprite &sprite{ m_sprites[entityId] };
 	GameComponent::Collision &collision{ m_collisions[entityId] };

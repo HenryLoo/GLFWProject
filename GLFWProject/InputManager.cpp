@@ -110,6 +110,9 @@ void InputManager::keyCallback(GLFWwindow *window, int key, int scancode, int ac
 		case GLFW_KEY_F1:
 			setKey(INPUT_DEBUG, isPressed, isReleased);
 			break;
+		case GLFW_KEY_F2:
+			setKey(INPUT_DEBUG2, isPressed, isReleased);
+			break;
 	}
 }
 
