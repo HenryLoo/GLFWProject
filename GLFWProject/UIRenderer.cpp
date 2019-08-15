@@ -83,7 +83,7 @@ void UIRenderer::initBox()
 	// Set attribute for vertices.
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
-	glVertexAttribDivisor(0, 0);
+	glVertexAttribDivisorARB(0, 0);
 
 	// Create the VBO for instance colours.
 	// Each vertex holds 4 values: r, g, b, a.
@@ -95,7 +95,7 @@ void UIRenderer::initBox()
 	// Set attribute for instance colours.
 	glEnableVertexAttribArray(1);
 	glVertexAttribPointer(1, 4, GL_UNSIGNED_BYTE, GL_TRUE, 0, (void*)0);
-	glVertexAttribDivisor(1, 1);
+	glVertexAttribDivisorARB(1, 1);
 
 	// Create the VBO for instance model view matrices.
 	// Initialize with an empty buffer and update its values in the game loop.
@@ -107,19 +107,19 @@ void UIRenderer::initBox()
 	// A mat4 is equivalent to 4 vec4's.
 	glEnableVertexAttribArray(2);
 	glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)0);
-	glVertexAttribDivisor(2, 1);
+	glVertexAttribDivisorARB(2, 1);
 
 	glEnableVertexAttribArray(3);
 	glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(sizeof(glm::vec4)));
-	glVertexAttribDivisor(3, 1);
+	glVertexAttribDivisorARB(3, 1);
 
 	glEnableVertexAttribArray(4);
 	glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(2 * sizeof(glm::vec4)));
-	glVertexAttribDivisor(4, 1);
+	glVertexAttribDivisorARB(4, 1);
 
 	glEnableVertexAttribArray(5);
 	glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(3 * sizeof(glm::vec4)));
-	glVertexAttribDivisor(5, 1);
+	glVertexAttribDivisorARB(5, 1);
 }
 
 void UIRenderer::initHud()
@@ -138,7 +138,7 @@ void UIRenderer::initHud()
 	// Set attribute for vertices.
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
-	glVertexAttribDivisor(0, 0);
+	glVertexAttribDivisorARB(0, 0);
 
 	// Create the VBO for instance colours.
 	// Each vertex holds 4 values: r, g, b, a.
@@ -150,7 +150,7 @@ void UIRenderer::initHud()
 	// Set attribute for instance colours.
 	glEnableVertexAttribArray(1);
 	glVertexAttribPointer(1, 4, GL_UNSIGNED_BYTE, GL_TRUE, 0, (void*)0);
-	glVertexAttribDivisor(1, 1);
+	glVertexAttribDivisorARB(1, 1);
 
 	// Create the VBO for instance texture coordinates.
 	// Each vertex holds 4 values: u, v of the top-left texture point, 
@@ -163,7 +163,7 @@ void UIRenderer::initHud()
 	// Set attribute for instance texture coordinates.
 	glEnableVertexAttribArray(2);
 	glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, 0, (void*)0);
-	glVertexAttribDivisor(2, 1);
+	glVertexAttribDivisorARB(2, 1);
 
 	// Create the VBO for instance model matrices.
 	// Initialize with an empty buffer and update its values in the game loop.
@@ -175,19 +175,19 @@ void UIRenderer::initHud()
 	// A mat4 is equivalent to 4 vec4's.
 	glEnableVertexAttribArray(3);
 	glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)0);
-	glVertexAttribDivisor(3, 1);
+	glVertexAttribDivisorARB(3, 1);
 
 	glEnableVertexAttribArray(4);
 	glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(sizeof(glm::vec4)));
-	glVertexAttribDivisor(4, 1);
+	glVertexAttribDivisorARB(4, 1);
 
 	glEnableVertexAttribArray(5);
 	glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(2 * sizeof(glm::vec4)));
-	glVertexAttribDivisor(5, 1);
+	glVertexAttribDivisorARB(5, 1);
 
 	glEnableVertexAttribArray(6);
 	glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(3 * sizeof(glm::vec4)));
-	glVertexAttribDivisor(6, 1);
+	glVertexAttribDivisorARB(6, 1);
 }
 
 void UIRenderer::addBox(const GameComponent::Physics &physics,
