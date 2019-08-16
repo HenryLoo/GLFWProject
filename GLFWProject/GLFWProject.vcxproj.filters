@@ -156,9 +156,6 @@
     <ClCompile Include="Sound.cpp">
       <Filter>Source Files\Asset Loader\Assets</Filter>
     </ClCompile>
-    <ClCompile Include="PrefabLoader.h">
-      <Filter>Header Files\Asset Loader\Loaders</Filter>
-    </ClCompile>
     <ClCompile Include="Prefab.cpp">
       <Filter>Source Files\Asset Loader\Assets</Filter>
     </ClCompile>
@@ -358,6 +355,9 @@
     </ClInclude>
     <ClInclude Include="EnemySystem.h">
       <Filter>Header Files\Game Systems</Filter>
+    </ClInclude>
+    <ClInclude Include="PrefabLoader.h">
+      <Filter>Header Files\Asset Loader\Loaders</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

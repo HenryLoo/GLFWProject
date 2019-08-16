@@ -169,7 +169,7 @@
     <ClCompile Include="PlayState.cpp" />
     <ClCompile Include="Prefab.cpp" />
     <ClCompile Include="PrefabLoader.cpp" />
-    <ClCompile Include="PrefabLoader.h" />
+    <ClInclude Include="PrefabLoader.h" />
     <ClCompile Include="OLD_Renderer.cpp" />
     <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="Room.cpp" />
