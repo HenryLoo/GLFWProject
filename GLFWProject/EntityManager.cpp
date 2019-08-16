@@ -1167,7 +1167,7 @@ void EntityManager::createEnemy()
 		phys.hasFriction = true;
 	} };
 
-	auto idleEnterAction{ [&enemy]()
+	auto idleEnterAction{ [&enemy, &phys]()
 	{
 		GameComponent::setActionTimer(enemy);
 	} };
@@ -1195,13 +1195,27 @@ void EntityManager::createEnemy()
 		}
 	} };
 
+	auto attackEnterAction{ [&phys, this]()
+	{
+		float dir{ glm::sign(phys.scale.x) };
+		phys.speed.x = 256.f * dir;
+		phys.speed.y = 32.f;
+		phys.hasFriction = false;
+	} };
+
+	auto attackExitAction{ [&enemy, &phys]()
+	{
+		phys.hasFriction = true;
+		enemy.attackTimer = enemy.attackDuration;
+	} };
+
 	states.addState(CharState::IDLE, idleUpdateAction, idleEnterAction);
 	states.addState(CharState::RUN, runUpdateAction, []() {}, runExitAction);
 	states.addState(CharState::HURT);
 	states.addState(CharState::HURT_AIR);
 	states.addState(CharState::FALLEN, fallenUpdateAction, fallenEnterAction);
 	states.addState(CharState::ALERT);
-	states.addState(CharState::ATTACK);
+	states.addState(CharState::ATTACK, []() {}, attackEnterAction, attackExitAction);
 
 	// Hurt while on ground.
 	auto isHurting{ [&character, &col, &phys]() -> bool
@@ -1271,7 +1285,7 @@ void EntityManager::createEnemy()
 	// Start moving.
 	auto isMoving{ [&enemy, &phys, &character, this]() -> bool
 	{
-		if (enemy.isTargetingPlayer)
+		if (enemy.isTargetingPlayer && enemy.attackTimer == 0.f)
 		{
 			// Move towards player.
 			glm::vec2 playerPos{ m_compPhysics[m_playerId].pos };
@@ -1312,6 +1326,49 @@ void EntityManager::createEnemy()
 		return false;
 	} };
 	states.addEdge(CharState::IDLE, CharState::RUN, isMoving);
+
+	// Alert.
+	auto isAlert{ [&enemy, &character, &col, &phys, this]() -> bool
+	{
+		if (enemy.isTargetingPlayer && enemy.attackTimer == 0.f)
+		{
+			glm::vec2 playerPos{ m_compPhysics[m_playerId].pos };
+			bool isInRangeLeft{ playerPos.x >= phys.pos.x - enemy.attackRange.x };
+			bool isInRangeRight{ playerPos.x <= phys.pos.x + enemy.attackRange.x };
+			bool isInRangeDown{ playerPos.y >= phys.pos.y - enemy.attackRange.y };
+			bool inInRangeUp{ playerPos.y <= phys.pos.y + enemy.attackRange.y };
+
+			if (isInRangeLeft && isInRangeRight &&
+				isInRangeDown && inInRangeUp)
+			{
+				return true;
+			}
+		}
+
+		return false;
+	} };
+	states.addEdge(CharState::IDLE, CharState::ALERT, isAlert);
+	states.addEdge(CharState::RUN, CharState::ALERT, isAlert);
+
+	// Animation end transitions.
+	auto isAnimationEnd{ [&spr]() -> bool
+	{
+		float frameDuration{ GameComponent::getFrameDuration(spr) };
+		int numSprites{ GameComponent::getNumSprites(spr) };
+		return (spr.currentFrameTime >= frameDuration &&
+			(!spr.currentSprite.isLooping && spr.currentFrame == numSprites - 1));
+	} };
+	states.addEdge(CharState::ALERT, CharState::ATTACK, isAnimationEnd);
+
+	auto isAttackEnd{ [&spr, &phys, &col]() -> bool
+	{
+		float frameDuration{ GameComponent::getFrameDuration(spr) };
+		int numSprites{ GameComponent::getNumSprites(spr) };
+		bool isAnimationEnd{ spr.currentFrameTime >= frameDuration &&
+			(!spr.currentSprite.isLooping && spr.currentFrame == numSprites - 1) };
+		return isAnimationEnd && GameComponent::isOnGround(phys, col);
+	} };
+	states.addEdge(CharState::ATTACK, CharState::IDLE, isAttackEnd);
 }
 
 //void GameEngine::createNewEntities()

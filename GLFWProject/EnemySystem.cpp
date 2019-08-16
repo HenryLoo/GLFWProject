@@ -17,4 +17,7 @@ void EnemySystem::process(float deltaTime, int entityId,
 
 	// Update the action timer.
 	GameComponent::updateTimer(deltaTime, enemy.actionTimer);
+
+	// Update the attack timer.
+	GameComponent::updateTimer(deltaTime, enemy.attackTimer);
 }

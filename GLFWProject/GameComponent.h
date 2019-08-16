@@ -180,9 +180,16 @@ namespace GameComponent
 		// The detection range for this enemy to "see" the player.
 		glm::vec2 targetRange{ 256.f, 32.f };
 
+		// The distance from the player for this enemy to start attacking.
+		glm::vec2 attackRange{ 72.f, 32.f };
+
 		// The duration of time in seconds between each enemy action.
 		float actionTimer{ 0.f };
 		float actionDuration{ 3.f };
+
+		// The duration of time in seconds between each enemy attack.
+		float attackTimer{ 0.f };
+		float attackDuration{ 1.5f };
 
 		// Movement direction flags.
 		bool isMovingLeft{ false };
