@@ -178,11 +178,15 @@ namespace GameComponent
 		bool isTargetingPlayer{ false };
 
 		// The detection range for this enemy to "see" the player.
-		glm::vec2 targetRange;
+		glm::vec2 targetRange{ 256.f, 32.f };
 
 		// The duration of time in seconds between each enemy action.
 		float actionTimer{ 0.f };
 		float actionDuration{ 3.f };
+
+		// Movement direction flags.
+		bool isMovingLeft{ false };
+		bool isMovingRight{ false };
 	};
 
 	struct Character
@@ -253,7 +257,7 @@ namespace GameComponent
 	bool isDead(const Character &character);
 
 	// Set the enemy's action timer, with some variation.
-	void setActionTimer(Enemy &enemy);
+	void setActionTimer(Enemy &enemy, float multiplier = 1.f);
 }
 
 #endif

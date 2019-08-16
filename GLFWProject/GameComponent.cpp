@@ -66,7 +66,8 @@ bool GameComponent::isDead(const Character &character)
 	return character.health == 0;
 }
 
-void GameComponent::setActionTimer(Enemy &enemy)
+void GameComponent::setActionTimer(Enemy &enemy, float multiplier)
 {
-	enemy.actionTimer = enemy.actionDuration * glm::linearRand(0.8f, 1.2f);
+	enemy.actionTimer = enemy.actionDuration * multiplier * 
+		glm::linearRand(0.8f, 1.2f);
 }

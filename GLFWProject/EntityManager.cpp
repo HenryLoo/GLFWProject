@@ -1083,7 +1083,7 @@ void EntityManager::createEnemy()
 		}
 	} };
 
-	auto runUpdateAction{ [&enemy, &spr, &col, &phys]()
+	auto runUpdateAction{ [&enemy, &spr, &col, &phys, &character, this]()
 	{
 		// If in the air, fix the frame to the last running frame.
 		if (GameComponent::isInAir(phys, col))
@@ -1095,33 +1095,107 @@ void EntityManager::createEnemy()
 		// Move if on the ground.
 		if (GameComponent::isOnGround(phys, col))
 		{
-			phys.hasFriction = false;
-
 			// Move in the other direction if colliding.
 			if (col.isCollidingHorizontal)
 			{
-				phys.speed.x *= -1;
+				if (enemy.isMovingLeft)
+				{
+					enemy.isMovingLeft = false;
+					enemy.isMovingRight = true;
+				}
+				else if (enemy.isMovingRight)
+				{
+					enemy.isMovingLeft = true;
+					enemy.isMovingRight = false;
+				}
 			}
 
-			// Face the direction of movement.
-			if (phys.speed.x != 0.f)
+			// If current speed is greater than the character's movement speed,
+			// start applying friction to gradually bring it back down to
+			// the character's movement speed.
+			float currentSpeed{ glm::abs(phys.speed.x) };
+			phys.hasFriction = (currentSpeed > character.movementSpeed);
+
+			// Maintain maximum horizontal speed.
+			float maxSpeed{ glm::max(character.movementSpeed, currentSpeed) };
+
+			float dir{ 0.f };
+			if (enemy.isMovingLeft)
+				dir = -1.f;
+			else if (enemy.isMovingRight)
+				dir = 1.f;
+
+			phys.speed.x += (dir * character.movementSpeed / 0.1f * m_deltaTime);
+			phys.speed.x = glm::clamp(phys.speed.x, -maxSpeed, maxSpeed);
+		}
+
+		// Face the direction of movement if the enemy isn't targeting
+		// the player.
+		if (phys.speed.x != 0.f)
+		{
+			if (!enemy.isTargetingPlayer)
+				phys.scale.x = glm::sign(phys.speed.x) * glm::abs(phys.scale.x);
+			// Otherwise, face the player.
+			else
 			{
-				phys.scale.x = glm::sign(phys.speed.x);
+				glm::vec2 playerPos{ m_compPhysics[m_playerId].pos };
+				if (playerPos.x < phys.pos.x)
+					phys.scale.x = -glm::abs(phys.scale.x);
+				else if (playerPos.x > phys.pos.x)
+					phys.scale.x = glm::abs(phys.scale.x);
 			}
+		}
+
+		// Target the player if the enemy can see them.
+		if (!enemy.isTargetingPlayer)
+		{
+			glm::vec2 playerPos{ m_compPhysics[m_playerId].pos };
+			bool canSeePlayerLeft{ playerPos.x >= phys.pos.x - enemy.targetRange.x && playerPos.x <= phys.pos.x };
+			bool canSeePlayerRight{ playerPos.x <= phys.pos.x + enemy.targetRange.x && playerPos.x >= phys.pos.x };
+			bool canSeePlayerDown{ playerPos.y >= phys.pos.y - enemy.targetRange.y };
+			bool canSeePlayerUp{ playerPos.y <= phys.pos.y + enemy.targetRange.y };
+			enemy.isTargetingPlayer = ((canSeePlayerLeft && phys.scale.x < 0) ||
+				(canSeePlayerRight && phys.scale.x > 0)) &&
+				canSeePlayerDown && canSeePlayerUp;
 		}
 	} };
 
-	auto runExitAction{ [&phys]()
+	auto runExitAction{ [&enemy, &phys]()
 	{
+		enemy.isMovingLeft = false;
+		enemy.isMovingRight = false;
 		phys.hasFriction = true;
 	} };
 
-	auto idleEnterAction{ [&enemy, &phys]()
+	auto idleEnterAction{ [&enemy]()
 	{
 		GameComponent::setActionTimer(enemy);
 	} };
 
-	states.addState(CharState::IDLE, []() {}, idleEnterAction);
+	auto idleUpdateAction{ [&enemy, &phys, this]()
+	{
+		glm::vec2 playerPos{ m_compPhysics[m_playerId].pos };
+		bool canSeePlayerLeft{ playerPos.x >= phys.pos.x - enemy.targetRange.x };
+		bool canSeePlayerRight{ playerPos.x <= phys.pos.x + enemy.targetRange.x  };
+		bool canSeePlayerDown{ playerPos.y >= phys.pos.y - enemy.targetRange.y };
+		bool canSeePlayerUp{ playerPos.y <= phys.pos.y + enemy.targetRange.y };
+
+		// Target the player if the enemy can see them.
+		if (!enemy.isTargetingPlayer)
+		{
+			enemy.isTargetingPlayer = ((canSeePlayerLeft && playerPos.x <= phys.pos.x && phys.scale.x < 0) ||
+				(canSeePlayerRight && playerPos.x >= phys.pos.x && phys.scale.x > 0)) &&
+				canSeePlayerDown && canSeePlayerUp;
+		}
+		// Lose track of the player if too far away.
+		else
+		{
+			enemy.isTargetingPlayer = canSeePlayerLeft && canSeePlayerRight && 
+				canSeePlayerDown && canSeePlayerUp;
+		}
+	} };
+
+	states.addState(CharState::IDLE, idleUpdateAction, idleEnterAction);
 	states.addState(CharState::RUN, runUpdateAction, []() {}, runExitAction);
 	states.addState(CharState::HURT);
 	states.addState(CharState::HURT_AIR);
@@ -1185,28 +1259,59 @@ void EntityManager::createEnemy()
 	// Stop moving.
 	auto isStopMoving{ [&enemy, &col, &phys]() -> bool
 	{
-		bool isLanding{ GameComponent::isOnGround(phys, col) && phys.speed.x == 0.f };
-		bool isStoppedPatrolling{ phys.speed.x != 0.f && enemy.actionTimer == 0.f };
+		bool isLanding{ GameComponent::isOnGround(phys, col) && 
+			!enemy.isMovingLeft && !enemy.isMovingRight };
+		bool isStoppedPatrolling{ (enemy.isMovingLeft || enemy.isMovingRight) && 
+			enemy.actionTimer == 0.f };
 
 		return isLanding || isStoppedPatrolling;
 	} };
 	states.addEdge(CharState::RUN, CharState::IDLE, isStopMoving);
 
-	// Start patrolling.
-	auto isPatrolling{ [&enemy, &phys, &character]() -> bool
+	// Start moving.
+	auto isMoving{ [&enemy, &phys, &character, this]() -> bool
 	{
-		bool isReady{ enemy.actionTimer == 0.f };
-		if (isReady)
+		if (enemy.isTargetingPlayer)
+		{
+			// Move towards player.
+			glm::vec2 playerPos{ m_compPhysics[m_playerId].pos };
+			if (playerPos.x < phys.pos.x)
+			{
+				enemy.isMovingLeft = true;
+				enemy.isMovingRight = false;
+			}
+			else if (playerPos.x > phys.pos.x)
+			{
+				enemy.isMovingLeft = false;
+				enemy.isMovingRight = true;
+			}
+
+			// Respond twice as quickly when targeting player.
+			GameComponent::setActionTimer(enemy, 0.5f);
+
+			return true;
+		}
+		else if (enemy.actionTimer == 0.f)
 		{
 			// Move in random direction.
-			int dir{ rand() % 2 == 0 ? -1 : 1 };
-			phys.speed.x = character.movementSpeed * dir;
+			if (rand() % 2 == 0)
+			{
+				enemy.isMovingLeft = true;
+				enemy.isMovingRight = false;
+			}
+			else
+			{
+				enemy.isMovingLeft = false;
+				enemy.isMovingRight = true;
+			}
 			GameComponent::setActionTimer(enemy);
+
+			return true;
 		}
 
-		return isReady;
+		return false;
 	} };
-	states.addEdge(CharState::IDLE, CharState::RUN, isPatrolling);
+	states.addEdge(CharState::IDLE, CharState::RUN, isMoving);
 }
 
 //void GameEngine::createNewEntities()
