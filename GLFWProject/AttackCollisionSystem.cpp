@@ -4,6 +4,8 @@
 #include "EntityManager.h"
 #include "Sound.h"
 
+#include <iostream>
+
 namespace
 {
 	// A minimal amount of hit stun for when hurt while in the air.
@@ -73,11 +75,25 @@ void AttackCollisionSystem::update(float deltaTime, int numEntities,
 				continue;
 			}
 
+			// If the target is fallen, then skip this collision response.
+			if (character.states.getState() == CharState::FALLEN)
+			{
+				continue;
+			}
+
+			// If the attack and the target are in the same team, then skip 
+			// this collision response.
+			if (character.team == attack.team)
+			{
+				continue;
+			}
+
 			// Add to the list of hit entities.
 			hitEntities.insert(targetId);
 
 			// Play the hit sound.
-			attack.pattern.hitSound->play(m_soundEngine);
+			if (attack.pattern.hitSound != nullptr)
+				attack.pattern.hitSound->play(m_soundEngine);
 
 			// If the target is airborne, apply a minimum vertical knockback.
 			GameComponent::Collision &col{ m_collisions[targetId] };

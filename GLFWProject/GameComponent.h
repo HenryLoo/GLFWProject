@@ -156,6 +156,13 @@ namespace GameComponent
 		}
 	};
 
+	enum Team
+	{
+		TEAM_PLAYER,
+		TEAM_ENEMY,
+		TEAM_NEUTRAL
+	};
+
 	struct Attack
 	{
 		// Flag for if the attack is enabled.
@@ -163,6 +170,9 @@ namespace GameComponent
 
 		// The entity id of source of the attack.
 		int sourceId;
+
+		// The source's team. Attacks cannot harm targets in the same team.
+		int team{ TEAM_NEUTRAL };
 
 		// This attack pattern's values.
 		AttackPattern pattern;
@@ -205,6 +215,9 @@ namespace GameComponent
 
 		// Map all player states to their appropriate attack patterns.
 		std::unordered_map<std::string, AttackPattern> attackPatterns;
+
+		// The source's team. Attacks cannot harm targets in the same team.
+		int team{ TEAM_NEUTRAL };
 
 		// The remaining duration of time in seconds for the character to remain
 		// in a hurt state.

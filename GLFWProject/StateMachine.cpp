@@ -1,22 +1,15 @@
 #include "StateMachine.h"
 
-void StateMachine::update()
+void StateMachine::update(int entityId)
 {
 	if (m_currentState == nullptr)
 		return;
-
-	// If this is a new state, call the enter action.
-	if (isNewState)
-	{
-		m_currentState->enterAction();
-		isNewState = false;
-	}
 
 	// Edge is defined by {state label, condition function}.
 	for (const Edge &e : m_currentState->edges)
 	{
 		// Call the edge's condition function to see if it has been satisfied.
-		bool isTraversing{ e.condition() };
+		bool isTraversing{ e.condition(entityId) };
 		if (isTraversing)
 		{
 			// Move to new state if it exists.
@@ -25,7 +18,7 @@ void StateMachine::update()
 				continue;
 
 			// Call exit action.
-			m_currentState->exitAction();
+			m_currentState->exitAction(entityId);
 
 			// Change to new state.
 			// The enter action will be called in the next frame,
@@ -40,7 +33,14 @@ void StateMachine::update()
 	}
 
 	// Call update action.
-	m_currentState->updateAction();
+	m_currentState->updateAction(entityId);
+
+	// If this is a new state, call the enter action.
+	if (isNewState)
+	{
+		m_currentState->enterAction(entityId);
+		isNewState = false;
+	}
 }
 
 const std::string &StateMachine::getState() const
@@ -49,9 +49,9 @@ const std::string &StateMachine::getState() const
 }
 
 void StateMachine::addState(const std::string &label,
-	std::function<void()> updateAction,
-	std::function<void()> enterAction,
-	std::function<void()> exitAction)
+	std::function<void(int)> updateAction,
+	std::function<void(int)> enterAction,
+	std::function<void(int)> exitAction)
 {
 	// Add an empty state.
 	// Nothing happens if the state already exists.
@@ -72,7 +72,7 @@ void StateMachine::addState(const std::string &label,
 }
 
 void StateMachine::addEdge(const std::string &srcLabel,
-	const std::string &destLabel, std::function<bool()> condition)
+	const std::string &destLabel, std::function<bool(int)> condition)
 {
 	auto it{ m_states.find(srcLabel) };
 

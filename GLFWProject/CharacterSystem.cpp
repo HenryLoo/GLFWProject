@@ -2,6 +2,7 @@
 
 #include "CharStates.h"
 #include "SpriteSheet.h"
+#include "EntityManager.h"
 
 #include <glm/glm.hpp>
 #include <iostream>
@@ -48,7 +49,7 @@ void CharacterSystem::process(float deltaTime, int entityId,
 	GameComponent::Attack &attack{ m_attacks[entityId] };
 
 	// Update the character's state machine.
-	character.states.update();
+	character.states.update(entityId);
 
 	// Change the sprite's state if it is a different one or the animation
 	// is being reset.
@@ -95,6 +96,15 @@ void CharacterSystem::process(float deltaTime, int entityId,
 
 	// Update the fallen timer.
 	GameComponent::updateTimer(deltaTime, character.fallenTimer);
+
+	// Delete the entity if it is dead.
+	if (GameComponent::isDead(character) && character.fallenTimer == 0.f &&
+		character.states.getState() == CharState::FALLEN &&
+		entityId != m_manager.getPlayerId())
+	{
+		m_manager.deleteEntity(entityId);
+		return;
+	}
 
 	// Update the previous state, so that it will be ready for the next 
 	// iteration.
