@@ -74,11 +74,11 @@
     <LibraryPath>$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>$(SolutionDir)\Libraries\Includes;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)\Libraries\Includes\lua;$(SolutionDir)\Libraries\Includes;$(IncludePath)</IncludePath>
     <LibraryPath>$(SolutionDir)\Libraries\Libs;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>$(SolutionDir)\Libraries\Includes;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)\Libraries\Includes\lua;$(SolutionDir)\Libraries\Includes;$(IncludePath)</IncludePath>
     <LibraryPath>$(SolutionDir)\Libraries\Libs;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -98,12 +98,13 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <ConformanceMode>true</ConformanceMode>
+      <ConformanceMode>false</ConformanceMode>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
-      <AdditionalDependencies>opengl32.lib;glfw3.lib;physfs.lib;physfs++_debug.lib;soloud_static_x64.lib;freetype.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>opengl32.lib;glfw3.lib;physfs.lib;physfs++_debug.lib;soloud_static_x64.lib;freetype.lib;lua53.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -128,13 +129,13 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <ConformanceMode>true</ConformanceMode>
+      <ConformanceMode>false</ConformanceMode>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>opengl32.lib;glfw3.lib;physfs.lib;physfs++.lib;soloud_static_x64.lib;freetype.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>opengl32.lib;glfw3.lib;physfs.lib;physfs++.lib;soloud_static_x64.lib;freetype.lib;lua53.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <EntryPointSymbol>mainCRTStartup</EntryPointSymbol>
     </Link>
   </ItemDefinitionGroup>
@@ -175,6 +176,8 @@
     <ClCompile Include="Room.cpp" />
     <ClCompile Include="RoomCollisionSystem.cpp" />
     <ClCompile Include="RoomLoader.cpp" />
+    <ClCompile Include="Script.cpp" />
+    <ClCompile Include="ScriptLoader.cpp" />
     <ClCompile Include="Shader.cpp" />
     <ClCompile Include="ShaderLoader.cpp" />
     <ClCompile Include="Sound.cpp" />
@@ -228,6 +231,8 @@
     <ClInclude Include="Room.h" />
     <ClInclude Include="RoomCollisionSystem.h" />
     <ClInclude Include="RoomLoader.h" />
+    <ClInclude Include="Script.h" />
+    <ClInclude Include="ScriptLoader.h" />
     <ClInclude Include="Shader.h" />
     <ClInclude Include="ShaderLoader.h" />
     <ClInclude Include="Sound.h" />

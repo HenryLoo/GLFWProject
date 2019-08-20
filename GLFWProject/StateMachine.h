@@ -22,13 +22,13 @@ struct State
 	std::vector<Edge> edges;
 
 	// Function to call at update.
-	std::function<void(int entityId)> updateAction;
+	std::function<void(int entityId)> updateAction{ [](int) {} };
 
 	// Function to call when the state machine enters this state.
-	std::function<void(int entityId)> enterAction;
+	std::function<void(int entityId)> enterAction{ [](int) {} };
 
 	// Function to call when the state machine leaves this state.
-	std::function<void(int entityId)> exitAction;
+	std::function<void(int entityId)> exitAction{ [](int) {} };
 };
 
 class StateMachine
@@ -41,14 +41,19 @@ public:
 	const std::string &getState() const;
 
 	// Add a state to the machine.
-	void addState(const std::string &label,
-		std::function<void(int)> updateAction = [](int) {},
-		std::function<void(int)> enterAction = [](int) {},
-		std::function<void(int)> exitAction = [](int) {});
+	void addState(const std::string &label);
 
 	// Add a transition edge between two existing states in the machine.
 	void addEdge(const std::string &srcLabel, const std::string &destLabel,
 		std::function<bool(int)> condition);
+
+	// Set state actions.
+	void setUpdateAction(const std::string &label,
+		std::function<void(int)> action);
+	void setEnterAction(const std::string &label,
+		std::function<void(int)> action);
+	void setExitAction(const std::string &label,
+		std::function<void(int)> action);
 
 private:
 	// Map state labels to their respective states.

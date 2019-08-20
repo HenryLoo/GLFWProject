@@ -18,7 +18,6 @@ namespace CharState
 	const std::string ATTACK{ "attack" };
 	const std::string ATTACK_AIR{ "attack_air" };
 	const std::string ATTACK_CROUCH{ "attack_crouch" };
-	const std::string ATTACK_EVADE{ "attack_evade" };
 	const std::string HURT{ "hurt" };
 	const std::string HURT_AIR{ "hurt_air" };
 	const std::string FALLEN{ "fallen" };

@@ -22,7 +22,6 @@ namespace CharState
 	extern const std::string ATTACK;
 	extern const std::string ATTACK_AIR;
 	extern const std::string ATTACK_CROUCH;
-	extern const std::string ATTACK_EVADE;
 	extern const std::string HURT;
 	extern const std::string HURT_AIR;
 	extern const std::string FALLEN;

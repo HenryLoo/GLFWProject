@@ -4,6 +4,7 @@
 #include "JSONUtilities.h"
 #include "SpriteSheet.h"
 #include "Room.h"
+#include "Script.h"
 #include "Shader.h"
 #include "Sound.h"
 #include "Prefab.h"
@@ -18,6 +19,7 @@ namespace
 	const std::string LIST_FONTS{ "font" };
 	const std::string LIST_PREFABS{ "prefab" };
 	const std::string LIST_ROOMS{ "room" };
+	const std::string LIST_SCRIPTS{ "script" };
 	const std::string LIST_SHADERS{ "shader" };
 	const std::string LIST_SOUNDS{ "sound" };
 	const std::string LIST_SPRITESHEETS{ "spritesheet" };
@@ -31,6 +33,7 @@ namespace
 		{ LIST_FONTS, std::type_index(typeid(Font)) },
 		{ LIST_PREFABS, std::type_index(typeid(Prefab)) },
 		{ LIST_ROOMS, std::type_index(typeid(Room)) },
+		{ LIST_SCRIPTS, std::type_index(typeid(Script)) },
 		{ LIST_SHADERS, std::type_index(typeid(Shader)) },
 		{ LIST_SOUNDS, std::type_index(typeid(Sound)) },
 		{ LIST_SPRITESHEETS, std::type_index(typeid(SpriteSheet)) },

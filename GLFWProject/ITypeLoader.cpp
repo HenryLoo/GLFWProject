@@ -70,7 +70,7 @@ void ITypeLoader::update(float deltaTime)
 		for (auto it = m_cache.begin(); it != m_cache.end(); )
 		{
 			// If use_count is 1, then it is only being owned by the cache.
-			if (it->second.unique())
+			if (it->second.use_count() == 1)
 			{
 				//std::cout << "ITypeLoader::update: '" << it->first << "' deleted from cache" << std::endl;
 				it = m_cache.erase(it);

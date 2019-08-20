@@ -9,6 +9,7 @@
 #include "Prefab.h"
 #include "JSONUtilities.h"
 #include "UIRenderer.h"
+#include "Script.h"
 
 #include "AttackCollisionSystem.h"
 #include "AttackSystem.h"
@@ -60,6 +61,7 @@ namespace
 	const std::string PROPERTY_RESOURCE{ "resource" };
 	const std::string PROPERTY_MOVESPEED{ "movementSpeed" };
 	const std::string PROPERTY_JUMPSPEED{ "jumpSpeed" };
+	const std::string PROPERTY_SCRIPT{ "script" };
 	const std::string PROPERTY_ATTACKPATTERNS{ "attackPatterns" };
 	const std::string PROPERTY_TYPE{ "type" };
 	const std::string PROPERTY_FRAMERANGE{ "frameRange" };
@@ -71,6 +73,9 @@ namespace
 	const std::string PROPERTY_COOLDOWN{ "cooldown" };
 	const std::string PROPERTY_DAMAGE{ "damage" };
 	const std::string PROPERTY_KNOCKBACK{ "knockback" };
+
+	const std::string PLAYER_STATES_SCRIPT{ "player_states" };
+	const std::string INIT_PLAYER_STATES{ "initPlayerStates" };
 }
 
 EntityManager::EntityManager(GameEngine *game, AssetLoader *assetLoader,
@@ -91,13 +96,16 @@ EntityManager::EntityManager(GameEngine *game, AssetLoader *assetLoader,
 
 	m_broadPhase = std::make_unique<CollisionBroadPhase>();
 
+	// Initialize Lua state.
+	initLua();
+
 	// TODO: replace these hardcoded resources.
 	m_effectsTexture = assetLoader->load<SpriteSheet>("effects");
 	m_jumpSound = assetLoader->load<Sound>("jump");
 	m_evadeSound = assetLoader->load<Sound>("evade");
 	m_attackSound = assetLoader->load<Sound>("serah_attack");
 	m_hitSound = assetLoader->load<Sound>("hit");
-	createEnemy();
+	//createEnemy();
 	createPlayer();
 
 	// Initialze game systems.
@@ -122,6 +130,14 @@ EntityManager::EntityManager(GameEngine *game, AssetLoader *assetLoader,
 
 	m_debugSystem = std::make_unique<DebugSystem>(*this, uRenderer,
 		m_compPhysics, m_compCollisions, m_compAttacks);
+
+	// TODO: remove this later.
+	//auto testScript{ assetLoader->load<Script>("test") };
+	//if (testScript->execute(m_lua))
+	//{
+	//	m_lua.set("testMsg", "TEST MSG!");
+	//	m_lua["testFun"]();
+	//}
 }
 
 EntityManager::~EntityManager()
@@ -223,7 +239,20 @@ int EntityManager::createEntity(Prefab *prefab)
 		// Set team id, if applicable.
 		int team{ GameComponent::TEAM_NEUTRAL };
 		if (GameComponent::hasComponent(mask, GameComponent::COMPONENT_PLAYER))
+		{
 			team = GameComponent::TEAM_PLAYER;
+
+			// Create the player's states.
+			std::shared_ptr<Script> playerStateScript{ m_assetLoader->load<Script>(PLAYER_STATES_SCRIPT) };
+			if (playerStateScript != nullptr)
+			{
+				bool isValid{ playerStateScript->execute(m_lua) };
+				if (isValid)
+				{
+					m_lua[INIT_PLAYER_STATES](id);
+				}
+			}
+		}
 		else if (GameComponent::hasComponent(mask, GameComponent::COMPONENT_ENEMY))
 			team = GameComponent::TEAM_ENEMY;
 
@@ -580,674 +609,674 @@ void EntityManager::createPlayer()
 
 	GameComponent::Physics &phys = m_compPhysics[m_playerId];
 	phys.pos = glm::vec3(64.f, 800.f, 0.f);
-	GameComponent::Sprite &spr = m_compSprites[m_playerId];
-	GameComponent::Weapon &wp = m_compWeapons[m_playerId];
-	GameComponent::Collision &col = m_compCollisions[m_playerId];
-	GameComponent::Attack &atk = m_compAttacks[m_playerId];
-	GameComponent::Character &character = m_compCharacters[m_playerId];
-
-	// Set up state machine.
-	StateMachine &states{ character.states };
-
-	auto enableFriction{ [this](int entityId)
-	{
-		m_compPhysics[entityId].hasFriction = true;
-	} };
-
-	auto enableGravity{ [this](int entityId)
-	{
-		m_compPhysics[entityId].hasGravity = true;
-	} };
-
-	auto evadeUpdateAction{ [this](int entityId)
-	{
-		// If in the air, reset vertical speed and disable gravity.
-		GameComponent::Physics &phys{ m_compPhysics[entityId] };
-		GameComponent::Collision &col{ m_compCollisions[entityId] };
-		if (GameComponent::isInAir(phys, col))
-		{
-			phys.speed.y = 0.f;
-			phys.hasGravity = false;
-		}
-		else
-		{
-			phys.hasGravity = true;
-		}
-	} };
-
-	auto evadeEnterAction{ [this](int entityId)
-	{
-		GameComponent::Physics &phys{ m_compPhysics[entityId] };
-		GameComponent::Character &character{ m_compCharacters[entityId] };
-
-		// By default, just evade in the direction that
-		// the player is facing.
-		float dir{ glm::sign(phys.scale.x) };
-
-		// If left/right is held down, then evade in that direction
-		// instead.
-		bool isRunningLeft{ m_inputManager->isKeyPressing(InputManager::INPUT_LEFT) };
-		bool isRunningRight{ m_inputManager->isKeyPressing(InputManager::INPUT_RIGHT) };
-		bool isRunning{ isRunningLeft != isRunningRight };
-		if (isRunning)
-		{
-			if (isRunningLeft)
-				dir = -1.f;
-			else if (isRunningRight)
-				dir = 1.f;
-		}
-
-		m_compPlayer.numRemainingEvades--;
-		phys.speed.x = dir * 1.7f * character.movementSpeed;
-		phys.scale.x = glm::abs(phys.scale.x) * dir;
-		phys.hasFriction = false;
-		phys.isLockedDirection = false;
-
-		// Set the evade timer.
-		m_compPlayer.evadeTimer = m_compPlayer.evadeDuration;
-
-		// Create smoke effect.
-		glm::vec3 effectPos{ phys.pos };
-		effectPos.x -= (dir * 20.f);
-		effectPos.y -= 4.f;
-		createEffect(EffectType::EVADE_SMOKE, effectPos, phys.scale, 
-			255, 255, 255, 180);
-
-		m_evadeSound->play(m_soundEngine);
-	} };
-
-	auto runUpdateAction{ [this](int entityId)
-	{
-		GameComponent::Physics &phys{ m_compPhysics[entityId] };
-		GameComponent::Character &character{ m_compCharacters[entityId] };
-
-		bool isRunningLeft{ m_inputManager->isKeyPressing(InputManager::INPUT_LEFT) };
-		bool isRunningRight{ m_inputManager->isKeyPressing(InputManager::INPUT_RIGHT) };
-		bool isRunning{ isRunningLeft != isRunningRight };
-
-		// Stopping while turning.
-		bool isStopRunningLeft{ m_inputManager->isKeyReleased(InputManager::INPUT_LEFT) };
-		bool isStopRunningRight{ m_inputManager->isKeyReleased(InputManager::INPUT_RIGHT) };
-		bool isTurning{ character.states.getState() == CharState::TURN };
-		if (isTurning && ((isStopRunningLeft && isStopRunningRight) || !isRunning))
-		{
-			phys.hasFriction = true;
-			return;
-		}
-
-		// If current speed is greater than the character's movement speed,
-		// start applying friction to gradually bring it back down to
-		// the character's movement speed.
-		float currentSpeed{ glm::abs(phys.speed.x) };
-		phys.hasFriction = (currentSpeed > character.movementSpeed);
-
-		// Maintain maximum horizontal speed.
-		float maxSpeed{ glm::max(character.movementSpeed, currentSpeed) };
-
-		float dir{ 0.f };
-		if (isRunning)
-		{
-			if (isRunningLeft)
-				dir = -1.f;
-			else if (isRunningRight)
-				dir = 1.f;
-		}
-
-		phys.speed.x += (dir * character.movementSpeed / 0.1f * m_deltaTime);
-		phys.speed.x = glm::clamp(phys.speed.x, -maxSpeed, maxSpeed);
-
-		if (dir != 0.f && !phys.isLockedDirection)
-			phys.scale.x = glm::abs(phys.scale.x) * dir;
-	} };
-
-	auto dropDownEnterAction{ [this](int entityId)
-	{
-		GameComponent::Physics &phys{ m_compPhysics[entityId] };
-		GameComponent::Collision &col{ m_compCollisions[entityId] };
-		GameComponent::Sprite &spr{ m_compSprites[entityId] };
-
-		bool isCrouching{ m_inputManager->isKeyPressing(InputManager::INPUT_DOWN) };
-		bool isJumping{ m_inputManager->isKeyPressed(InputManager::INPUT_JUMP) };
-		if (isCrouching && isJumping && col.isCollidingGhost &&
-			!col.isCollidingFloor && !col.isCollidingSlope)
-		{
-			spr.isResetAnimation = true;
-			m_compPlayer.numRemainingJumps--;
-			phys.speed.y = 0.f;
-			phys.pos.y--;
-		}
-	} };
-
-	auto attackAirEnterAction{ [this](int entityId)
-	{
-		GameComponent::Physics &phys{ m_compPhysics[entityId] };
-
-		phys.isLockedDirection = true;
-	} };
-
-	auto jumpLandEnterAction{ [this](int entityId)
-	{
-		GameComponent::Physics &phys{ m_compPhysics[entityId] };
-
-		phys.isLockedDirection = false;
-		phys.hasFriction = true;
-	} };
-
-	auto turnEnterAction{ [this](int entityId)
-	{
-		GameComponent::Sprite &spr{ m_compSprites[entityId] };
-		spr.isResetAnimation = true;
-	} };
-
-	auto skill1EnterAction{ [this](int entityId)
-	{
-		GameComponent::Physics &phys{ m_compPhysics[entityId] };
-		GameComponent::Collision &col{ m_compCollisions[entityId] };
-		GameComponent::Attack &atk{ m_compAttacks[entityId] };
-
-		m_compPlayer.skillTimers[0] = atk.pattern.cooldown;
-		phys.speed.x = 0.f;
-		if (GameComponent::isInAir(phys, col))
-			phys.speed.y = 0.f;
-		phys.hasGravity = false;
-	} };
-
-	auto skill1ExitAction{ [this](int entityId)
-	{
-		GameComponent::Physics &phys{ m_compPhysics[entityId] };
-
-		phys.hasGravity = true;
-	} };
-
-	auto skill1UpdateAction{ [this](int entityId)
-	{
-		GameComponent::Physics &phys{ m_compPhysics[entityId] };
-		GameComponent::Attack &atk{ m_compAttacks[entityId] };
-		GameComponent::Sprite &spr{ m_compSprites[entityId] };
-
-		if (spr.currentFrame == atk.pattern.frameRange.x && !phys.hasGravity)
-		{
-			float dir{ glm::sign(phys.scale.x) };
-			phys.speed.x = dir * 16.f;
-			phys.speed.y = atk.pattern.knockback.y - 16.f;
-			phys.isLockedDirection = true;
-			phys.hasGravity = true;
-		}
-	} };
-
-	auto fallenEnterAction{ [this](int entityId)
-	{
-		GameComponent::Physics &phys{ m_compPhysics[entityId] };
-		GameComponent::Character &character{ m_compCharacters[entityId] };
-
-		phys.hasFriction = true;
-		character.fallenTimer = 3.f;
-	} };
-
-	auto fallenUpdateAction{ [this](int entityId)
-	{
-		GameComponent::Character &character{ m_compCharacters[entityId] };
-		GameComponent::Sprite &spr{ m_compSprites[entityId] };
-
-		// If dead, make sprite translucent.
-		if (GameComponent::isDead(character))
-		{
-			spr.a = 100;
-		}
-	} };
-
-	states.addState(CharState::IDLE);
-	states.addState(CharState::RUN, runUpdateAction, [](int) {}, enableFriction);
-	states.addState(CharState::JUMP_ASCEND, runUpdateAction);
-	states.addState(CharState::JUMP_PEAK, runUpdateAction, dropDownEnterAction);
-	states.addState(CharState::JUMP_DESCEND, runUpdateAction);
-	states.addState(CharState::JUMP_LAND, [](int) {}, jumpLandEnterAction);
-	states.addState(CharState::RUN_START, runUpdateAction, [](int) {}, enableFriction);
-	states.addState(CharState::RUN_STOP);
-	states.addState(CharState::ALERT);
-	states.addState(CharState::ALERT_STOP);
-	states.addState(CharState::TURN, runUpdateAction, turnEnterAction, enableFriction);
-	states.addState(CharState::CROUCH, [](int) {}, enableFriction);
-	states.addState(CharState::CROUCH_STOP);
-	states.addState(CharState::ATTACK, [](int) {}, enableFriction);
-	states.addState(CharState::ATTACK2, [](int) {}, enableFriction);
-	states.addState(CharState::ATTACK3, [](int) {}, enableFriction);
-	states.addState(CharState::ATTACK_AIR, runUpdateAction, attackAirEnterAction);
-	states.addState(CharState::ATTACK_CROUCH);
-	states.addState(CharState::EVADE_START, evadeUpdateAction, evadeEnterAction, enableGravity);
-	states.addState(CharState::EVADE, evadeUpdateAction, [](int) {}, enableGravity);
-	states.addState(CharState::SKILL1, skill1UpdateAction, skill1EnterAction, skill1ExitAction);
-	states.addState(CharState::HURT);
-	states.addState(CharState::HURT_AIR);
-	states.addState(CharState::FALLEN, fallenUpdateAction, fallenEnterAction);
-
-	// Hurt while on ground.
-	auto isHurting{ [this](int entityId) -> bool
-	{
-		GameComponent::Physics &phys{ m_compPhysics[entityId] };
-		GameComponent::Collision &col{ m_compCollisions[entityId] };
-		GameComponent::Character &character{ m_compCharacters[entityId] };
-
-		return (character.hitStunTimer > 0.f && GameComponent::isOnGround(phys, col));
-	} };
-	states.addEdge(CharState::IDLE, CharState::HURT, isHurting);
-	states.addEdge(CharState::ALERT, CharState::HURT, isHurting);
-	states.addEdge(CharState::ALERT_STOP, CharState::HURT, isHurting);
-	states.addEdge(CharState::RUN_START, CharState::HURT, isHurting);
-	states.addEdge(CharState::RUN, CharState::HURT, isHurting);
-	states.addEdge(CharState::RUN_STOP, CharState::HURT, isHurting);
-	states.addEdge(CharState::TURN, CharState::HURT, isHurting);
-	states.addEdge(CharState::CROUCH_STOP, CharState::HURT, isHurting);
-	states.addEdge(CharState::JUMP_LAND, CharState::HURT, isHurting);
-	states.addEdge(CharState::ATTACK, CharState::HURT, isHurting);
-	states.addEdge(CharState::ATTACK2, CharState::HURT, isHurting);
-	states.addEdge(CharState::ATTACK3, CharState::HURT, isHurting);
-	states.addEdge(CharState::ATTACK_CROUCH, CharState::HURT, isHurting);
-	states.addEdge(CharState::EVADE_START, CharState::HURT, isHurting);
-	states.addEdge(CharState::EVADE, CharState::HURT, isHurting);
-	states.addEdge(CharState::SKILL1, CharState::HURT, isHurting);
-
-	// Stop hurting.
-	auto isStopHurting{ [this](int entityId) -> bool
-	{
-		GameComponent::Collision &col{ m_compCollisions[entityId] };
-		GameComponent::Character &character{ m_compCharacters[entityId] };
-
-		return character.hitStunTimer == 0.f;
-	} };
-	states.addEdge(CharState::HURT, CharState::IDLE, isStopHurting);
-
-	// Hurt while in the air.
-	auto isHurtingAir{ [this](int entityId) -> bool
-	{
-		GameComponent::Physics &phys{ m_compPhysics[entityId] };
-		GameComponent::Collision &col{ m_compCollisions[entityId] };
-		GameComponent::Character &character{ m_compCharacters[entityId] };
-
-		return (character.hitStunTimer > 0.f && GameComponent::isInAir(phys, col));
-	} };
-	states.addEdge(CharState::HURT, CharState::HURT_AIR, isHurtingAir);
-	states.addEdge(CharState::FALLEN, CharState::HURT_AIR, isHurtingAir);
-	states.addEdge(CharState::JUMP_ASCEND, CharState::HURT_AIR, isHurtingAir);
-	states.addEdge(CharState::JUMP_PEAK, CharState::HURT_AIR, isHurtingAir);
-	states.addEdge(CharState::JUMP_DESCEND, CharState::HURT_AIR, isHurtingAir);
-	states.addEdge(CharState::ATTACK_AIR, CharState::HURT_AIR, isHurtingAir);
-	states.addEdge(CharState::EVADE_START, CharState::HURT_AIR, isHurtingAir);
-	states.addEdge(CharState::EVADE, CharState::HURT_AIR, isHurtingAir);
-	states.addEdge(CharState::SKILL1, CharState::HURT_AIR, isHurtingAir);
-
-	// Fallen.
-	auto isFallen{ [this](int entityId) -> bool
-	{
-		GameComponent::Physics &phys{ m_compPhysics[entityId] };
-		GameComponent::Collision &col{ m_compCollisions[entityId] };
-
-		return GameComponent::isOnGround(phys, col);
-	} };
-	states.addEdge(CharState::HURT_AIR, CharState::FALLEN, isFallen);
-
-	// Dead while on ground.
-	auto isDead{ [this](int entityId) -> bool
-	{
-		GameComponent::Character &character{ m_compCharacters[entityId] };
-
-		return GameComponent::isDead(character);
-	} };
-	states.addEdge(CharState::HURT, CharState::FALLEN, isDead);
-
-	// Stop fallen.
-	auto isStopFallen{ [this](int entityId) -> bool
-	{
-		GameComponent::Collision &col{ m_compCollisions[entityId] };
-		GameComponent::Character &character{ m_compCharacters[entityId] };
-
-		return character.fallenTimer == 0.f && !GameComponent::isDead(character);
-	} };
-	states.addEdge(CharState::FALLEN, CharState::CROUCH_STOP, isStopFallen);
-
-	// Animation end transitions.
-	auto isAnimationEnd{ [this](int entityId) -> bool
-	{
-		GameComponent::Sprite &spr{ m_compSprites[entityId] };
-
-		float frameDuration{ GameComponent::getFrameDuration(spr) };
-		int numSprites{ GameComponent::getNumSprites(spr) };
-		return (spr.currentFrameTime >= frameDuration &&
-			(!spr.currentSprite.isLooping && spr.currentFrame == numSprites - 1));
-	} };
-	states.addEdge(CharState::JUMP_PEAK, CharState::JUMP_DESCEND, isAnimationEnd);
-	states.addEdge(CharState::JUMP_LAND, CharState::CROUCH_STOP, isAnimationEnd);
-	states.addEdge(CharState::CROUCH_STOP, CharState::IDLE, isAnimationEnd);
-	states.addEdge(CharState::RUN_START, CharState::RUN, isAnimationEnd);
-	states.addEdge(CharState::RUN_STOP, CharState::ALERT, isAnimationEnd);
-	states.addEdge(CharState::TURN, CharState::RUN_START, isAnimationEnd);
-	states.addEdge(CharState::ALERT, CharState::ALERT_STOP, isAnimationEnd);
-	states.addEdge(CharState::ALERT_STOP, CharState::IDLE, isAnimationEnd);
-	states.addEdge(CharState::ATTACK, CharState::ALERT_STOP, isAnimationEnd);
-	states.addEdge(CharState::ATTACK2, CharState::ALERT_STOP, isAnimationEnd);
-	states.addEdge(CharState::ATTACK3, CharState::ALERT_STOP, isAnimationEnd);
-	states.addEdge(CharState::ATTACK_CROUCH, CharState::CROUCH, isAnimationEnd);
-	states.addEdge(CharState::EVADE_START, CharState::EVADE, isAnimationEnd);
-	states.addEdge(CharState::ATTACK_AIR, CharState::JUMP_ASCEND, isAnimationEnd);
-
-	// Falling.
-	auto isFalling{ [this](int entityId) -> bool
-	{
-		GameComponent::Physics &phys{ m_compPhysics[entityId] };
-		GameComponent::Collision &col{ m_compCollisions[entityId] };
-		GameComponent::Character &character{ m_compCharacters[entityId] };
-
-		return (phys.speed.y < 0 && GameComponent::isInAir(phys, col) &&
-			character.states.getState() != CharState::JUMP_DESCEND);
-	} };
-	states.addEdge(CharState::IDLE, CharState::JUMP_PEAK, isFalling);
-	states.addEdge(CharState::JUMP_ASCEND, CharState::JUMP_PEAK, isFalling);
-	states.addEdge(CharState::RUN_START, CharState::JUMP_PEAK, isFalling);
-	states.addEdge(CharState::RUN, CharState::JUMP_PEAK, isFalling);
-	states.addEdge(CharState::RUN_STOP, CharState::JUMP_PEAK, isFalling);
-	states.addEdge(CharState::TURN, CharState::JUMP_PEAK, isFalling);
-	states.addEdge(CharState::CROUCH, CharState::JUMP_PEAK, isFalling);
-	states.addEdge(CharState::CROUCH_STOP, CharState::JUMP_PEAK, isFalling);
-	states.addEdge(CharState::ATTACK, CharState::JUMP_PEAK, isFalling);
-	states.addEdge(CharState::ATTACK_CROUCH, CharState::JUMP_PEAK, isFalling);
-	states.addEdge(CharState::ATTACK2, CharState::JUMP_PEAK, isFalling);
-	states.addEdge(CharState::ATTACK3, CharState::JUMP_PEAK, isFalling);
-
-	// Landing.
-	auto isLanding{ [this](int entityId) -> bool
-	{
-		GameComponent::Physics &phys{ m_compPhysics[entityId] };
-		GameComponent::Collision &col{ m_compCollisions[entityId] };
-
-		return GameComponent::isOnGround(phys, col);
-	} };
-	states.addEdge(CharState::JUMP_PEAK, CharState::JUMP_LAND, isLanding);
-	states.addEdge(CharState::JUMP_DESCEND, CharState::JUMP_LAND, isLanding);
-	states.addEdge(CharState::ATTACK_AIR, CharState::JUMP_LAND, isLanding);
-
-	// Skill 1.
-	auto isSkill1{ [this](int entityId) -> bool
-	{
-		bool isSkill{ m_inputManager->isKeyPressed(InputManager::INPUT_SKILL1) &&
-			m_compPlayer.skillTimers[0] == 0.f };
-
-		if (isSkill)
-		{
-			m_attackSound->play(m_soundEngine);
-		}
-		return isSkill;
-	} };
-	states.addEdge(CharState::IDLE, CharState::SKILL1, isSkill1);
-	states.addEdge(CharState::ALERT, CharState::SKILL1, isSkill1);
-	states.addEdge(CharState::ALERT_STOP, CharState::SKILL1, isSkill1);
-	states.addEdge(CharState::RUN_START, CharState::SKILL1, isSkill1);
-	states.addEdge(CharState::RUN, CharState::SKILL1, isSkill1);
-	states.addEdge(CharState::RUN_STOP, CharState::SKILL1, isSkill1);
-	states.addEdge(CharState::TURN, CharState::SKILL1, isSkill1);
-	states.addEdge(CharState::CROUCH_STOP, CharState::SKILL1, isSkill1);
-	states.addEdge(CharState::JUMP_LAND, CharState::SKILL1, isSkill1);
-	states.addEdge(CharState::JUMP_ASCEND, CharState::SKILL1, isSkill1);
-	states.addEdge(CharState::JUMP_PEAK, CharState::SKILL1, isSkill1);
-	states.addEdge(CharState::JUMP_DESCEND, CharState::SKILL1, isSkill1);
-	states.addEdge(CharState::ATTACK, CharState::SKILL1, isSkill1);
-	states.addEdge(CharState::ATTACK2, CharState::SKILL1, isSkill1);
-	states.addEdge(CharState::ATTACK3, CharState::SKILL1, isSkill1);
-	states.addEdge(CharState::ATTACK_AIR, CharState::SKILL1, isSkill1);
-	states.addEdge(CharState::ATTACK_CROUCH, CharState::SKILL1, isSkill1);
-
-	auto isSkill1End{ [this](int entityId) -> bool
-	{
-		GameComponent::Physics &phys{ m_compPhysics[entityId] };
-		GameComponent::Sprite &spr{ m_compSprites[entityId] };
-		GameComponent::Attack &atk{ m_compAttacks[entityId] };
-
-		return (phys.speed.y < 0.f &&
-			spr.currentFrame > atk.pattern.frameRange.x);
-	} };
-	states.addEdge(CharState::SKILL1, CharState::JUMP_ASCEND, isSkill1End);
-
-	// Attacking.
-	auto isAttacking{ [this](int entityId) -> bool
-	{
-		bool isAttacking{ m_inputManager->isKeyPressed(InputManager::INPUT_ATTACK) };
-		if (isAttacking)
-		{
-			m_attackSound->play(m_soundEngine);
-		}
-		return isAttacking;
-	} };
-	states.addEdge(CharState::IDLE, CharState::ATTACK, isAttacking);
-	states.addEdge(CharState::ALERT, CharState::ATTACK, isAttacking);
-	states.addEdge(CharState::ALERT_STOP, CharState::ATTACK, isAttacking);
-	states.addEdge(CharState::RUN_START, CharState::ATTACK, isAttacking);
-	states.addEdge(CharState::RUN, CharState::ATTACK, isAttacking);
-	states.addEdge(CharState::RUN_STOP, CharState::ATTACK, isAttacking);
-	states.addEdge(CharState::TURN, CharState::ATTACK, isAttacking);
-	states.addEdge(CharState::CROUCH, CharState::ATTACK_CROUCH, isAttacking);
-	states.addEdge(CharState::CROUCH_STOP, CharState::ATTACK, isAttacking);
-	states.addEdge(CharState::JUMP_LAND, CharState::ATTACK, isAttacking);
-	states.addEdge(CharState::JUMP_ASCEND, CharState::ATTACK_AIR, isAttacking);
-	states.addEdge(CharState::JUMP_PEAK, CharState::ATTACK_AIR, isAttacking);
-	states.addEdge(CharState::JUMP_DESCEND, CharState::ATTACK_AIR, isAttacking);
-	states.addEdge(CharState::EVADE_START, CharState::ATTACK, isAttacking);
-	states.addEdge(CharState::EVADE, CharState::ATTACK, isAttacking);
-
-	auto isAttackCombo{ [this](int entityId) -> bool
-	{
-		GameComponent::Sprite &spr{ m_compSprites[entityId] };
-		GameComponent::Attack &atk{ m_compAttacks[entityId] };
-
-		bool isAttacking{ m_inputManager->isKeyPressed(InputManager::INPUT_ATTACK) && 
-			spr.currentFrame > atk.pattern.comboFrame };
-		if (isAttacking)
-		{
-			m_attackSound->play(m_soundEngine);
-		}
-		return isAttacking;
-	} };
-	states.addEdge(CharState::ATTACK, CharState::ATTACK2, isAttackCombo);
-	states.addEdge(CharState::ATTACK2, CharState::ATTACK3, isAttackCombo);
-
-	auto isAirAttacking{ [this](int entityId) -> bool
-	{
-		GameComponent::Physics &phys{ m_compPhysics[entityId] };
-		GameComponent::Collision &col{ m_compCollisions[entityId] };
-
-		bool isAttacking{ m_inputManager->isKeyPressed(InputManager::INPUT_ATTACK) };
-		return (isAttacking && GameComponent::isInAir(phys, col));
-	} };
-	states.addEdge(CharState::EVADE, CharState::ATTACK_AIR, isAirAttacking);
-	states.addEdge(CharState::EVADE_START, CharState::ATTACK_AIR, isAirAttacking);
-	states.addEdge(CharState::EVADE, CharState::ATTACK, isAttacking);
-	states.addEdge(CharState::EVADE_START, CharState::ATTACK, isAttacking);
-
-	// Jumping.
-	auto isJumping{ [this](int entityId) -> bool
-	{
-		GameComponent::Physics &phys{ m_compPhysics[entityId] };
-		GameComponent::Sprite &spr{ m_compSprites[entityId] };
-		GameComponent::Character &character{ m_compCharacters[entityId] };
-
-		bool isJumping{ m_inputManager->isKeyPressed(InputManager::INPUT_JUMP, true) };
-		bool canJump{ isJumping && m_compPlayer.numRemainingJumps > 0 };
-
-		if (canJump)
-		{
-			m_jumpSound->play(m_soundEngine);
-			phys.isLockedDirection = false;
-			phys.hasGravity = true;
-			spr.isResetAnimation = true;
-			m_compPlayer.numRemainingJumps--;
-			phys.speed.y = character.jumpSpeed;
-
-			// Don't allow for free evade if jumping from an evade.
-			std::string prevState{ character.previousState };
-			if (prevState == CharState::EVADE_START ||
-				prevState == CharState::EVADE)
-			{
-				m_compPlayer.numRemainingEvades = glm::min(
-					m_compPlayer.numRemainingEvades, m_compPlayer.numMaxEvades - 1);
-			}
-		}
-		return canJump;
-	} };
-	states.addEdge(CharState::IDLE, CharState::JUMP_ASCEND, isJumping);
-	states.addEdge(CharState::ALERT, CharState::JUMP_ASCEND, isJumping);
-	states.addEdge(CharState::ALERT_STOP, CharState::JUMP_ASCEND, isJumping);
-	states.addEdge(CharState::RUN_START, CharState::JUMP_ASCEND, isJumping);
-	states.addEdge(CharState::RUN, CharState::JUMP_ASCEND, isJumping);
-	states.addEdge(CharState::RUN_STOP, CharState::JUMP_ASCEND, isJumping);
-	states.addEdge(CharState::TURN, CharState::JUMP_ASCEND, isJumping);
-	states.addEdge(CharState::CROUCH_STOP, CharState::JUMP_ASCEND, isJumping);
-	states.addEdge(CharState::JUMP_LAND, CharState::JUMP_ASCEND, isJumping);
-	states.addEdge(CharState::JUMP_ASCEND, CharState::JUMP_ASCEND, isJumping);
-	states.addEdge(CharState::JUMP_PEAK, CharState::JUMP_ASCEND, isJumping);
-	states.addEdge(CharState::JUMP_DESCEND, CharState::JUMP_ASCEND, isJumping);
-	states.addEdge(CharState::ATTACK, CharState::JUMP_ASCEND, isJumping);
-	states.addEdge(CharState::ATTACK2, CharState::JUMP_ASCEND, isJumping);
-	states.addEdge(CharState::ATTACK3, CharState::JUMP_ASCEND, isJumping);
-	states.addEdge(CharState::ATTACK_AIR, CharState::JUMP_ASCEND, isJumping);
-	states.addEdge(CharState::EVADE_START, CharState::JUMP_ASCEND, isJumping);
-	states.addEdge(CharState::EVADE, CharState::JUMP_ASCEND, isJumping);
-
-	// Drop down.
-	auto isDroppingDown{ [this](int entityId) -> bool
-	{
-		GameComponent::Collision &col{ m_compCollisions[entityId] };
-
-		bool isCrouching{ m_inputManager->isKeyPressing(InputManager::INPUT_DOWN) };
-		bool isJumping{ m_inputManager->isKeyPressed(InputManager::INPUT_JUMP) };
-		return (isCrouching && isJumping && col.isCollidingGhost &&
-			!col.isCollidingFloor && !col.isCollidingSlope);
-	} };
-	states.addEdge(CharState::CROUCH, CharState::JUMP_PEAK, isDroppingDown);
-
-	// Evading.
-	auto isEvading{ [this](int entityId) -> bool
-	{
-		bool isEvading{ m_inputManager->isKeyPressed(InputManager::INPUT_EVADE, true) };
-		return (isEvading && m_compPlayer.numRemainingEvades > 0);
-	} };
-	states.addEdge(CharState::IDLE, CharState::EVADE_START, isEvading);
-	states.addEdge(CharState::ALERT, CharState::EVADE_START, isEvading);
-	states.addEdge(CharState::ALERT_STOP, CharState::EVADE_START, isEvading);
-	states.addEdge(CharState::RUN_START, CharState::EVADE_START, isEvading);
-	states.addEdge(CharState::RUN, CharState::EVADE_START, isEvading);
-	states.addEdge(CharState::RUN_STOP, CharState::EVADE_START, isEvading);
-	states.addEdge(CharState::TURN, CharState::EVADE_START, isEvading);
-	states.addEdge(CharState::CROUCH_STOP, CharState::EVADE_START, isEvading);
-	states.addEdge(CharState::JUMP_LAND, CharState::EVADE_START, isEvading);
-	states.addEdge(CharState::ATTACK, CharState::EVADE_START, isEvading);
-	states.addEdge(CharState::ATTACK2, CharState::EVADE_START, isEvading);
-	states.addEdge(CharState::ATTACK3, CharState::EVADE_START, isEvading);
-	states.addEdge(CharState::JUMP_ASCEND, CharState::EVADE_START, isEvading);
-	states.addEdge(CharState::JUMP_PEAK, CharState::EVADE_START, isEvading);
-	states.addEdge(CharState::JUMP_DESCEND, CharState::EVADE_START, isEvading);
-	states.addEdge(CharState::ATTACK_AIR, CharState::EVADE_START, isEvading);
-
-	// Stop evading.
-	auto isEvadeTimerEndAndTurning{ [this](int entityId) -> bool
-	{
-		GameComponent::Physics &phys{ m_compPhysics[entityId] };
-
-		bool isRunningLeft{ m_inputManager->isKeyPressing(InputManager::INPUT_LEFT) };
-		bool isRunningRight{ m_inputManager->isKeyPressing(InputManager::INPUT_RIGHT) };
-		bool isRunning{ isRunningLeft != isRunningRight };
-
-		// Show turning animation if moving in opposite from the direction 
-		// the player is facing.
-		return (m_compPlayer.evadeTimer == 0.f && (isRunning &&
-			((phys.scale.x < 0 && isRunningRight) || (phys.scale.x > 0 && isRunningLeft))));
-	} };
-	auto isEvadeTimerEnd{ [this](int entityId) -> bool
-	{
-		return m_compPlayer.evadeTimer == 0.f;
-	} };
-	states.addEdge(CharState::EVADE_START, CharState::TURN, isEvadeTimerEndAndTurning);
-	states.addEdge(CharState::EVADE, CharState::TURN, isEvadeTimerEndAndTurning);
-	states.addEdge(CharState::EVADE_START, CharState::RUN, isEvadeTimerEnd);
-	states.addEdge(CharState::EVADE, CharState::RUN, isEvadeTimerEnd);
-
-	// Crouching.
-	auto isCrouching{ [this](int entityId) -> bool
-	{
-		bool isCrouching{ m_inputManager->isKeyPressing(InputManager::INPUT_DOWN) };
-		return isCrouching;
-	} };
-	states.addEdge(CharState::IDLE, CharState::CROUCH, isCrouching);
-	states.addEdge(CharState::ALERT, CharState::CROUCH, isCrouching);
-	states.addEdge(CharState::ALERT_STOP, CharState::CROUCH, isCrouching);
-	states.addEdge(CharState::RUN_START, CharState::CROUCH, isCrouching);
-	states.addEdge(CharState::RUN, CharState::CROUCH, isCrouching);
-	states.addEdge(CharState::RUN_STOP, CharState::CROUCH, isCrouching);
-	states.addEdge(CharState::TURN, CharState::CROUCH, isCrouching);
-	states.addEdge(CharState::CROUCH_STOP, CharState::CROUCH, isCrouching);
-	states.addEdge(CharState::JUMP_LAND, CharState::CROUCH, isCrouching);
-
-	// Stop crouching.
-	auto isStopCrouching{ [this](int entityId) -> bool
-	{
-		bool isCrouching{ m_inputManager->isKeyPressing(InputManager::INPUT_DOWN) };
-		return !isCrouching;
-	} };
-	states.addEdge(CharState::CROUCH, CharState::CROUCH_STOP, isStopCrouching);
-
-	// Start running.
-	auto isStartRunning{ [this](int entityId) -> bool
-	{
-		bool isRunningLeft{ m_inputManager->isKeyPressing(InputManager::INPUT_LEFT) };
-		bool isRunningRight{ m_inputManager->isKeyPressing(InputManager::INPUT_RIGHT) };
-		bool isRunning{ isRunningLeft != isRunningRight };
-
-		return isRunning;
-	} };
-	auto isTurning{ [this](int entityId) -> bool
-	{
-		GameComponent::Physics &phys{ m_compPhysics[entityId] };
-		GameComponent::Sprite &spr{ m_compSprites[entityId] };
-		GameComponent::Character &character{ m_compCharacters[entityId] };
-
-		bool isRunningLeft{ m_inputManager->isKeyPressing(InputManager::INPUT_LEFT) };
-		bool isRunningRight{ m_inputManager->isKeyPressing(InputManager::INPUT_RIGHT) };
-		bool isRunning{ isRunningLeft != isRunningRight };
-
-		// Show turning animation if moving in opposite from the direction 
-		// the player is facing.
-		return isRunning &&
-			((phys.scale.x < 0 && isRunningRight) || (phys.scale.x > 0 && isRunningLeft));
-	} };
-	states.addEdge(CharState::IDLE, CharState::TURN, isTurning);
-	states.addEdge(CharState::TURN, CharState::TURN, isTurning);
-	states.addEdge(CharState::RUN_START, CharState::TURN, isTurning);
-	states.addEdge(CharState::RUN, CharState::TURN, isTurning);
-	states.addEdge(CharState::RUN_STOP, CharState::TURN, isTurning);
-	states.addEdge(CharState::ALERT, CharState::TURN, isTurning);
-	states.addEdge(CharState::ALERT_STOP, CharState::TURN, isTurning);
-	states.addEdge(CharState::CROUCH_STOP, CharState::TURN, isTurning);
-	states.addEdge(CharState::JUMP_LAND, CharState::TURN, isTurning);
-
-	states.addEdge(CharState::IDLE, CharState::RUN_START, isStartRunning);
-	states.addEdge(CharState::RUN_STOP, CharState::RUN_START, isStartRunning);
-	states.addEdge(CharState::ALERT, CharState::RUN_START, isStartRunning);
-	states.addEdge(CharState::ALERT_STOP, CharState::RUN_START, isStartRunning);
-	states.addEdge(CharState::CROUCH_STOP, CharState::RUN_START, isStartRunning);
-	states.addEdge(CharState::JUMP_LAND, CharState::RUN_START, isStartRunning);
-
-	// Stop running.
-	auto isStopRunning{ [this](int entityId) -> bool
-	{
-		GameComponent::Character &character{ m_compCharacters[entityId] };
-
-		bool isStopRunningLeft{ m_inputManager->isKeyReleased(InputManager::INPUT_LEFT) };
-		bool isStopRunningRight{ m_inputManager->isKeyReleased(InputManager::INPUT_RIGHT) };
-		bool isRunningLeft{ m_inputManager->isKeyPressing(InputManager::INPUT_LEFT) };
-		bool isRunningRight{ m_inputManager->isKeyPressing(InputManager::INPUT_RIGHT) };
-		bool isRunning{ isRunningLeft != isRunningRight };
-
-		return ((isStopRunningLeft && isStopRunningRight) || !isRunning);
-	} };
-	states.addEdge(CharState::RUN, CharState::RUN_STOP, isStopRunning);
-	states.addEdge(CharState::RUN_START, CharState::RUN_STOP, isStopRunning);
+	//GameComponent::Sprite &spr = m_compSprites[m_playerId];
+	//GameComponent::Weapon &wp = m_compWeapons[m_playerId];
+	//GameComponent::Collision &col = m_compCollisions[m_playerId];
+	//GameComponent::Attack &atk = m_compAttacks[m_playerId];
+	//GameComponent::Character &character = m_compCharacters[m_playerId];
+
+	//// Set up state machine.
+	//StateMachine &states{ character.states };
+
+	//auto enableFriction{ [this](int entityId)
+	//{
+	//	m_compPhysics[entityId].hasFriction = true;
+	//} };
+
+	//auto enableGravity{ [this](int entityId)
+	//{
+	//	m_compPhysics[entityId].hasGravity = true;
+	//} };
+
+	//auto evadeUpdateAction{ [this](int entityId)
+	//{
+	//	// If in the air, reset vertical speed and disable gravity.
+	//	GameComponent::Physics &phys{ m_compPhysics[entityId] };
+	//	GameComponent::Collision &col{ m_compCollisions[entityId] };
+	//	if (GameComponent::isInAir(phys, col))
+	//	{
+	//		phys.speed.y = 0.f;
+	//		phys.hasGravity = false;
+	//	}
+	//	else
+	//	{
+	//		phys.hasGravity = true;
+	//	}
+	//} };
+
+	//auto evadeEnterAction{ [this](int entityId)
+	//{
+	//	GameComponent::Physics &phys{ m_compPhysics[entityId] };
+	//	GameComponent::Character &character{ m_compCharacters[entityId] };
+
+	//	// By default, just evade in the direction that
+	//	// the player is facing.
+	//	float dir{ glm::sign(phys.scale.x) };
+
+	//	// If left/right is held down, then evade in that direction
+	//	// instead.
+	//	bool isRunningLeft{ m_inputManager->isKeyPressing(InputManager::INPUT_LEFT) };
+	//	bool isRunningRight{ m_inputManager->isKeyPressing(InputManager::INPUT_RIGHT) };
+	//	bool isRunning{ isRunningLeft != isRunningRight };
+	//	if (isRunning)
+	//	{
+	//		if (isRunningLeft)
+	//			dir = -1.f;
+	//		else if (isRunningRight)
+	//			dir = 1.f;
+	//	}
+
+	//	m_compPlayer.numRemainingEvades--;
+	//	phys.speed.x = dir * 1.7f * character.movementSpeed;
+	//	phys.scale.x = glm::abs(phys.scale.x) * dir;
+	//	phys.hasFriction = false;
+	//	phys.isLockedDirection = false;
+
+	//	// Set the evade timer.
+	//	m_compPlayer.evadeTimer = m_compPlayer.evadeDuration;
+
+	//	// Create smoke effect.
+	//	glm::vec3 effectPos{ phys.pos };
+	//	effectPos.x -= (dir * 20.f);
+	//	effectPos.y -= 4.f;
+	//	createEffect(EffectType::EVADE_SMOKE, effectPos, phys.scale, 
+	//		255, 255, 255, 180);
+
+	//	m_evadeSound->play(m_soundEngine);
+	//} };
+
+	//auto runUpdateAction{ [this](int entityId)
+	//{
+	//	GameComponent::Physics &phys{ m_compPhysics[entityId] };
+	//	GameComponent::Character &character{ m_compCharacters[entityId] };
+
+	//	bool isRunningLeft{ m_inputManager->isKeyPressing(InputManager::INPUT_LEFT) };
+	//	bool isRunningRight{ m_inputManager->isKeyPressing(InputManager::INPUT_RIGHT) };
+	//	bool isRunning{ isRunningLeft != isRunningRight };
+
+	//	// Stopping while turning.
+	//	bool isStopRunningLeft{ m_inputManager->isKeyReleased(InputManager::INPUT_LEFT) };
+	//	bool isStopRunningRight{ m_inputManager->isKeyReleased(InputManager::INPUT_RIGHT) };
+	//	bool isTurning{ character.states.getState() == CharState::TURN };
+	//	if (isTurning && ((isStopRunningLeft && isStopRunningRight) || !isRunning))
+	//	{
+	//		phys.hasFriction = true;
+	//		return;
+	//	}
+
+	//	// If current speed is greater than the character's movement speed,
+	//	// start applying friction to gradually bring it back down to
+	//	// the character's movement speed.
+	//	float currentSpeed{ glm::abs(phys.speed.x) };
+	//	phys.hasFriction = (currentSpeed > character.movementSpeed);
+
+	//	// Maintain maximum horizontal speed.
+	//	float maxSpeed{ glm::max(character.movementSpeed, currentSpeed) };
+
+	//	float dir{ 0.f };
+	//	if (isRunning)
+	//	{
+	//		if (isRunningLeft)
+	//			dir = -1.f;
+	//		else if (isRunningRight)
+	//			dir = 1.f;
+	//	}
+
+	//	phys.speed.x += (dir * character.movementSpeed / 0.1f * m_deltaTime);
+	//	phys.speed.x = glm::clamp(phys.speed.x, -maxSpeed, maxSpeed);
+
+	//	if (dir != 0.f && !phys.isLockedDirection)
+	//		phys.scale.x = glm::abs(phys.scale.x) * dir;
+	//} };
+
+	//auto dropDownEnterAction{ [this](int entityId)
+	//{
+	//	GameComponent::Physics &phys{ m_compPhysics[entityId] };
+	//	GameComponent::Collision &col{ m_compCollisions[entityId] };
+	//	GameComponent::Sprite &spr{ m_compSprites[entityId] };
+
+	//	bool isCrouching{ m_inputManager->isKeyPressing(InputManager::INPUT_DOWN) };
+	//	bool isJumping{ m_inputManager->isKeyPressed(InputManager::INPUT_JUMP) };
+	//	if (isCrouching && isJumping && col.isCollidingGhost &&
+	//		!col.isCollidingFloor && !col.isCollidingSlope)
+	//	{
+	//		spr.isResetAnimation = true;
+	//		m_compPlayer.numRemainingJumps--;
+	//		phys.speed.y = 0.f;
+	//		phys.pos.y--;
+	//	}
+	//} };
+
+	//auto attackAirEnterAction{ [this](int entityId)
+	//{
+	//	GameComponent::Physics &phys{ m_compPhysics[entityId] };
+
+	//	phys.isLockedDirection = true;
+	//} };
+
+	//auto jumpLandEnterAction{ [this](int entityId)
+	//{
+	//	GameComponent::Physics &phys{ m_compPhysics[entityId] };
+
+	//	phys.isLockedDirection = false;
+	//	phys.hasFriction = true;
+	//} };
+
+	//auto turnEnterAction{ [this](int entityId)
+	//{
+	//	GameComponent::Sprite &spr{ m_compSprites[entityId] };
+	//	spr.isResetAnimation = true;
+	//} };
+
+	//auto skill1EnterAction{ [this](int entityId)
+	//{
+	//	GameComponent::Physics &phys{ m_compPhysics[entityId] };
+	//	GameComponent::Collision &col{ m_compCollisions[entityId] };
+	//	GameComponent::Attack &atk{ m_compAttacks[entityId] };
+
+	//	m_compPlayer.skillTimers[0] = atk.pattern.cooldown;
+	//	phys.speed.x = 0.f;
+	//	if (GameComponent::isInAir(phys, col))
+	//		phys.speed.y = 0.f;
+	//	phys.hasGravity = false;
+	//} };
+
+	//auto skill1ExitAction{ [this](int entityId)
+	//{
+	//	GameComponent::Physics &phys{ m_compPhysics[entityId] };
+
+	//	phys.hasGravity = true;
+	//} };
+
+	//auto skill1UpdateAction{ [this](int entityId)
+	//{
+	//	GameComponent::Physics &phys{ m_compPhysics[entityId] };
+	//	GameComponent::Attack &atk{ m_compAttacks[entityId] };
+	//	GameComponent::Sprite &spr{ m_compSprites[entityId] };
+
+	//	if (spr.currentFrame == atk.pattern.frameRange.x && !phys.hasGravity)
+	//	{
+	//		float dir{ glm::sign(phys.scale.x) };
+	//		phys.speed.x = dir * 16.f;
+	//		phys.speed.y = atk.pattern.knockback.y - 16.f;
+	//		phys.isLockedDirection = true;
+	//		phys.hasGravity = true;
+	//	}
+	//} };
+
+	//auto fallenEnterAction{ [this](int entityId)
+	//{
+	//	GameComponent::Physics &phys{ m_compPhysics[entityId] };
+	//	GameComponent::Character &character{ m_compCharacters[entityId] };
+
+	//	phys.hasFriction = true;
+	//	character.fallenTimer = 3.f;
+	//} };
+
+	//auto fallenUpdateAction{ [this](int entityId)
+	//{
+	//	GameComponent::Character &character{ m_compCharacters[entityId] };
+	//	GameComponent::Sprite &spr{ m_compSprites[entityId] };
+
+	//	// If dead, make sprite translucent.
+	//	if (GameComponent::isDead(character))
+	//	{
+	//		spr.a = 100;
+	//	}
+	//} };
+
+	//states.addState(CharState::IDLE);
+	//states.addState(CharState::RUN, runUpdateAction, [](int) {}, enableFriction);
+	//states.addState(CharState::JUMP_ASCEND, runUpdateAction);
+	//states.addState(CharState::JUMP_PEAK, runUpdateAction, dropDownEnterAction);
+	//states.addState(CharState::JUMP_DESCEND, runUpdateAction);
+	//states.addState(CharState::JUMP_LAND, [](int) {}, jumpLandEnterAction);
+	//states.addState(CharState::RUN_START, runUpdateAction, [](int) {}, enableFriction);
+	//states.addState(CharState::RUN_STOP);
+	//states.addState(CharState::ALERT);
+	//states.addState(CharState::ALERT_STOP);
+	//states.addState(CharState::TURN, runUpdateAction, turnEnterAction, enableFriction);
+	//states.addState(CharState::CROUCH, [](int) {}, enableFriction);
+	//states.addState(CharState::CROUCH_STOP);
+	//states.addState(CharState::ATTACK, [](int) {}, enableFriction);
+	//states.addState(CharState::ATTACK2, [](int) {}, enableFriction);
+	//states.addState(CharState::ATTACK3, [](int) {}, enableFriction);
+	//states.addState(CharState::ATTACK_AIR, runUpdateAction, attackAirEnterAction);
+	//states.addState(CharState::ATTACK_CROUCH);
+	//states.addState(CharState::EVADE_START, evadeUpdateAction, evadeEnterAction, enableGravity);
+	//states.addState(CharState::EVADE, evadeUpdateAction, [](int) {}, enableGravity);
+	//states.addState(CharState::SKILL1, skill1UpdateAction, skill1EnterAction, skill1ExitAction);
+	//states.addState(CharState::HURT);
+	//states.addState(CharState::HURT_AIR);
+	//states.addState(CharState::FALLEN, fallenUpdateAction, fallenEnterAction);
+
+	//// Hurt while on ground.
+	//auto isHurting{ [this](int entityId) -> bool
+	//{
+	//	GameComponent::Physics &phys{ m_compPhysics[entityId] };
+	//	GameComponent::Collision &col{ m_compCollisions[entityId] };
+	//	GameComponent::Character &character{ m_compCharacters[entityId] };
+
+	//	return (character.hitStunTimer > 0.f && GameComponent::isOnGround(phys, col));
+	//} };
+	//states.addEdge(CharState::IDLE, CharState::HURT, isHurting);
+	//states.addEdge(CharState::ALERT, CharState::HURT, isHurting);
+	//states.addEdge(CharState::ALERT_STOP, CharState::HURT, isHurting);
+	//states.addEdge(CharState::RUN_START, CharState::HURT, isHurting);
+	//states.addEdge(CharState::RUN, CharState::HURT, isHurting);
+	//states.addEdge(CharState::RUN_STOP, CharState::HURT, isHurting);
+	//states.addEdge(CharState::TURN, CharState::HURT, isHurting);
+	//states.addEdge(CharState::CROUCH_STOP, CharState::HURT, isHurting);
+	//states.addEdge(CharState::JUMP_LAND, CharState::HURT, isHurting);
+	//states.addEdge(CharState::ATTACK, CharState::HURT, isHurting);
+	//states.addEdge(CharState::ATTACK2, CharState::HURT, isHurting);
+	//states.addEdge(CharState::ATTACK3, CharState::HURT, isHurting);
+	//states.addEdge(CharState::ATTACK_CROUCH, CharState::HURT, isHurting);
+	//states.addEdge(CharState::EVADE_START, CharState::HURT, isHurting);
+	//states.addEdge(CharState::EVADE, CharState::HURT, isHurting);
+	//states.addEdge(CharState::SKILL1, CharState::HURT, isHurting);
+
+	//// Stop hurting.
+	//auto isStopHurting{ [this](int entityId) -> bool
+	//{
+	//	GameComponent::Collision &col{ m_compCollisions[entityId] };
+	//	GameComponent::Character &character{ m_compCharacters[entityId] };
+
+	//	return character.hitStunTimer == 0.f;
+	//} };
+	//states.addEdge(CharState::HURT, CharState::IDLE, isStopHurting);
+
+	//// Hurt while in the air.
+	//auto isHurtingAir{ [this](int entityId) -> bool
+	//{
+	//	GameComponent::Physics &phys{ m_compPhysics[entityId] };
+	//	GameComponent::Collision &col{ m_compCollisions[entityId] };
+	//	GameComponent::Character &character{ m_compCharacters[entityId] };
+
+	//	return (character.hitStunTimer > 0.f && GameComponent::isInAir(phys, col));
+	//} };
+	//states.addEdge(CharState::HURT, CharState::HURT_AIR, isHurtingAir);
+	//states.addEdge(CharState::FALLEN, CharState::HURT_AIR, isHurtingAir);
+	//states.addEdge(CharState::JUMP_ASCEND, CharState::HURT_AIR, isHurtingAir);
+	//states.addEdge(CharState::JUMP_PEAK, CharState::HURT_AIR, isHurtingAir);
+	//states.addEdge(CharState::JUMP_DESCEND, CharState::HURT_AIR, isHurtingAir);
+	//states.addEdge(CharState::ATTACK_AIR, CharState::HURT_AIR, isHurtingAir);
+	//states.addEdge(CharState::EVADE_START, CharState::HURT_AIR, isHurtingAir);
+	//states.addEdge(CharState::EVADE, CharState::HURT_AIR, isHurtingAir);
+	//states.addEdge(CharState::SKILL1, CharState::HURT_AIR, isHurtingAir);
+
+	//// Fallen.
+	//auto isFallen{ [this](int entityId) -> bool
+	//{
+	//	GameComponent::Physics &phys{ m_compPhysics[entityId] };
+	//	GameComponent::Collision &col{ m_compCollisions[entityId] };
+
+	//	return GameComponent::isOnGround(phys, col);
+	//} };
+	//states.addEdge(CharState::HURT_AIR, CharState::FALLEN, isFallen);
+
+	//// Dead while on ground.
+	//auto isDead{ [this](int entityId) -> bool
+	//{
+	//	GameComponent::Character &character{ m_compCharacters[entityId] };
+
+	//	return GameComponent::isDead(character);
+	//} };
+	//states.addEdge(CharState::HURT, CharState::FALLEN, isDead);
+
+	//// Stop fallen.
+	//auto isStopFallen{ [this](int entityId) -> bool
+	//{
+	//	GameComponent::Collision &col{ m_compCollisions[entityId] };
+	//	GameComponent::Character &character{ m_compCharacters[entityId] };
+
+	//	return character.fallenTimer == 0.f && !GameComponent::isDead(character);
+	//} };
+	//states.addEdge(CharState::FALLEN, CharState::CROUCH_STOP, isStopFallen);
+
+	//// Animation end transitions.
+	//auto isAnimationEnd{ [this](int entityId) -> bool
+	//{
+	//	GameComponent::Sprite &spr{ m_compSprites[entityId] };
+
+	//	float frameDuration{ GameComponent::getFrameDuration(spr) };
+	//	int numSprites{ GameComponent::getNumSprites(spr) };
+	//	return (spr.currentFrameTime >= frameDuration &&
+	//		(!spr.currentSprite.isLooping && spr.currentFrame == numSprites - 1));
+	//} };
+	//states.addEdge(CharState::JUMP_PEAK, CharState::JUMP_DESCEND, isAnimationEnd);
+	//states.addEdge(CharState::JUMP_LAND, CharState::CROUCH_STOP, isAnimationEnd);
+	//states.addEdge(CharState::CROUCH_STOP, CharState::IDLE, isAnimationEnd);
+	//states.addEdge(CharState::RUN_START, CharState::RUN, isAnimationEnd);
+	//states.addEdge(CharState::RUN_STOP, CharState::ALERT, isAnimationEnd);
+	//states.addEdge(CharState::TURN, CharState::RUN_START, isAnimationEnd);
+	//states.addEdge(CharState::ALERT, CharState::ALERT_STOP, isAnimationEnd);
+	//states.addEdge(CharState::ALERT_STOP, CharState::IDLE, isAnimationEnd);
+	//states.addEdge(CharState::ATTACK, CharState::ALERT_STOP, isAnimationEnd);
+	//states.addEdge(CharState::ATTACK2, CharState::ALERT_STOP, isAnimationEnd);
+	//states.addEdge(CharState::ATTACK3, CharState::ALERT_STOP, isAnimationEnd);
+	//states.addEdge(CharState::ATTACK_CROUCH, CharState::CROUCH, isAnimationEnd);
+	//states.addEdge(CharState::EVADE_START, CharState::EVADE, isAnimationEnd);
+	//states.addEdge(CharState::ATTACK_AIR, CharState::JUMP_ASCEND, isAnimationEnd);
+
+	//// Falling.
+	//auto isFalling{ [this](int entityId) -> bool
+	//{
+	//	GameComponent::Physics &phys{ m_compPhysics[entityId] };
+	//	GameComponent::Collision &col{ m_compCollisions[entityId] };
+	//	GameComponent::Character &character{ m_compCharacters[entityId] };
+
+	//	return (phys.speed.y < 0 && GameComponent::isInAir(phys, col) &&
+	//		character.states.getState() != CharState::JUMP_DESCEND);
+	//} };
+	//states.addEdge(CharState::IDLE, CharState::JUMP_PEAK, isFalling);
+	//states.addEdge(CharState::JUMP_ASCEND, CharState::JUMP_PEAK, isFalling);
+	//states.addEdge(CharState::RUN_START, CharState::JUMP_PEAK, isFalling);
+	//states.addEdge(CharState::RUN, CharState::JUMP_PEAK, isFalling);
+	//states.addEdge(CharState::RUN_STOP, CharState::JUMP_PEAK, isFalling);
+	//states.addEdge(CharState::TURN, CharState::JUMP_PEAK, isFalling);
+	//states.addEdge(CharState::CROUCH, CharState::JUMP_PEAK, isFalling);
+	//states.addEdge(CharState::CROUCH_STOP, CharState::JUMP_PEAK, isFalling);
+	//states.addEdge(CharState::ATTACK, CharState::JUMP_PEAK, isFalling);
+	//states.addEdge(CharState::ATTACK_CROUCH, CharState::JUMP_PEAK, isFalling);
+	//states.addEdge(CharState::ATTACK2, CharState::JUMP_PEAK, isFalling);
+	//states.addEdge(CharState::ATTACK3, CharState::JUMP_PEAK, isFalling);
+
+	//// Landing.
+	//auto isLanding{ [this](int entityId) -> bool
+	//{
+	//	GameComponent::Physics &phys{ m_compPhysics[entityId] };
+	//	GameComponent::Collision &col{ m_compCollisions[entityId] };
+
+	//	return GameComponent::isOnGround(phys, col);
+	//} };
+	//states.addEdge(CharState::JUMP_PEAK, CharState::JUMP_LAND, isLanding);
+	//states.addEdge(CharState::JUMP_DESCEND, CharState::JUMP_LAND, isLanding);
+	//states.addEdge(CharState::ATTACK_AIR, CharState::JUMP_LAND, isLanding);
+
+	//// Skill 1.
+	//auto isSkill1{ [this](int entityId) -> bool
+	//{
+	//	bool isSkill{ m_inputManager->isKeyPressed(InputManager::INPUT_SKILL1) &&
+	//		m_compPlayer.skillTimers[0] == 0.f };
+
+	//	if (isSkill)
+	//	{
+	//		m_attackSound->play(m_soundEngine);
+	//	}
+	//	return isSkill;
+	//} };
+	//states.addEdge(CharState::IDLE, CharState::SKILL1, isSkill1);
+	//states.addEdge(CharState::ALERT, CharState::SKILL1, isSkill1);
+	//states.addEdge(CharState::ALERT_STOP, CharState::SKILL1, isSkill1);
+	//states.addEdge(CharState::RUN_START, CharState::SKILL1, isSkill1);
+	//states.addEdge(CharState::RUN, CharState::SKILL1, isSkill1);
+	//states.addEdge(CharState::RUN_STOP, CharState::SKILL1, isSkill1);
+	//states.addEdge(CharState::TURN, CharState::SKILL1, isSkill1);
+	//states.addEdge(CharState::CROUCH_STOP, CharState::SKILL1, isSkill1);
+	//states.addEdge(CharState::JUMP_LAND, CharState::SKILL1, isSkill1);
+	//states.addEdge(CharState::JUMP_ASCEND, CharState::SKILL1, isSkill1);
+	//states.addEdge(CharState::JUMP_PEAK, CharState::SKILL1, isSkill1);
+	//states.addEdge(CharState::JUMP_DESCEND, CharState::SKILL1, isSkill1);
+	//states.addEdge(CharState::ATTACK, CharState::SKILL1, isSkill1);
+	//states.addEdge(CharState::ATTACK2, CharState::SKILL1, isSkill1);
+	//states.addEdge(CharState::ATTACK3, CharState::SKILL1, isSkill1);
+	//states.addEdge(CharState::ATTACK_AIR, CharState::SKILL1, isSkill1);
+	//states.addEdge(CharState::ATTACK_CROUCH, CharState::SKILL1, isSkill1);
+
+	//auto isSkill1End{ [this](int entityId) -> bool
+	//{
+	//	GameComponent::Physics &phys{ m_compPhysics[entityId] };
+	//	GameComponent::Sprite &spr{ m_compSprites[entityId] };
+	//	GameComponent::Attack &atk{ m_compAttacks[entityId] };
+
+	//	return (phys.speed.y < 0.f &&
+	//		spr.currentFrame > atk.pattern.frameRange.x);
+	//} };
+	//states.addEdge(CharState::SKILL1, CharState::JUMP_ASCEND, isSkill1End);
+
+	//// Attacking.
+	//auto isAttacking{ [this](int entityId) -> bool
+	//{
+	//	bool isAttacking{ m_inputManager->isKeyPressed(InputManager::INPUT_ATTACK) };
+	//	if (isAttacking)
+	//	{
+	//		m_attackSound->play(m_soundEngine);
+	//	}
+	//	return isAttacking;
+	//} };
+	//states.addEdge(CharState::IDLE, CharState::ATTACK, isAttacking);
+	//states.addEdge(CharState::ALERT, CharState::ATTACK, isAttacking);
+	//states.addEdge(CharState::ALERT_STOP, CharState::ATTACK, isAttacking);
+	//states.addEdge(CharState::RUN_START, CharState::ATTACK, isAttacking);
+	//states.addEdge(CharState::RUN, CharState::ATTACK, isAttacking);
+	//states.addEdge(CharState::RUN_STOP, CharState::ATTACK, isAttacking);
+	//states.addEdge(CharState::TURN, CharState::ATTACK, isAttacking);
+	//states.addEdge(CharState::CROUCH, CharState::ATTACK_CROUCH, isAttacking);
+	//states.addEdge(CharState::CROUCH_STOP, CharState::ATTACK, isAttacking);
+	//states.addEdge(CharState::JUMP_LAND, CharState::ATTACK, isAttacking);
+	//states.addEdge(CharState::JUMP_ASCEND, CharState::ATTACK_AIR, isAttacking);
+	//states.addEdge(CharState::JUMP_PEAK, CharState::ATTACK_AIR, isAttacking);
+	//states.addEdge(CharState::JUMP_DESCEND, CharState::ATTACK_AIR, isAttacking);
+	//states.addEdge(CharState::EVADE_START, CharState::ATTACK, isAttacking);
+	//states.addEdge(CharState::EVADE, CharState::ATTACK, isAttacking);
+
+	//auto isAttackCombo{ [this](int entityId) -> bool
+	//{
+	//	GameComponent::Sprite &spr{ m_compSprites[entityId] };
+	//	GameComponent::Attack &atk{ m_compAttacks[entityId] };
+
+	//	bool isAttacking{ m_inputManager->isKeyPressed(InputManager::INPUT_ATTACK) && 
+	//		spr.currentFrame > atk.pattern.comboFrame };
+	//	if (isAttacking)
+	//	{
+	//		m_attackSound->play(m_soundEngine);
+	//	}
+	//	return isAttacking;
+	//} };
+	//states.addEdge(CharState::ATTACK, CharState::ATTACK2, isAttackCombo);
+	//states.addEdge(CharState::ATTACK2, CharState::ATTACK3, isAttackCombo);
+
+	//auto isAirAttacking{ [this](int entityId) -> bool
+	//{
+	//	GameComponent::Physics &phys{ m_compPhysics[entityId] };
+	//	GameComponent::Collision &col{ m_compCollisions[entityId] };
+
+	//	bool isAttacking{ m_inputManager->isKeyPressed(InputManager::INPUT_ATTACK) };
+	//	return (isAttacking && GameComponent::isInAir(phys, col));
+	//} };
+	//states.addEdge(CharState::EVADE, CharState::ATTACK_AIR, isAirAttacking);
+	//states.addEdge(CharState::EVADE_START, CharState::ATTACK_AIR, isAirAttacking);
+	//states.addEdge(CharState::EVADE, CharState::ATTACK, isAttacking);
+	//states.addEdge(CharState::EVADE_START, CharState::ATTACK, isAttacking);
+
+	//// Jumping.
+	//auto isJumping{ [this](int entityId) -> bool
+	//{
+	//	GameComponent::Physics &phys{ m_compPhysics[entityId] };
+	//	GameComponent::Sprite &spr{ m_compSprites[entityId] };
+	//	GameComponent::Character &character{ m_compCharacters[entityId] };
+
+	//	bool isJumping{ m_inputManager->isKeyPressed(InputManager::INPUT_JUMP, true) };
+	//	bool canJump{ isJumping && m_compPlayer.numRemainingJumps > 0 };
+
+	//	if (canJump)
+	//	{
+	//		m_jumpSound->play(m_soundEngine);
+	//		phys.isLockedDirection = false;
+	//		phys.hasGravity = true;
+	//		spr.isResetAnimation = true;
+	//		m_compPlayer.numRemainingJumps--;
+	//		phys.speed.y = character.jumpSpeed;
+
+	//		// Don't allow for free evade if jumping from an evade.
+	//		std::string prevState{ character.previousState };
+	//		if (prevState == CharState::EVADE_START ||
+	//			prevState == CharState::EVADE)
+	//		{
+	//			m_compPlayer.numRemainingEvades = glm::min(
+	//				m_compPlayer.numRemainingEvades, m_compPlayer.numMaxEvades - 1);
+	//		}
+	//	}
+	//	return canJump;
+	//} };
+	//states.addEdge(CharState::IDLE, CharState::JUMP_ASCEND, isJumping);
+	//states.addEdge(CharState::ALERT, CharState::JUMP_ASCEND, isJumping);
+	//states.addEdge(CharState::ALERT_STOP, CharState::JUMP_ASCEND, isJumping);
+	//states.addEdge(CharState::RUN_START, CharState::JUMP_ASCEND, isJumping);
+	//states.addEdge(CharState::RUN, CharState::JUMP_ASCEND, isJumping);
+	//states.addEdge(CharState::RUN_STOP, CharState::JUMP_ASCEND, isJumping);
+	//states.addEdge(CharState::TURN, CharState::JUMP_ASCEND, isJumping);
+	//states.addEdge(CharState::CROUCH_STOP, CharState::JUMP_ASCEND, isJumping);
+	//states.addEdge(CharState::JUMP_LAND, CharState::JUMP_ASCEND, isJumping);
+	//states.addEdge(CharState::JUMP_ASCEND, CharState::JUMP_ASCEND, isJumping);
+	//states.addEdge(CharState::JUMP_PEAK, CharState::JUMP_ASCEND, isJumping);
+	//states.addEdge(CharState::JUMP_DESCEND, CharState::JUMP_ASCEND, isJumping);
+	//states.addEdge(CharState::ATTACK, CharState::JUMP_ASCEND, isJumping);
+	//states.addEdge(CharState::ATTACK2, CharState::JUMP_ASCEND, isJumping);
+	//states.addEdge(CharState::ATTACK3, CharState::JUMP_ASCEND, isJumping);
+	//states.addEdge(CharState::ATTACK_AIR, CharState::JUMP_ASCEND, isJumping);
+	//states.addEdge(CharState::EVADE_START, CharState::JUMP_ASCEND, isJumping);
+	//states.addEdge(CharState::EVADE, CharState::JUMP_ASCEND, isJumping);
+
+	//// Drop down.
+	//auto isDroppingDown{ [this](int entityId) -> bool
+	//{
+	//	GameComponent::Collision &col{ m_compCollisions[entityId] };
+
+	//	bool isCrouching{ m_inputManager->isKeyPressing(InputManager::INPUT_DOWN) };
+	//	bool isJumping{ m_inputManager->isKeyPressed(InputManager::INPUT_JUMP) };
+	//	return (isCrouching && isJumping && col.isCollidingGhost &&
+	//		!col.isCollidingFloor && !col.isCollidingSlope);
+	//} };
+	//states.addEdge(CharState::CROUCH, CharState::JUMP_PEAK, isDroppingDown);
+
+	//// Evading.
+	//auto isEvading{ [this](int entityId) -> bool
+	//{
+	//	bool isEvading{ m_inputManager->isKeyPressed(InputManager::INPUT_EVADE, true) };
+	//	return (isEvading && m_compPlayer.numRemainingEvades > 0);
+	//} };
+	//states.addEdge(CharState::IDLE, CharState::EVADE_START, isEvading);
+	//states.addEdge(CharState::ALERT, CharState::EVADE_START, isEvading);
+	//states.addEdge(CharState::ALERT_STOP, CharState::EVADE_START, isEvading);
+	//states.addEdge(CharState::RUN_START, CharState::EVADE_START, isEvading);
+	//states.addEdge(CharState::RUN, CharState::EVADE_START, isEvading);
+	//states.addEdge(CharState::RUN_STOP, CharState::EVADE_START, isEvading);
+	//states.addEdge(CharState::TURN, CharState::EVADE_START, isEvading);
+	//states.addEdge(CharState::CROUCH_STOP, CharState::EVADE_START, isEvading);
+	//states.addEdge(CharState::JUMP_LAND, CharState::EVADE_START, isEvading);
+	//states.addEdge(CharState::ATTACK, CharState::EVADE_START, isEvading);
+	//states.addEdge(CharState::ATTACK2, CharState::EVADE_START, isEvading);
+	//states.addEdge(CharState::ATTACK3, CharState::EVADE_START, isEvading);
+	//states.addEdge(CharState::JUMP_ASCEND, CharState::EVADE_START, isEvading);
+	//states.addEdge(CharState::JUMP_PEAK, CharState::EVADE_START, isEvading);
+	//states.addEdge(CharState::JUMP_DESCEND, CharState::EVADE_START, isEvading);
+	//states.addEdge(CharState::ATTACK_AIR, CharState::EVADE_START, isEvading);
+
+	//// Stop evading.
+	//auto isEvadeTimerEndAndTurning{ [this](int entityId) -> bool
+	//{
+	//	GameComponent::Physics &phys{ m_compPhysics[entityId] };
+
+	//	bool isRunningLeft{ m_inputManager->isKeyPressing(InputManager::INPUT_LEFT) };
+	//	bool isRunningRight{ m_inputManager->isKeyPressing(InputManager::INPUT_RIGHT) };
+	//	bool isRunning{ isRunningLeft != isRunningRight };
+
+	//	// Show turning animation if moving in opposite from the direction 
+	//	// the player is facing.
+	//	return (m_compPlayer.evadeTimer == 0.f && (isRunning &&
+	//		((phys.scale.x < 0 && isRunningRight) || (phys.scale.x > 0 && isRunningLeft))));
+	//} };
+	//auto isEvadeTimerEnd{ [this](int entityId) -> bool
+	//{
+	//	return m_compPlayer.evadeTimer == 0.f;
+	//} };
+	//states.addEdge(CharState::EVADE_START, CharState::TURN, isEvadeTimerEndAndTurning);
+	//states.addEdge(CharState::EVADE, CharState::TURN, isEvadeTimerEndAndTurning);
+	//states.addEdge(CharState::EVADE_START, CharState::RUN, isEvadeTimerEnd);
+	//states.addEdge(CharState::EVADE, CharState::RUN, isEvadeTimerEnd);
+
+	//// Crouching.
+	//auto isCrouching{ [this](int entityId) -> bool
+	//{
+	//	bool isCrouching{ m_inputManager->isKeyPressing(InputManager::INPUT_DOWN) };
+	//	return isCrouching;
+	//} };
+	//states.addEdge(CharState::IDLE, CharState::CROUCH, isCrouching);
+	//states.addEdge(CharState::ALERT, CharState::CROUCH, isCrouching);
+	//states.addEdge(CharState::ALERT_STOP, CharState::CROUCH, isCrouching);
+	//states.addEdge(CharState::RUN_START, CharState::CROUCH, isCrouching);
+	//states.addEdge(CharState::RUN, CharState::CROUCH, isCrouching);
+	//states.addEdge(CharState::RUN_STOP, CharState::CROUCH, isCrouching);
+	//states.addEdge(CharState::TURN, CharState::CROUCH, isCrouching);
+	//states.addEdge(CharState::CROUCH_STOP, CharState::CROUCH, isCrouching);
+	//states.addEdge(CharState::JUMP_LAND, CharState::CROUCH, isCrouching);
+
+	//// Stop crouching.
+	//auto isStopCrouching{ [this](int entityId) -> bool
+	//{
+	//	bool isCrouching{ m_inputManager->isKeyPressing(InputManager::INPUT_DOWN) };
+	//	return !isCrouching;
+	//} };
+	//states.addEdge(CharState::CROUCH, CharState::CROUCH_STOP, isStopCrouching);
+
+	//// Start running.
+	//auto isStartRunning{ [this](int entityId) -> bool
+	//{
+	//	bool isRunningLeft{ m_inputManager->isKeyPressing(InputManager::INPUT_LEFT) };
+	//	bool isRunningRight{ m_inputManager->isKeyPressing(InputManager::INPUT_RIGHT) };
+	//	bool isRunning{ isRunningLeft != isRunningRight };
+
+	//	return isRunning;
+	//} };
+	//auto isTurning{ [this](int entityId) -> bool
+	//{
+	//	GameComponent::Physics &phys{ m_compPhysics[entityId] };
+	//	GameComponent::Sprite &spr{ m_compSprites[entityId] };
+	//	GameComponent::Character &character{ m_compCharacters[entityId] };
+
+	//	bool isRunningLeft{ m_inputManager->isKeyPressing(InputManager::INPUT_LEFT) };
+	//	bool isRunningRight{ m_inputManager->isKeyPressing(InputManager::INPUT_RIGHT) };
+	//	bool isRunning{ isRunningLeft != isRunningRight };
+
+	//	// Show turning animation if moving in opposite from the direction 
+	//	// the player is facing.
+	//	return isRunning &&
+	//		((phys.scale.x < 0 && isRunningRight) || (phys.scale.x > 0 && isRunningLeft));
+	//} };
+	//states.addEdge(CharState::IDLE, CharState::TURN, isTurning);
+	//states.addEdge(CharState::TURN, CharState::TURN, isTurning);
+	//states.addEdge(CharState::RUN_START, CharState::TURN, isTurning);
+	//states.addEdge(CharState::RUN, CharState::TURN, isTurning);
+	//states.addEdge(CharState::RUN_STOP, CharState::TURN, isTurning);
+	//states.addEdge(CharState::ALERT, CharState::TURN, isTurning);
+	//states.addEdge(CharState::ALERT_STOP, CharState::TURN, isTurning);
+	//states.addEdge(CharState::CROUCH_STOP, CharState::TURN, isTurning);
+	//states.addEdge(CharState::JUMP_LAND, CharState::TURN, isTurning);
+
+	//states.addEdge(CharState::IDLE, CharState::RUN_START, isStartRunning);
+	//states.addEdge(CharState::RUN_STOP, CharState::RUN_START, isStartRunning);
+	//states.addEdge(CharState::ALERT, CharState::RUN_START, isStartRunning);
+	//states.addEdge(CharState::ALERT_STOP, CharState::RUN_START, isStartRunning);
+	//states.addEdge(CharState::CROUCH_STOP, CharState::RUN_START, isStartRunning);
+	//states.addEdge(CharState::JUMP_LAND, CharState::RUN_START, isStartRunning);
+
+	//// Stop running.
+	//auto isStopRunning{ [this](int entityId) -> bool
+	//{
+	//	GameComponent::Character &character{ m_compCharacters[entityId] };
+
+	//	bool isStopRunningLeft{ m_inputManager->isKeyReleased(InputManager::INPUT_LEFT) };
+	//	bool isStopRunningRight{ m_inputManager->isKeyReleased(InputManager::INPUT_RIGHT) };
+	//	bool isRunningLeft{ m_inputManager->isKeyPressing(InputManager::INPUT_LEFT) };
+	//	bool isRunningRight{ m_inputManager->isKeyPressing(InputManager::INPUT_RIGHT) };
+	//	bool isRunning{ isRunningLeft != isRunningRight };
+
+	//	return ((isStopRunningLeft && isStopRunningRight) || !isRunning);
+	//} };
+	//states.addEdge(CharState::RUN, CharState::RUN_STOP, isStopRunning);
+	//states.addEdge(CharState::RUN_START, CharState::RUN_STOP, isStopRunning);
 }
 
 void EntityManager::createEnemy()
@@ -1434,13 +1463,13 @@ void EntityManager::createEnemy()
 		enemy.attackTimer = enemy.attackDuration;
 	} };
 
-	states.addState(CharState::IDLE, idleUpdateAction, idleEnterAction);
+	/*states.addState(CharState::IDLE, idleUpdateAction, idleEnterAction);
 	states.addState(CharState::RUN, runUpdateAction, [](int) {}, runExitAction);
 	states.addState(CharState::HURT);
 	states.addState(CharState::HURT_AIR);
 	states.addState(CharState::FALLEN, fallenUpdateAction, fallenEnterAction);
 	states.addState(CharState::ALERT);
-	states.addState(CharState::ATTACK, [](int) {}, attackEnterAction, attackExitAction);
+	states.addState(CharState::ATTACK, [](int) {}, attackEnterAction, attackExitAction);*/
 
 	// Hurt while on ground.
 	auto isHurting{ [this](int entityId) -> bool
@@ -1682,3 +1711,256 @@ void EntityManager::createEnemy()
 //		spr.spriteSheet->setAnimation("run", spr);
 //	}
 //}
+
+void EntityManager::initLua()
+{
+	m_lua.open_libraries(sol::lib::base, sol::lib::package, sol::lib::math);
+
+	m_lua.new_enum("InputType",
+		"INPUT_UP", InputManager::INPUT_UP,
+		"INPUT_DOWN", InputManager::INPUT_DOWN,
+		"INPUT_LEFT", InputManager::INPUT_LEFT,
+		"INPUT_RIGHT", InputManager::INPUT_RIGHT,
+		"INPUT_CANCEL", InputManager::INPUT_CANCEL,
+		"INPUT_ATTACK", InputManager::INPUT_ATTACK,
+		"INPUT_JUMP", InputManager::INPUT_JUMP,
+		"INPUT_EVADE", InputManager::INPUT_EVADE,
+		"INPUT_SKILL1", InputManager::INPUT_SKILL1);
+
+	m_lua.new_enum("CharState",
+		"IDLE", CharState::IDLE,
+		"RUN", CharState::RUN,
+		"JUMP_ASCEND", CharState::JUMP_ASCEND,
+		"JUMP_PEAK", CharState::JUMP_PEAK,
+		"JUMP_DESCEND", CharState::JUMP_DESCEND,
+		"JUMP_LAND", CharState::JUMP_LAND,
+		"RUN_START", CharState::RUN_START,
+		"RUN_STOP", CharState::RUN_STOP,
+		"ALERT", CharState::ALERT,
+		"ALERT_STOP", CharState::ALERT_STOP,
+		"TURN", CharState::TURN,
+		"CROUCH", CharState::CROUCH,
+		"CROUCH_STOP", CharState::CROUCH_STOP,
+		"ATTACK", CharState::ATTACK,
+		"ATTACK_AIR", CharState::ATTACK_AIR,
+		"ATTACK_CROUCH", CharState::ATTACK_CROUCH,
+		"HURT", CharState::HURT,
+		"HURT_AIR", CharState::HURT_AIR,
+		"FALLEN", CharState::FALLEN,
+		"EVADE_START", CharState::EVADE_START,
+		"EVADE", CharState::EVADE,
+		"ATTACK2", CharState::ATTACK2,
+		"ATTACK3", CharState::ATTACK3,
+		"SKILL1", CharState::SKILL1);
+
+	// Expose functions to Lua.
+	m_lua.set_function("addState", [this](int entityId, const std::string &label) 
+		{
+			GameComponent::Character &character{ m_compCharacters[entityId] };
+			StateMachine &states{ character.states };
+			states.addState(label);
+		});
+	m_lua.set_function("addEdge", [this](int entityId, const std::string &srcLabel, 
+		const std::string &destLabel, std::function<bool(int)> condition)
+		{
+			GameComponent::Character &character{ m_compCharacters[entityId] };
+			StateMachine &states{ character.states };
+			states.addEdge(srcLabel, destLabel, condition);
+		});
+	m_lua.set_function("setUpdateAction", [this](int entityId, const std::string &label,
+		std::function<void(int)> action)
+		{
+			GameComponent::Character &character{ m_compCharacters[entityId] };
+			StateMachine &states{ character.states };
+			states.setUpdateAction(label, action);
+		});
+	m_lua.set_function("setEnterAction", [this](int entityId, const std::string &label,
+		std::function<void(int)> action)
+		{
+			GameComponent::Character &character{ m_compCharacters[entityId] };
+			StateMachine &states{ character.states };
+			states.setEnterAction(label, action);
+		});
+	m_lua.set_function("setExitAction", [this](int entityId, const std::string &label,
+		std::function<void(int)> action)
+		{
+			GameComponent::Character &character{ m_compCharacters[entityId] };
+			StateMachine &states{ character.states };
+			states.setExitAction(label, action);
+		});
+
+	m_lua.set_function("isKeyPressed", [this](InputManager::InputType input, bool flag)
+		{
+			return m_inputManager->isKeyPressed(input, flag);
+		});
+	m_lua.set_function("isKeyPressing", [this](InputManager::InputType input)
+		{
+			return m_inputManager->isKeyPressing(input);
+		});
+	m_lua.set_function("isKeyReleased", [this](InputManager::InputType input)
+		{
+			return m_inputManager->isKeyReleased(input);
+		});
+
+	m_lua.set_function("playSound", [this](std::string soundName)
+		{
+			std::shared_ptr<Sound> sound{ m_assetLoader->load<Sound>(soundName) };
+			sound->play(m_soundEngine);
+		});
+
+	m_lua.set_function("getDeltaTime", [this]()
+		{
+			return m_deltaTime;
+		});
+	m_lua.set_function("clamp", [this](float value, float min, float max)
+		{
+			return glm::clamp(value, min, max);
+		});
+
+	m_lua.set_function("getPosX", [this](int entityId)
+		{
+			return m_compPhysics[entityId].pos.x;
+		});
+	m_lua.set_function("getPosY", [this](int entityId)
+		{
+			return m_compPhysics[entityId].pos.y;
+		});
+	m_lua.set_function("getSpeedX", [this](int entityId) 
+		{ 
+			return m_compPhysics[entityId].speed.x; 
+		});
+	m_lua.set_function("getSpeedY", [this](int entityId) 
+		{ 
+			return m_compPhysics[entityId].speed.y; 
+		});
+	m_lua.set_function("getScaleX", [this](int entityId)
+		{
+			return m_compPhysics[entityId].scale.x;
+		});
+	m_lua.set_function("getScaleY", [this](int entityId)
+		{
+			return m_compPhysics[entityId].scale.y;
+		});
+	m_lua.set_function("isInAir", [this](int entityId) 
+		{ 
+			return GameComponent::isInAir(m_compPhysics[entityId], 
+				m_compCollisions[entityId]); 
+		});
+	m_lua.set_function("isOnGround", [this](int entityId)
+		{
+			return GameComponent::isOnGround(m_compPhysics[entityId],
+				m_compCollisions[entityId]);
+		});
+	m_lua.set_function("isLockedDirection", [this](int entityId)
+		{
+			return m_compPhysics[entityId].isLockedDirection;
+		});
+	m_lua.set_function("setPosX", [this](int entityId, float value)
+		{
+			m_compPhysics[entityId].pos.x = value;
+		});
+	m_lua.set_function("setPosY", [this](int entityId, float value)
+		{
+			m_compPhysics[entityId].pos.y = value;
+		});
+	m_lua.set_function("setSpeedX", [this](int entityId, float value)
+		{
+			m_compPhysics[entityId].speed.x = value;
+		});
+	m_lua.set_function("setSpeedY", [this](int entityId, float value)
+		{
+			m_compPhysics[entityId].speed.y = value;
+		});
+	m_lua.set_function("setScaleX", [this](int entityId, float value)
+		{
+			m_compPhysics[entityId].scale.x = value;
+		});
+	m_lua.set_function("setScaleY", [this](int entityId, float value)
+		{
+			m_compPhysics[entityId].scale.y = value;
+		});
+	m_lua.set_function("setFriction", [this](int entityId, bool flag)
+		{
+			m_compPhysics[entityId].hasFriction = flag;
+		});
+	m_lua.set_function("setGravity", [this](int entityId, bool flag)
+		{
+			m_compPhysics[entityId].hasGravity = flag;
+		});
+	m_lua.set_function("setLockedDirection", [this](int entityId, bool flag)
+		{
+			m_compPhysics[entityId].isLockedDirection = flag;
+		});
+	m_lua.set_function("isCollidingFloor", [this](int entityId)
+		{
+			return m_compCollisions[entityId].isCollidingFloor;
+		});
+	m_lua.set_function("isCollidingGhost", [this](int entityId)
+		{
+			return m_compCollisions[entityId].isCollidingGhost;
+		});
+	m_lua.set_function("isCollidingSlope", [this](int entityId)
+		{
+			return m_compCollisions[entityId].isCollidingSlope;
+		});
+	m_lua.set_function("getState", [this](int entityId)
+		{
+			return m_compCharacters[entityId].states.getState();
+		});
+	m_lua.set_function("getPreviousState", [this](int entityId)
+		{
+			return m_compCharacters[entityId].previousState;
+		});
+	m_lua.set_function("getMovementSpeed", [this](int entityId)
+		{
+			return m_compCharacters[entityId].movementSpeed;
+		});
+	m_lua.set_function("getJumpSpeed", [this](int entityId)
+		{
+			return m_compCharacters[entityId].jumpSpeed;
+		});
+	m_lua.set_function("getNumRemainingJumps", [this](int entityId)
+		{
+			return m_compPlayer.numRemainingJumps;
+		});
+	m_lua.set_function("getNumRemainingEvades", [this](int entityId)
+		{
+			return m_compPlayer.numRemainingEvades;
+		});
+	m_lua.set_function("getMaxEvades", [this](int entityId)
+		{
+			return m_compPlayer.numMaxEvades;
+		});
+	m_lua.set_function("setNumRemainingJumps", [this](int entityId, int value)
+		{
+			m_compPlayer.numRemainingJumps = value;
+		});
+	m_lua.set_function("setNumRemainingEvades", [this](int entityId, int value)
+		{
+			m_compPlayer.numRemainingEvades = value;
+		});
+	m_lua.set_function("getCurrentFrameTime", [this](int entityId)
+		{
+			return m_compSprites[entityId].currentFrameTime;
+		});
+	m_lua.set_function("getFrameDuration", [this](int entityId)
+		{
+			return GameComponent::getFrameDuration(m_compSprites[entityId]);
+		});
+	m_lua.set_function("isSpriteLooping", [this](int entityId)
+		{
+			return m_compSprites[entityId].currentSprite.isLooping;
+		});
+	m_lua.set_function("getCurrentFrame", [this](int entityId)
+		{
+			return m_compSprites[entityId].currentFrame;
+		}); 
+	m_lua.set_function("getNumSprites", [this](int entityId)
+		{
+			return GameComponent::getNumSprites(m_compSprites[entityId]);
+		});
+	m_lua.set_function("setResetAnimation", [this](int entityId, bool flag)
+		{
+			m_compSprites[entityId].isResetAnimation = flag;
+		});
+}

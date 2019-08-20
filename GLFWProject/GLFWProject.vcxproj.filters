@@ -195,6 +195,12 @@
     <ClCompile Include="EnemySystem.cpp">
       <Filter>Source Files\Game Systems</Filter>
     </ClCompile>
+    <ClCompile Include="Script.cpp">
+      <Filter>Source Files\Asset Loader\Assets</Filter>
+    </ClCompile>
+    <ClCompile Include="ScriptLoader.cpp">
+      <Filter>Source Files\Asset Loader\Loaders</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stb_image.h">
@@ -357,6 +363,12 @@
       <Filter>Header Files\Game Systems</Filter>
     </ClInclude>
     <ClInclude Include="PrefabLoader.h">
+      <Filter>Header Files\Asset Loader\Loaders</Filter>
+    </ClInclude>
+    <ClInclude Include="Script.h">
+      <Filter>Header Files\Asset Loader\Assets</Filter>
+    </ClInclude>
+    <ClInclude Include="ScriptLoader.h">
       <Filter>Header Files\Asset Loader\Loaders</Filter>
     </ClInclude>
   </ItemGroup>

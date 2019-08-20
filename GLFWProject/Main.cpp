@@ -18,6 +18,7 @@
 #include "Sound.h"
 #include "Prefab.h"
 #include "Font.h"
+#include "Script.h"
 
 #include "AssetLoader.h"
 #include "DiskStream.h"
@@ -28,6 +29,7 @@
 #include "SoundLoader.h"
 #include "PrefabLoader.h"
 #include "FontLoader.h"
+#include "ScriptLoader.h"
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -56,24 +58,25 @@ int main()
 	assetLoader->registerLoader<Sound>(new SoundLoader());
 	assetLoader->registerLoader<Prefab>(new PrefabLoader());
 	assetLoader->registerLoader<Font>(new FontLoader());
+	assetLoader->registerLoader<Script>(new ScriptLoader());
 
-	std::unique_ptr<SpriteRenderer> sRenderer{ 
+	std::unique_ptr<SpriteRenderer> sRenderer{
 		std::make_unique<SpriteRenderer>(assetLoader.get()) };
-	std::unique_ptr<UIRenderer> uRenderer{ 
+	std::unique_ptr<UIRenderer> uRenderer{
 		std::make_unique<UIRenderer>(assetLoader.get()) };
-	std::unique_ptr<InputManager> inputManager{ 
+	std::unique_ptr<InputManager> inputManager{
 		std::make_unique<InputManager>(game->getWindow()) };
 	std::unique_ptr<TextRenderer> tRenderer{
 		std::make_unique<TextRenderer>(assetLoader.get()) };
 
 	// Initialize the sound engine.
-	SoLoud::Soloud soundEngine;
-	soundEngine.init();
+	SoLoud::Soloud *soundEngine{ new SoLoud::Soloud() };
+	soundEngine->init();
 
-	std::unique_ptr<EntityManager> entityManager{ 
-		std::make_unique<EntityManager>( game.get(), assetLoader.get(), 
+	std::unique_ptr<EntityManager> entityManager{
+		std::make_unique<EntityManager>(game.get(), assetLoader.get(),
 		inputManager.get(), sRenderer.get(), uRenderer.get(),
-		soundEngine) };
+		*soundEngine) };
 
 	// Seed the random number generator.
 	srand(static_cast<unsigned> (time(0)));
@@ -84,7 +87,7 @@ int main()
 		sRenderer.get(), uRenderer.get(), tRenderer.get());
 
 	// Deinitialize the sound engine before closing.
-	soundEngine.deinit();
+	soundEngine->deinit();
 
 	// Game has ended.
 	return 0;

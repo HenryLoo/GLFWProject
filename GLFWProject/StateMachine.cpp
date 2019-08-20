@@ -48,16 +48,12 @@ const std::string &StateMachine::getState() const
 	return m_currentLabel;
 }
 
-void StateMachine::addState(const std::string &label,
-	std::function<void(int)> updateAction,
-	std::function<void(int)> enterAction,
-	std::function<void(int)> exitAction)
+void StateMachine::addState(const std::string &label)
 {
 	// Add an empty state.
 	// Nothing happens if the state already exists.
 	std::pair<std::unordered_map<std::string, State>::iterator, bool> result;
-	result = m_states.insert(std::pair<std::string, State>(label, 
-		{ {}, updateAction, enterAction, exitAction }));
+	result = m_states.insert(std::pair<std::string, State>(label, {}));
 
 	// If this is the first state added, then set it
 	// as the current state.
@@ -65,9 +61,6 @@ void StateMachine::addState(const std::string &label,
 	{
 		m_currentLabel = label;
 		m_currentState = &(result.first->second);
-		m_currentState->updateAction = updateAction;
-		m_currentState->enterAction = enterAction;
-		m_currentState->exitAction = exitAction;
 	}
 }
 
@@ -82,4 +75,34 @@ void StateMachine::addEdge(const std::string &srcLabel,
 
 	// Otherwise, insert the edge to the state.
 	it->second.edges.push_back({ destLabel, condition });
+}
+
+void StateMachine::setUpdateAction(const std::string &label,
+	std::function<void(int)> action)
+{
+	auto it{ m_states.find(label) };
+	if (it != m_states.end())
+	{
+		it->second.updateAction = action;
+	}
+}
+
+void StateMachine::setEnterAction(const std::string &label,
+	std::function<void(int)> action)
+{
+	auto it{ m_states.find(label) };
+	if (it != m_states.end())
+	{
+		it->second.enterAction = action;
+	}
+}
+
+void StateMachine::setExitAction(const std::string &label,
+	std::function<void(int)> action)
+{
+	auto it{ m_states.find(label) };
+	if (it != m_states.end())
+	{
+		it->second.exitAction = action;
+	}
 }

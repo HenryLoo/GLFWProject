@@ -9,6 +9,9 @@
 
 #include <json/include/nlohmann/json_fwd.hpp>
 
+#define SOL_ALL_SAFETIES_ON 1
+#include <sol/sol.hpp>
+
 #include <memory>
 #include <vector>
 
@@ -61,6 +64,9 @@ public:
 	// TODO: test function for generating entities, remove this later.
 	void createEnemy();
 
+	// Initialize the Lua state and bind appropriate functions.
+	void initLua();
+
 private:
 	// Component initializers.
 	void initializeSprite(int entityId, const nlohmann::json &json);
@@ -76,6 +82,9 @@ private:
 	// TODO: test function for generating entities, remove this later.
 	//void createNewEntities();
 	void createPlayer();
+
+	// The Lua state to use for defining entities.
+	sol::state m_lua;
 
 	// Hold bitmasks that determines each entity's components.
 	// If the value is 0, then the entity is dead.
