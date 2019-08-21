@@ -68,9 +68,10 @@ public:
 	void initLua();
 
 private:
-	// Component initializers.
+	// Component initializers. 
+	// Player and enemy initializers return their respective script names.
 	void initializeSprite(int entityId, const nlohmann::json &json);
-	void initializePlayer(const nlohmann::json &json);
+	std::string initializePlayer(const nlohmann::json &json);
 	void initializeCollision(int entityId, const nlohmann::json &json);
 	void initializeWeapon(int entityId, const nlohmann::json &json);
 	void initializeAttack(int entityId, const nlohmann::json &json);
@@ -128,9 +129,6 @@ private:
 	// TODO: remove this later for a more flexible implementation.
 	std::shared_ptr<SpriteSheet> m_effectsTexture;
 	std::shared_ptr<Sound> m_jumpSound;
-	std::shared_ptr<Sound> m_evadeSound;
-	std::shared_ptr<Sound> m_attackSound;
-	std::shared_ptr<Sound> m_hitSound;
 };
 
 #endif

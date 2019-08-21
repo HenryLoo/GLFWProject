@@ -20,7 +20,10 @@ bool Script::execute(sol::state &lua) const
 
 	bool success{ result.valid() };
 	if (!success)
-		std::cout << "Script::execute: invalid script:" << std::endl << m_script << std::endl;
+	{
+		sol::error err = result;
+		std::cout << "Script::execute: invalid script:" << std::endl << err.what() << std::endl;
+	}
 
 	return success;
 }

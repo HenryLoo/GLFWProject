@@ -20,6 +20,9 @@ struct AttackPattern
 	// The minimum frame index to allow for an additional attack.
 	int comboFrame{ -1 };
 
+	// The sound to play when the attack begins.
+	std::shared_ptr<Sound> attackSound;
+
 	// The sound to play when a target is hit.
 	std::shared_ptr<Sound> hitSound;
 

@@ -51,6 +51,9 @@ public:
 	bool isKeyPressed(InputType type, bool isResetDuration = false) const;
 	bool isKeyReleased(InputType type) const;
 
+	// Reset the duration for a given input type.
+	void resetDuration(InputType type) const;
+
 private:
 	static void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods);
 	static void setKey(InputType type, bool isPressed, bool isReleased);

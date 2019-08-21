@@ -58,9 +58,9 @@ bool InputManager::isKeyPressed(InputType type, bool isResetDuration) const
 
 		if (isResetDuration)
 		{
-			for (InputState &thisState : m_inputStates)
+			for (InputState &state : m_inputStates)
 			{
-				thisState.duration = 0.f;
+				state.duration = 0.f;
 			}
 		}
 	}
@@ -71,6 +71,11 @@ bool InputManager::isKeyPressed(InputType type, bool isResetDuration) const
 bool InputManager::isKeyReleased(InputType type) const
 {
 	return m_inputStates[type].isReleased;
+}
+
+void InputManager::resetDuration(InputType type) const
+{
+	m_inputStates[type].duration = 0.f;
 }
 
 void InputManager::keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods)

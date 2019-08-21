@@ -5,6 +5,14 @@ void StateMachine::update(int entityId)
 	if (m_currentState == nullptr)
 		return;
 
+	// If this is a new state, call the enter action.
+	// This is called on the first frame after the state change.
+	if (isNewState)
+	{
+		m_currentState->enterAction(entityId);
+		isNewState = false;
+	}
+
 	// Edge is defined by {state label, condition function}.
 	for (const Edge &e : m_currentState->edges)
 	{
@@ -34,13 +42,6 @@ void StateMachine::update(int entityId)
 
 	// Call update action.
 	m_currentState->updateAction(entityId);
-
-	// If this is a new state, call the enter action.
-	if (isNewState)
-	{
-		m_currentState->enterAction(entityId);
-		isNewState = false;
-	}
 }
 
 const std::string &StateMachine::getState() const
