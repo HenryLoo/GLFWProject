@@ -12,7 +12,7 @@ Script::~Script()
 
 }
 
-bool Script::execute(sol::state &lua) const
+sol::protected_function_result Script::execute(sol::state &lua) const
 {
 	auto result{ lua.script(m_script, [](lua_State *, sol::protected_function_result pfr) {
 		return pfr;
@@ -25,5 +25,5 @@ bool Script::execute(sol::state &lua) const
 		std::cout << "Script::execute: invalid script:" << std::endl << err.what() << std::endl;
 	}
 
-	return success;
+	return result;
 }

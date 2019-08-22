@@ -14,9 +14,8 @@ public:
 	Script(const std::string &script);
 	virtual ~Script();
 
-	// Execute the script.
-	// Return true if there were no errors, else false.
-	bool execute(sol::state &lua) const;
+	// Execute the script and return the result.
+	sol::protected_function_result execute(sol::state &lua) const;
 
 private:
 	std::string m_script;

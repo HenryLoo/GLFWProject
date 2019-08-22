@@ -48,8 +48,10 @@ void CharacterSystem::process(float deltaTime, int entityId,
 	GameComponent::Collision &collision{ m_collisions[entityId] };
 	GameComponent::Attack &attack{ m_attacks[entityId] };
 
-	// Update the character's state machine.
-	character.states.update(entityId);
+	character.previousState = character.states.getState();
+
+	// Check the character's state edges.
+	character.states.checkEdges(entityId);
 
 	// Change the sprite's state if it is a different one or the animation
 	// is being reset.
@@ -91,6 +93,9 @@ void CharacterSystem::process(float deltaTime, int entityId,
 		}
 	}
 
+	// Update the character's state machine.
+	character.states.update(entityId);
+
 	// Update the hit stun timer.
 	GameComponent::updateTimer(deltaTime, character.hitStunTimer);
 
@@ -105,8 +110,4 @@ void CharacterSystem::process(float deltaTime, int entityId,
 		m_manager.deleteEntity(entityId);
 		return;
 	}
-
-	// Update the previous state, so that it will be ready for the next 
-	// iteration.
-	character.previousState = currentState;
 }

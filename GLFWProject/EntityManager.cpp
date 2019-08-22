@@ -76,6 +76,8 @@ namespace
 	const std::string PROPERTY_DAMAGE{ "damage" };
 	const std::string PROPERTY_KNOCKBACK{ "knockback" };
 
+	const std::string CHAR_STATES_SCRIPT{ "char_states" };
+	const std::string INIT_CHAR_STATES{ "initCharStates" };
 	const std::string PLAYER_STATES_SCRIPT{ "player_states" };
 	const std::string INIT_PLAYER_STATES{ "initPlayerStates" };
 	const std::string INIT_STATES{ "initStates" };
@@ -104,7 +106,6 @@ EntityManager::EntityManager(GameEngine *game, AssetLoader *assetLoader,
 
 	// TODO: replace these hardcoded resources.
 	m_effectsTexture = assetLoader->load<SpriteSheet>("effects");
-	m_jumpSound = assetLoader->load<Sound>("jump");
 	//createEnemy();
 	createPlayer();
 
@@ -207,6 +208,11 @@ int EntityManager::createEntity(Prefab *prefab)
 		// Save the player/enemy's script name to execute at the end.
 		std::string scriptName;
 
+		bool hasCharacter{ false };
+		bool hasPlayer{ false };
+		bool hasAttack{ false };
+		bool hasEnemy{ false };
+
 		auto &components{ json.at(PROPERTY_COMPONENTS) };
 		if (components.is_array())
 		{
@@ -228,6 +234,7 @@ int EntityManager::createEntity(Prefab *prefab)
 					initializeSprite(id, component);
 				else if (type == COMPONENT_PLAYER)
 				{
+					hasPlayer = true;
 					scriptName = initializePlayer(component);
 				}
 				else if (type == COMPONENT_COLLISION)
@@ -235,15 +242,39 @@ int EntityManager::createEntity(Prefab *prefab)
 				else if (type == COMPONENT_WEAPON)
 					initializeWeapon(id, component);
 				else if (type == COMPONENT_ATTACK)
+				{
+					hasAttack = true;
 					initializeAttack(id, component);
+				}
 				else if (type == COMPONENT_CHARACTER)
+				{
+					hasCharacter = true;
 					initializeCharacter(id, component);
+				}
+				else if (type == COMPONENT_ENEMY)
+				{
+					hasEnemy = true;
+				}
+			}
+		}
+
+		if (hasCharacter)
+		{
+			// Create the character's states.
+			std::shared_ptr<Script> charStateScript{ m_assetLoader->load<Script>(CHAR_STATES_SCRIPT) };
+			if (charStateScript != nullptr)
+			{
+				auto result{ charStateScript->execute(m_lua) };
+				if (result.valid())
+				{
+					m_lua[INIT_CHAR_STATES](id);
+				}
 			}
 		}
 
 		// Set team id, if applicable.
 		int team{ GameComponent::TEAM_NEUTRAL };
-		if (GameComponent::hasComponent(mask, GameComponent::COMPONENT_PLAYER))
+		if (hasPlayer)
 		{
 			team = GameComponent::TEAM_PLAYER;
 
@@ -251,8 +282,8 @@ int EntityManager::createEntity(Prefab *prefab)
 			std::shared_ptr<Script> playerStateScript{ m_assetLoader->load<Script>(PLAYER_STATES_SCRIPT) };
 			if (playerStateScript != nullptr)
 			{
-				bool isValid{ playerStateScript->execute(m_lua) };
-				if (isValid)
+				auto result{ playerStateScript->execute(m_lua) };
+				if (result.valid())
 				{
 					m_lua[INIT_PLAYER_STATES](id);
 				}
@@ -264,20 +295,20 @@ int EntityManager::createEntity(Prefab *prefab)
 				std::shared_ptr<Script> statesScript{ m_assetLoader->load<Script>(scriptName) };
 				if (statesScript != nullptr)
 				{
-					bool isValid{ statesScript->execute(m_lua) };
-					if (isValid)
+					auto result{ statesScript->execute(m_lua) };
+					if (result.valid())
 					{
 						m_lua[INIT_STATES](id);
 					}
 				}
 			}
 		}
-		else if (GameComponent::hasComponent(mask, GameComponent::COMPONENT_ENEMY))
+		else if (hasEnemy)
 			team = GameComponent::TEAM_ENEMY;
 
-		if (GameComponent::hasComponent(mask, GameComponent::COMPONENT_CHARACTER))
+		if (hasCharacter)
 			m_compCharacters[id].team = team;
-		if (GameComponent::hasComponent(mask, GameComponent::COMPONENT_ATTACK))
+		if (hasAttack)
 			m_compAttacks[id].team = team;
 	}
 
@@ -1797,6 +1828,17 @@ void EntityManager::initLua()
 		"HIT_SPARK", EffectType::HIT_SPARK);
 
 	// Expose functions to Lua.
+	m_lua.set_function("requireTable", [this](const std::string &scriptName)
+		{
+			std::shared_ptr<Script> script{ m_assetLoader->load<Script>(scriptName) };
+			sol::table table;
+			if (script != nullptr)
+			{
+				table = script->execute(m_lua);
+			}
+
+			return table;
+		});
 	m_lua.set_function("addState", [this](int entityId, const std::string &label) 
 		{
 			GameComponent::Character &character{ m_compCharacters[entityId] };
@@ -1831,7 +1873,6 @@ void EntityManager::initLua()
 			StateMachine &states{ character.states };
 			states.setExitAction(label, action);
 		});
-
 	m_lua.set_function("isKeyPressed", [this](InputManager::InputType input, bool flag)
 		{
 			return m_inputManager->isKeyPressed(input, flag);
@@ -1848,29 +1889,6 @@ void EntityManager::initLua()
 		{
 			return m_inputManager->resetDuration(input);
 		});
-	m_lua.set_function("isRunning", [this]()
-		{
-			bool isRunningLeft{ m_inputManager->isKeyPressing(InputManager::INPUT_LEFT) };
-			bool isRunningRight{ m_inputManager->isKeyPressing(InputManager::INPUT_RIGHT) };
-			bool isRunning{ isRunningLeft != isRunningRight };
-
-			return std::make_tuple(isRunning, isRunningLeft, isRunningRight);
-		});
-	m_lua.set_function("isEvading", [this](int entityId)
-		{
-			bool isEvading{ m_inputManager->isKeyPressed(InputManager::INPUT_EVADE, true) };
-			return (isEvading && m_compPlayer.numRemainingEvades > 0);
-		});
-	m_lua.set_function("isAttacking", [this](int entityId)
-		{
-			GameComponent::Sprite &spr{ m_compSprites[entityId] };
-			GameComponent::Attack &atk{ m_compAttacks[entityId] };
-
-			bool isAttacking{ m_inputManager->isKeyPressed(InputManager::INPUT_ATTACK) && 
-				spr.currentFrame > atk.pattern.comboFrame };
-			return isAttacking;
-		});
-
 	m_lua.set_function("playSound", [this](std::string soundName)
 		{
 			std::shared_ptr<Sound> sound{ m_assetLoader->load<Sound>(soundName) };
@@ -1906,7 +1924,6 @@ void EntityManager::initLua()
 		{
 			return glm::sign(value);
 		});
-
 	m_lua.set_function("getPosX", [this](int entityId)
 		{
 			return m_compPhysics[entityId].pos.x;
@@ -1952,44 +1969,6 @@ void EntityManager::initLua()
 	m_lua.set_function("isLockedDirection", [this](int entityId)
 		{
 			return m_compPhysics[entityId].isLockedDirection;
-		});
-	m_lua.set_function("isFalling", [this](int entityId)
-		{
-			GameComponent::Physics &phys{ m_compPhysics[entityId] };
-			GameComponent::Collision &col{ m_compCollisions[entityId] };
-			GameComponent::Character &character{ m_compCharacters[entityId] };
-
-			return (phys.speed.y < 0 && GameComponent::isInAir(phys, col) &&
-				character.states.getState() != CharState::JUMP_DESCEND);
-		});
-	m_lua.set_function("isJumping", [this](int entityId)
-		{
-			GameComponent::Physics &phys{ m_compPhysics[entityId] };
-			GameComponent::Sprite &spr{ m_compSprites[entityId] };
-			GameComponent::Character &character{ m_compCharacters[entityId] };
-
-			bool isJumping{ m_inputManager->isKeyPressed(InputManager::INPUT_JUMP, true) };
-			bool canJump{ isJumping && m_compPlayer.numRemainingJumps > 0 };
-
-			if (canJump)
-			{
-				m_jumpSound->play(m_soundEngine);
-				phys.isLockedDirection = false;
-				phys.hasGravity = true;
-				spr.isResetAnimation = true;
-				m_compPlayer.numRemainingJumps--;
-				phys.speed.y = character.jumpSpeed;
-
-				// Don't allow for free evade if jumping from an evade.
-				std::string prevState{ character.previousState };
-				if (prevState == CharState::EVADE_START ||
-					prevState == CharState::EVADE)
-				{
-					m_compPlayer.numRemainingEvades = glm::min(
-						m_compPlayer.numRemainingEvades, m_compPlayer.numMaxEvades - 1);
-				}
-			}
-			return canJump;
 		});
 	m_lua.set_function("setPosX", [this](int entityId, float value)
 		{
@@ -2087,19 +2066,6 @@ void EntityManager::initLua()
 		{
 			return m_compPlayer.skillTimers[index];
 		});
-	m_lua.set_function("isSkill1", [this](int entityId)
-		{
-			bool isSkill{ m_inputManager->isKeyPressed(InputManager::INPUT_SKILL1) &&
-				m_compPlayer.skillTimers[0] == 0.f };
-
-			if (isSkill)
-			{
-				GameComponent::Character &character{ m_compCharacters[entityId] };
-				m_compPlayer.skillTimers[0] = character.attackPatterns[CharState::SKILL1].cooldown;
-			}
-
-			return isSkill;
-		});
 	m_lua.set_function("setNumRemainingJumps", [this](int entityId, int value)
 		{
 			m_compPlayer.numRemainingJumps = value;
@@ -2112,9 +2078,9 @@ void EntityManager::initLua()
 		{
 			m_compPlayer.evadeTimer = m_compPlayer.evadeDuration;
 		});
-	m_lua.set_function("setSkillTimer", [this](int entityId, int index, float value)
+	m_lua.set_function("setSkillTimer", [this](int entityId, int index)
 		{
-			m_compPlayer.skillTimers[index] = value;
+			m_compPlayer.skillTimers[index] = m_compAttacks[entityId].pattern.cooldown;
 		});
 	m_lua.set_function("getCurrentFrameTime", [this](int entityId)
 		{
@@ -2140,15 +2106,6 @@ void EntityManager::initLua()
 		{
 			m_compSprites[entityId].isResetAnimation = flag;
 		});
-	m_lua.set_function("hasAnimationEnded", [this](int entityId)
-		{
-			GameComponent::Sprite &spr{ m_compSprites[entityId] };
-
-			float frameDuration{ GameComponent::getFrameDuration(spr) };
-			int numSprites{ GameComponent::getNumSprites(spr) };
-			return (spr.currentFrameTime >= frameDuration &&
-				(!spr.currentSprite.isLooping && spr.currentFrame == numSprites - 1));
-		});
 	m_lua.set_function("getAttackFrameStart", [this](int entityId)
 		{
 			return m_compAttacks[entityId].pattern.frameRange.x;
@@ -2160,9 +2117,5 @@ void EntityManager::initLua()
 	m_lua.set_function("getComboFrame", [this](int entityId)
 		{
 			return m_compAttacks[entityId].pattern.comboFrame;
-		});
-	m_lua.set_function("getCooldown", [this](int entityId)
-		{
-			return m_compAttacks[entityId].pattern.cooldown;
 		});
 }

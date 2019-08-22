@@ -34,6 +34,9 @@ struct State
 class StateMachine
 {
 public:
+	// Check edge conditions and transition to new states when appropriate.
+	void checkEdges(int entityId);
+
 	// Process the current state.
 	void update(int entityId);
 
