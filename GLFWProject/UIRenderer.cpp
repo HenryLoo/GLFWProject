@@ -401,14 +401,23 @@ void UIRenderer::renderHud()
 	glBindBuffer(GL_ARRAY_BUFFER, m_hudModelsVBO);
 	glBufferData(GL_ARRAY_BUFFER, numElements * sizeof(glm::mat4), NULL, GL_STREAM_DRAW);
 
-	glBindBuffer(GL_ARRAY_BUFFER, m_hudColoursVBO);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, numElements * sizeof(GLubyte) * 4, &m_hudColoursData[0]);
+	if (!m_hudColoursData.empty())
+	{
+		glBindBuffer(GL_ARRAY_BUFFER, m_hudColoursVBO);
+		glBufferSubData(GL_ARRAY_BUFFER, 0, numElements * sizeof(GLubyte) * 4, &m_hudColoursData[0]);
+	}
 
-	glBindBuffer(GL_ARRAY_BUFFER, m_hudTexCoordsVBO);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, numElements * sizeof(GLfloat) * 4, &m_hudTexCoordsData[0]);
+	if (!m_hudTexCoordsData.empty())
+	{
+		glBindBuffer(GL_ARRAY_BUFFER, m_hudTexCoordsVBO);
+		glBufferSubData(GL_ARRAY_BUFFER, 0, numElements * sizeof(GLfloat) * 4, &m_hudTexCoordsData[0]);
+	}
 
-	glBindBuffer(GL_ARRAY_BUFFER, m_hudModelsVBO);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, numElements * sizeof(glm::mat4), &m_hudModelsData[0]);
+	if (!m_hudModelsData.empty())
+	{
+		glBindBuffer(GL_ARRAY_BUFFER, m_hudModelsVBO);
+		glBufferSubData(GL_ARRAY_BUFFER, 0, numElements * sizeof(glm::mat4), &m_hudModelsData[0]);
+	}
 
 	m_hudTexture->bind();
 	glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, numElements);

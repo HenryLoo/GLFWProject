@@ -76,7 +76,7 @@ namespace GameComponent
 		float cameraDistance{ -1 };
 
 		// Flag for if the animation should be reset.
-		bool isResetAnimation{ false };
+		bool isResetAnimation{ true };
 
 		bool operator<(const Sprite &that) const
 		{

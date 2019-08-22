@@ -106,7 +106,7 @@ EntityManager::EntityManager(GameEngine *game, AssetLoader *assetLoader,
 
 	// TODO: replace these hardcoded resources.
 	m_effectsTexture = assetLoader->load<SpriteSheet>("effects");
-	//createEnemy();
+	createEnemy();
 	createPlayer();
 
 	// Initialze game systems.
@@ -169,10 +169,13 @@ void EntityManager::update(float deltaTime, AssetLoader *assetLoader,
 	deleteFlaggedEntities();
 
 	// Update the hud with entity values.
-	const GameComponent::Character &playerChar{ m_compCharacters[m_playerId] };
-	uRenderer->updateHud(assetLoader, tRenderer, m_compPlayer.portraitIcon, 
-		m_compPlayer.skillIcons, playerChar.health, playerChar.maxHealth, 
-		playerChar.resource, playerChar.maxResource, m_compPlayer.skillTimers);
+	if (m_playerId != EntityConstants::PLAYER_NOT_SET)
+	{
+		const GameComponent::Character &playerChar{ m_compCharacters[m_playerId] };
+		uRenderer->updateHud(assetLoader, tRenderer, m_compPlayer.portraitIcon,
+			m_compPlayer.skillIcons, playerChar.health, playerChar.maxHealth,
+			playerChar.resource, playerChar.maxResource, m_compPlayer.skillTimers);
+	}
 }
 
 void EntityManager::updateDebug(float deltaTime)
@@ -254,6 +257,7 @@ int EntityManager::createEntity(Prefab *prefab)
 				else if (type == COMPONENT_ENEMY)
 				{
 					hasEnemy = true;
+					scriptName = initializeEnemy(id, component);
 				}
 			}
 		}
@@ -288,23 +292,23 @@ int EntityManager::createEntity(Prefab *prefab)
 					m_lua[INIT_PLAYER_STATES](id);
 				}
 			}
-
-			// Create the player's specific states.
-			if (!scriptName.empty())
-			{
-				std::shared_ptr<Script> statesScript{ m_assetLoader->load<Script>(scriptName) };
-				if (statesScript != nullptr)
-				{
-					auto result{ statesScript->execute(m_lua) };
-					if (result.valid())
-					{
-						m_lua[INIT_STATES](id);
-					}
-				}
-			}
 		}
 		else if (hasEnemy)
 			team = GameComponent::TEAM_ENEMY;
+
+		// Create the player's or enemy's specific states.
+		if ((hasPlayer || hasEnemy) && !scriptName.empty())
+		{
+			std::shared_ptr<Script> statesScript{ m_assetLoader->load<Script>(scriptName) };
+			if (statesScript != nullptr)
+			{
+				auto result{ statesScript->execute(m_lua) };
+				if (result.valid())
+				{
+					m_lua[INIT_STATES](id);
+				}
+			}
+		}
 
 		if (hasCharacter)
 			m_compCharacters[id].team = team;
@@ -545,6 +549,17 @@ void EntityManager::initializeCharacter(int entityId, const nlohmann::json &json
 			}
 		}
 	}
+}
+
+std::string EntityManager::initializeEnemy(int entityId, const nlohmann::json &json)
+{
+	std::string scriptName;
+	if (JSONUtilities::hasEntry(PROPERTY_SCRIPT, json))
+	{
+		scriptName = json.at(PROPERTY_SCRIPT).get<std::string>();
+	}
+
+	return scriptName;
 }
 
 void EntityManager::deleteEntity(int id)
@@ -1359,386 +1374,386 @@ void EntityManager::createEnemy()
 	GameComponent::Physics &phys = m_compPhysics[enemyId];
 	phys.pos = glm::vec3(128.f, 800.f, 0.f);
 
-	GameComponent::Sprite &spr = m_compSprites[enemyId];
-	GameComponent::Collision &col = m_compCollisions[enemyId];
+	//GameComponent::Sprite &spr = m_compSprites[enemyId];
+	//GameComponent::Collision &col = m_compCollisions[enemyId];
 
-	// Set up state machine.
-	GameComponent::Character &character{ m_compCharacters[enemyId] };
-	StateMachine &states{ character.states };
+	//// Set up state machine.
+	//GameComponent::Character &character{ m_compCharacters[enemyId] };
+	//StateMachine &states{ character.states };
 
-	auto fallenEnterAction{ [this](int entityId)
-	{
-		GameComponent::Physics &phys{ m_compPhysics[entityId] };
-		GameComponent::Character &character{ m_compCharacters[entityId] };
+	//auto fallenEnterAction{ [this](int entityId)
+	//{
+	//	GameComponent::Physics &phys{ m_compPhysics[entityId] };
+	//	GameComponent::Character &character{ m_compCharacters[entityId] };
 
-		phys.hasFriction = true;
-		character.fallenTimer = 3.f;
-	} };
+	//	phys.hasFriction = true;
+	//	character.fallenTimer = 3.f;
+	//} };
 
-	auto fallenUpdateAction{ [this](int entityId)
-	{
-		GameComponent::Sprite &spr{ m_compSprites[entityId] };
-		GameComponent::Character &character{ m_compCharacters[entityId] };
+	//auto fallenUpdateAction{ [this](int entityId)
+	//{
+	//	GameComponent::Sprite &spr{ m_compSprites[entityId] };
+	//	GameComponent::Character &character{ m_compCharacters[entityId] };
 
-		// If dead, make sprite translucent.
-		if (GameComponent::isDead(character))
-		{
-			spr.a = 100;
-		}
-	} };
+	//	// If dead, make sprite translucent.
+	//	if (GameComponent::isDead(character))
+	//	{
+	//		spr.a = 100;
+	//	}
+	//} };
 
-	auto runUpdateAction{ [this](int entityId)
-	{
-		GameComponent::Enemy &enemy{ m_compEnemies[entityId] };
-		GameComponent::Physics &phys{ m_compPhysics[entityId] };
-		GameComponent::Sprite &spr{ m_compSprites[entityId] };
-		GameComponent::Collision &col{ m_compCollisions[entityId] };
-		GameComponent::Character &character{ m_compCharacters[entityId] };
+	//auto runUpdateAction{ [this](int entityId)
+	//{
+	//	GameComponent::Enemy &enemy{ m_compEnemies[entityId] };
+	//	GameComponent::Physics &phys{ m_compPhysics[entityId] };
+	//	GameComponent::Sprite &spr{ m_compSprites[entityId] };
+	//	GameComponent::Collision &col{ m_compCollisions[entityId] };
+	//	GameComponent::Character &character{ m_compCharacters[entityId] };
 
-		// If in the air, fix the frame to the last running frame.
-		if (GameComponent::isInAir(phys, col))
-		{
-			spr.currentFrame = GameComponent::getNumSprites(spr) - 1;
-			spr.currentFrameTime = 0.f;
-		}
+	//	// If in the air, fix the frame to the last running frame.
+	//	if (GameComponent::isInAir(phys, col))
+	//	{
+	//		spr.currentFrame = GameComponent::getNumSprites(spr) - 1;
+	//		spr.currentFrameTime = 0.f;
+	//	}
 
-		// Move if on the ground.
-		if (GameComponent::isOnGround(phys, col))
-		{
-			// Move in the other direction if colliding.
-			if (col.isCollidingHorizontal)
-			{
-				if (enemy.isMovingLeft)
-				{
-					enemy.isMovingLeft = false;
-					enemy.isMovingRight = true;
-				}
-				else if (enemy.isMovingRight)
-				{
-					enemy.isMovingLeft = true;
-					enemy.isMovingRight = false;
-				}
-			}
+	//	// Move if on the ground.
+	//	if (GameComponent::isOnGround(phys, col))
+	//	{
+	//		// Move in the other direction if colliding.
+	//		if (col.isCollidingHorizontal)
+	//		{
+	//			if (enemy.isMovingLeft)
+	//			{
+	//				enemy.isMovingLeft = false;
+	//				enemy.isMovingRight = true;
+	//			}
+	//			else if (enemy.isMovingRight)
+	//			{
+	//				enemy.isMovingLeft = true;
+	//				enemy.isMovingRight = false;
+	//			}
+	//		}
 
-			// If current speed is greater than the character's movement speed,
-			// start applying friction to gradually bring it back down to
-			// the character's movement speed.
-			float currentSpeed{ glm::abs(phys.speed.x) };
-			phys.hasFriction = (currentSpeed > character.movementSpeed);
+	//		// If current speed is greater than the character's movement speed,
+	//		// start applying friction to gradually bring it back down to
+	//		// the character's movement speed.
+	//		float currentSpeed{ glm::abs(phys.speed.x) };
+	//		phys.hasFriction = (currentSpeed > character.movementSpeed);
 
-			// Maintain maximum horizontal speed.
-			float maxSpeed{ glm::max(character.movementSpeed, currentSpeed) };
+	//		// Maintain maximum horizontal speed.
+	//		float maxSpeed{ glm::max(character.movementSpeed, currentSpeed) };
 
-			float dir{ 0.f };
-			if (enemy.isMovingLeft)
-				dir = -1.f;
-			else if (enemy.isMovingRight)
-				dir = 1.f;
+	//		float dir{ 0.f };
+	//		if (enemy.isMovingLeft)
+	//			dir = -1.f;
+	//		else if (enemy.isMovingRight)
+	//			dir = 1.f;
 
-			phys.speed.x += (dir * character.movementSpeed / 0.1f * m_deltaTime);
-			phys.speed.x = glm::clamp(phys.speed.x, -maxSpeed, maxSpeed);
-		}
+	//		phys.speed.x += (dir * character.movementSpeed / 0.1f * m_deltaTime);
+	//		phys.speed.x = glm::clamp(phys.speed.x, -maxSpeed, maxSpeed);
+	//	}
 
-		// Face the direction of movement if the enemy isn't targeting
-		// the player.
-		if (phys.speed.x != 0.f)
-		{
-			if (!enemy.isTargetingPlayer)
-				phys.scale.x = glm::sign(phys.speed.x) * glm::abs(phys.scale.x);
-			// Otherwise, face the player.
-			else
-			{
-				glm::vec2 playerPos{ m_compPhysics[m_playerId].pos };
-				if (playerPos.x < phys.pos.x)
-					phys.scale.x = -glm::abs(phys.scale.x);
-				else if (playerPos.x > phys.pos.x)
-					phys.scale.x = glm::abs(phys.scale.x);
-			}
-		}
+	//	// Face the direction of movement if the enemy isn't targeting
+	//	// the player.
+	//	if (phys.speed.x != 0.f)
+	//	{
+	//		if (!enemy.isTargetingPlayer)
+	//			phys.scale.x = glm::sign(phys.speed.x) * glm::abs(phys.scale.x);
+	//		// Otherwise, face the player.
+	//		else
+	//		{
+	//			glm::vec2 playerPos{ m_compPhysics[m_playerId].pos };
+	//			if (playerPos.x < phys.pos.x)
+	//				phys.scale.x = -glm::abs(phys.scale.x);
+	//			else if (playerPos.x > phys.pos.x)
+	//				phys.scale.x = glm::abs(phys.scale.x);
+	//		}
+	//	}
 
-		// Target the player if the enemy can see them.
-		if (!enemy.isTargetingPlayer)
-		{
-			glm::vec2 playerPos{ m_compPhysics[m_playerId].pos };
-			bool canSeePlayerLeft{ playerPos.x >= phys.pos.x - enemy.targetRange.x && playerPos.x <= phys.pos.x };
-			bool canSeePlayerRight{ playerPos.x <= phys.pos.x + enemy.targetRange.x && playerPos.x >= phys.pos.x };
-			bool canSeePlayerDown{ playerPos.y >= phys.pos.y - enemy.targetRange.y };
-			bool canSeePlayerUp{ playerPos.y <= phys.pos.y + enemy.targetRange.y };
-			enemy.isTargetingPlayer = ((canSeePlayerLeft && phys.scale.x < 0) ||
-				(canSeePlayerRight && phys.scale.x > 0)) &&
-				canSeePlayerDown && canSeePlayerUp;
-		}
-	} };
+	//	// Target the player if the enemy can see them.
+	//	if (!enemy.isTargetingPlayer)
+	//	{
+	//		glm::vec2 playerPos{ m_compPhysics[m_playerId].pos };
+	//		bool canSeePlayerLeft{ playerPos.x >= phys.pos.x - enemy.targetRange.x && playerPos.x <= phys.pos.x };
+	//		bool canSeePlayerRight{ playerPos.x <= phys.pos.x + enemy.targetRange.x && playerPos.x >= phys.pos.x };
+	//		bool canSeePlayerDown{ playerPos.y >= phys.pos.y - enemy.targetRange.y };
+	//		bool canSeePlayerUp{ playerPos.y <= phys.pos.y + enemy.targetRange.y };
+	//		enemy.isTargetingPlayer = ((canSeePlayerLeft && phys.scale.x < 0) ||
+	//			(canSeePlayerRight && phys.scale.x > 0)) &&
+	//			canSeePlayerDown && canSeePlayerUp;
+	//	}
+	//} };
 
-	auto runExitAction{ [this](int entityId)
-	{
-		GameComponent::Enemy &enemy{ m_compEnemies[entityId] };
-		GameComponent::Physics &phys{ m_compPhysics[entityId] };
+	//auto runExitAction{ [this](int entityId)
+	//{
+	//	GameComponent::Enemy &enemy{ m_compEnemies[entityId] };
+	//	GameComponent::Physics &phys{ m_compPhysics[entityId] };
 
-		enemy.isMovingLeft = false;
-		enemy.isMovingRight = false;
-		phys.hasFriction = true;
-	} };
+	//	enemy.isMovingLeft = false;
+	//	enemy.isMovingRight = false;
+	//	phys.hasFriction = true;
+	//} };
 
-	auto idleEnterAction{ [this](int entityId)
-	{
-		GameComponent::Enemy &enemy{ m_compEnemies[entityId] };
-		GameComponent::Physics &phys{ m_compPhysics[entityId] };
+	//auto idleEnterAction{ [this](int entityId)
+	//{
+	//	GameComponent::Enemy &enemy{ m_compEnemies[entityId] };
+	//	GameComponent::Physics &phys{ m_compPhysics[entityId] };
 
-		GameComponent::setActionTimer(enemy);
-	} };
+	//	GameComponent::setActionTimer(enemy);
+	//} };
 
-	auto idleUpdateAction{ [this](int entityId)
-	{
-		GameComponent::Enemy &enemy{ m_compEnemies[entityId] };
-		GameComponent::Physics &phys{ m_compPhysics[entityId] };
+	//auto idleUpdateAction{ [this](int entityId)
+	//{
+	//	GameComponent::Enemy &enemy{ m_compEnemies[entityId] };
+	//	GameComponent::Physics &phys{ m_compPhysics[entityId] };
 
-		glm::vec2 playerPos{ m_compPhysics[m_playerId].pos };
-		bool canSeePlayerLeft{ playerPos.x >= phys.pos.x - enemy.targetRange.x };
-		bool canSeePlayerRight{ playerPos.x <= phys.pos.x + enemy.targetRange.x  };
-		bool canSeePlayerDown{ playerPos.y >= phys.pos.y - enemy.targetRange.y };
-		bool canSeePlayerUp{ playerPos.y <= phys.pos.y + enemy.targetRange.y };
+	//	glm::vec2 playerPos{ m_compPhysics[m_playerId].pos };
+	//	bool canSeePlayerLeft{ playerPos.x >= phys.pos.x - enemy.targetRange.x };
+	//	bool canSeePlayerRight{ playerPos.x <= phys.pos.x + enemy.targetRange.x  };
+	//	bool canSeePlayerDown{ playerPos.y >= phys.pos.y - enemy.targetRange.y };
+	//	bool canSeePlayerUp{ playerPos.y <= phys.pos.y + enemy.targetRange.y };
 
-		// Target the player if the enemy can see them.
-		if (!enemy.isTargetingPlayer)
-		{
-			enemy.isTargetingPlayer = ((canSeePlayerLeft && playerPos.x <= phys.pos.x && phys.scale.x < 0) ||
-				(canSeePlayerRight && playerPos.x >= phys.pos.x && phys.scale.x > 0)) &&
-				canSeePlayerDown && canSeePlayerUp;
-		}
-		// Lose track of the player if too far away.
-		else
-		{
-			enemy.isTargetingPlayer = canSeePlayerLeft && canSeePlayerRight && 
-				canSeePlayerDown && canSeePlayerUp;
-		}
-	} };
+	//	// Target the player if the enemy can see them.
+	//	if (!enemy.isTargetingPlayer)
+	//	{
+	//		enemy.isTargetingPlayer = ((canSeePlayerLeft && playerPos.x <= phys.pos.x && phys.scale.x < 0) ||
+	//			(canSeePlayerRight && playerPos.x >= phys.pos.x && phys.scale.x > 0)) &&
+	//			canSeePlayerDown && canSeePlayerUp;
+	//	}
+	//	// Lose track of the player if too far away.
+	//	else
+	//	{
+	//		enemy.isTargetingPlayer = canSeePlayerLeft && canSeePlayerRight && 
+	//			canSeePlayerDown && canSeePlayerUp;
+	//	}
+	//} };
 
-	auto attackEnterAction{ [this](int entityId)
-	{
-		GameComponent::Physics &phys{ m_compPhysics[entityId] };
+	//auto attackEnterAction{ [this](int entityId)
+	//{
+	//	GameComponent::Physics &phys{ m_compPhysics[entityId] };
 
-		float dir{ glm::sign(phys.scale.x) };
-		phys.speed.x = 256.f * dir;
-		phys.speed.y = 32.f;
-		phys.hasFriction = false;
-	} };
+	//	float dir{ glm::sign(phys.scale.x) };
+	//	phys.speed.x = 256.f * dir;
+	//	phys.speed.y = 32.f;
+	//	phys.hasFriction = false;
+	//} };
 
-	auto attackExitAction{ [this](int entityId)
-	{
-		GameComponent::Enemy &enemy{ m_compEnemies[entityId] };
-		GameComponent::Physics &phys{ m_compPhysics[entityId] };
+	//auto attackExitAction{ [this](int entityId)
+	//{
+	//	GameComponent::Enemy &enemy{ m_compEnemies[entityId] };
+	//	GameComponent::Physics &phys{ m_compPhysics[entityId] };
 
-		phys.hasFriction = true;
-		enemy.attackTimer = enemy.attackDuration;
-	} };
+	//	phys.hasFriction = true;
+	//	enemy.attackTimer = enemy.attackDuration;
+	//} };
 
-	/*states.addState(CharState::IDLE, idleUpdateAction, idleEnterAction);
-	states.addState(CharState::RUN, runUpdateAction, [](int) {}, runExitAction);
-	states.addState(CharState::HURT);
-	states.addState(CharState::HURT_AIR);
-	states.addState(CharState::FALLEN, fallenUpdateAction, fallenEnterAction);
-	states.addState(CharState::ALERT);
-	states.addState(CharState::ATTACK, [](int) {}, attackEnterAction, attackExitAction);*/
+	///*states.addState(CharState::IDLE, idleUpdateAction, idleEnterAction);
+	//states.addState(CharState::RUN, runUpdateAction, [](int) {}, runExitAction);
+	//states.addState(CharState::HURT);
+	//states.addState(CharState::HURT_AIR);
+	//states.addState(CharState::FALLEN, fallenUpdateAction, fallenEnterAction);
+	//states.addState(CharState::ALERT);
+	//states.addState(CharState::ATTACK, [](int) {}, attackEnterAction, attackExitAction);*/
 
-	// Hurt while on ground.
-	auto isHurting{ [this](int entityId) -> bool
-	{
-		GameComponent::Physics &phys{ m_compPhysics[entityId] };
-		GameComponent::Collision &col{ m_compCollisions[entityId] };
-		GameComponent::Character &character{ m_compCharacters[entityId] };
+	//// Hurt while on ground.
+	//auto isHurting{ [this](int entityId) -> bool
+	//{
+	//	GameComponent::Physics &phys{ m_compPhysics[entityId] };
+	//	GameComponent::Collision &col{ m_compCollisions[entityId] };
+	//	GameComponent::Character &character{ m_compCharacters[entityId] };
 
-		return (character.hitStunTimer > 0.f && GameComponent::isOnGround(phys, col));
-	} };
-	states.addEdge(CharState::IDLE, CharState::HURT, isHurting);
-	states.addEdge(CharState::RUN, CharState::HURT, isHurting);
-	states.addEdge(CharState::ALERT, CharState::HURT, isHurting);
-	states.addEdge(CharState::ATTACK, CharState::HURT, isHurting);
+	//	return (character.hitStunTimer > 0.f && GameComponent::isOnGround(phys, col));
+	//} };
+	//states.addEdge(CharState::IDLE, CharState::HURT, isHurting);
+	//states.addEdge(CharState::RUN, CharState::HURT, isHurting);
+	//states.addEdge(CharState::ALERT, CharState::HURT, isHurting);
+	//states.addEdge(CharState::ATTACK, CharState::HURT, isHurting);
 
-	// Stop hurting.
-	auto isStopHurting{ [this](int entityId) -> bool
-	{
-		GameComponent::Collision &col{ m_compCollisions[entityId] };
-		GameComponent::Character &character{ m_compCharacters[entityId] };
+	//// Stop hurting.
+	//auto isStopHurting{ [this](int entityId) -> bool
+	//{
+	//	GameComponent::Collision &col{ m_compCollisions[entityId] };
+	//	GameComponent::Character &character{ m_compCharacters[entityId] };
 
-		return character.hitStunTimer == 0.f;
-	} };
-	states.addEdge(CharState::HURT, CharState::IDLE, isStopHurting);
+	//	return character.hitStunTimer == 0.f;
+	//} };
+	//states.addEdge(CharState::HURT, CharState::IDLE, isStopHurting);
 
-	// Hurt while in the air.
-	auto isHurtingAir{ [this](int entityId) -> bool
-	{
-		GameComponent::Physics &phys{ m_compPhysics[entityId] };
-		GameComponent::Collision &col{ m_compCollisions[entityId] };
-		GameComponent::Character &character{ m_compCharacters[entityId] };
+	//// Hurt while in the air.
+	//auto isHurtingAir{ [this](int entityId) -> bool
+	//{
+	//	GameComponent::Physics &phys{ m_compPhysics[entityId] };
+	//	GameComponent::Collision &col{ m_compCollisions[entityId] };
+	//	GameComponent::Character &character{ m_compCharacters[entityId] };
 
-		return (character.hitStunTimer > 0.f && GameComponent::isInAir(phys, col));
-	} };
-	states.addEdge(CharState::RUN, CharState::HURT_AIR, isHurtingAir);
-	states.addEdge(CharState::HURT, CharState::HURT_AIR, isHurtingAir);
-	states.addEdge(CharState::FALLEN, CharState::HURT_AIR, isHurtingAir);
-	states.addEdge(CharState::ALERT, CharState::HURT_AIR, isHurtingAir);
-	states.addEdge(CharState::ATTACK, CharState::HURT_AIR, isHurtingAir);
+	//	return (character.hitStunTimer > 0.f && GameComponent::isInAir(phys, col));
+	//} };
+	//states.addEdge(CharState::RUN, CharState::HURT_AIR, isHurtingAir);
+	//states.addEdge(CharState::HURT, CharState::HURT_AIR, isHurtingAir);
+	//states.addEdge(CharState::FALLEN, CharState::HURT_AIR, isHurtingAir);
+	//states.addEdge(CharState::ALERT, CharState::HURT_AIR, isHurtingAir);
+	//states.addEdge(CharState::ATTACK, CharState::HURT_AIR, isHurtingAir);
 
-	// Fallen.
-	auto isFallen{ [this](int entityId) -> bool
-	{
-		GameComponent::Physics &phys{ m_compPhysics[entityId] };
-		GameComponent::Collision &col{ m_compCollisions[entityId] };
+	//// Fallen.
+	//auto isFallen{ [this](int entityId) -> bool
+	//{
+	//	GameComponent::Physics &phys{ m_compPhysics[entityId] };
+	//	GameComponent::Collision &col{ m_compCollisions[entityId] };
 
-		return GameComponent::isOnGround(phys, col);
-	} };
-	states.addEdge(CharState::HURT_AIR, CharState::FALLEN, isFallen);
+	//	return GameComponent::isOnGround(phys, col);
+	//} };
+	//states.addEdge(CharState::HURT_AIR, CharState::FALLEN, isFallen);
 
-	// Dead while on ground.
-	auto isDead{ [this](int entityId) -> bool
-	{
-		GameComponent::Character &character{ m_compCharacters[entityId] };
+	//// Dead while on ground.
+	//auto isDead{ [this](int entityId) -> bool
+	//{
+	//	GameComponent::Character &character{ m_compCharacters[entityId] };
 
-		return GameComponent::isDead(character);
-	} };
-	states.addEdge(CharState::HURT, CharState::FALLEN, isDead);
+	//	return GameComponent::isDead(character);
+	//} };
+	//states.addEdge(CharState::HURT, CharState::FALLEN, isDead);
 
-	// Stop fallen.
-	auto isStopFallen{ [this](int entityId) -> bool
-	{
-		GameComponent::Collision &col{ m_compCollisions[entityId] };
-		GameComponent::Character &character{ m_compCharacters[entityId] };
+	//// Stop fallen.
+	//auto isStopFallen{ [this](int entityId) -> bool
+	//{
+	//	GameComponent::Collision &col{ m_compCollisions[entityId] };
+	//	GameComponent::Character &character{ m_compCharacters[entityId] };
 
-		return character.fallenTimer == 0.f && !GameComponent::isDead(character);
-	} };
-	states.addEdge(CharState::FALLEN, CharState::IDLE, isStopFallen);
+	//	return character.fallenTimer == 0.f && !GameComponent::isDead(character);
+	//} };
+	//states.addEdge(CharState::FALLEN, CharState::IDLE, isStopFallen);
 
-	// Falling.
-	auto isFalling{ [this](int entityId) -> bool
-	{
-		GameComponent::Physics &phys{ m_compPhysics[entityId] };
-		GameComponent::Collision &col{ m_compCollisions[entityId] };
-		GameComponent::Character &character{ m_compCharacters[entityId] };
+	//// Falling.
+	//auto isFalling{ [this](int entityId) -> bool
+	//{
+	//	GameComponent::Physics &phys{ m_compPhysics[entityId] };
+	//	GameComponent::Collision &col{ m_compCollisions[entityId] };
+	//	GameComponent::Character &character{ m_compCharacters[entityId] };
 
-		return (character.hitStunTimer == 0.f && GameComponent::isInAir(phys, col));
-	} };
-	states.addEdge(CharState::IDLE, CharState::RUN, isFalling);
+	//	return (character.hitStunTimer == 0.f && GameComponent::isInAir(phys, col));
+	//} };
+	//states.addEdge(CharState::IDLE, CharState::RUN, isFalling);
 
-	// Stop moving.
-	auto isStopMoving{ [this](int entityId) -> bool
-	{
-		GameComponent::Enemy &enemy{ m_compEnemies[entityId] };
-		GameComponent::Physics &phys{ m_compPhysics[entityId] };
-		GameComponent::Collision &col{ m_compCollisions[entityId] };
+	//// Stop moving.
+	//auto isStopMoving{ [this](int entityId) -> bool
+	//{
+	//	GameComponent::Enemy &enemy{ m_compEnemies[entityId] };
+	//	GameComponent::Physics &phys{ m_compPhysics[entityId] };
+	//	GameComponent::Collision &col{ m_compCollisions[entityId] };
 
-		bool isLanding{ GameComponent::isOnGround(phys, col) && 
-			!enemy.isMovingLeft && !enemy.isMovingRight };
-		bool isStoppedPatrolling{ (enemy.isMovingLeft || enemy.isMovingRight) && 
-			enemy.actionTimer == 0.f };
+	//	bool isLanding{ GameComponent::isOnGround(phys, col) && 
+	//		!enemy.isMovingLeft && !enemy.isMovingRight };
+	//	bool isStoppedPatrolling{ (enemy.isMovingLeft || enemy.isMovingRight) && 
+	//		enemy.actionTimer == 0.f };
 
-		return isLanding || isStoppedPatrolling;
-	} };
-	states.addEdge(CharState::RUN, CharState::IDLE, isStopMoving);
+	//	return isLanding || isStoppedPatrolling;
+	//} };
+	//states.addEdge(CharState::RUN, CharState::IDLE, isStopMoving);
 
-	// Start moving.
-	auto isMoving{ [this](int entityId) -> bool
-	{
-		GameComponent::Enemy &enemy{ m_compEnemies[entityId] };
-		GameComponent::Physics &phys{ m_compPhysics[entityId] };
-		GameComponent::Character &character{ m_compCharacters[entityId] };
+	//// Start moving.
+	//auto isMoving{ [this](int entityId) -> bool
+	//{
+	//	GameComponent::Enemy &enemy{ m_compEnemies[entityId] };
+	//	GameComponent::Physics &phys{ m_compPhysics[entityId] };
+	//	GameComponent::Character &character{ m_compCharacters[entityId] };
 
-		if (enemy.isTargetingPlayer && enemy.attackTimer == 0.f)
-		{
-			// Move towards player.
-			glm::vec2 playerPos{ m_compPhysics[m_playerId].pos };
-			if (playerPos.x < phys.pos.x)
-			{
-				enemy.isMovingLeft = true;
-				enemy.isMovingRight = false;
-			}
-			else if (playerPos.x > phys.pos.x)
-			{
-				enemy.isMovingLeft = false;
-				enemy.isMovingRight = true;
-			}
+	//	if (enemy.isTargetingPlayer && enemy.attackTimer == 0.f)
+	//	{
+	//		// Move towards player.
+	//		glm::vec2 playerPos{ m_compPhysics[m_playerId].pos };
+	//		if (playerPos.x < phys.pos.x)
+	//		{
+	//			enemy.isMovingLeft = true;
+	//			enemy.isMovingRight = false;
+	//		}
+	//		else if (playerPos.x > phys.pos.x)
+	//		{
+	//			enemy.isMovingLeft = false;
+	//			enemy.isMovingRight = true;
+	//		}
 
-			// Respond twice as quickly when targeting player.
-			GameComponent::setActionTimer(enemy, 0.5f);
+	//		// Respond twice as quickly when targeting player.
+	//		GameComponent::setActionTimer(enemy, 0.5f);
 
-			return true;
-		}
-		else if (enemy.actionTimer == 0.f)
-		{
-			// Move in random direction.
-			if (rand() % 2 == 0)
-			{
-				enemy.isMovingLeft = true;
-				enemy.isMovingRight = false;
-			}
-			else
-			{
-				enemy.isMovingLeft = false;
-				enemy.isMovingRight = true;
-			}
-			GameComponent::setActionTimer(enemy);
+	//		return true;
+	//	}
+	//	else if (enemy.actionTimer == 0.f)
+	//	{
+	//		// Move in random direction.
+	//		if (rand() % 2 == 0)
+	//		{
+	//			enemy.isMovingLeft = true;
+	//			enemy.isMovingRight = false;
+	//		}
+	//		else
+	//		{
+	//			enemy.isMovingLeft = false;
+	//			enemy.isMovingRight = true;
+	//		}
+	//		GameComponent::setActionTimer(enemy);
 
-			return true;
-		}
+	//		return true;
+	//	}
 
-		return false;
-	} };
-	states.addEdge(CharState::IDLE, CharState::RUN, isMoving);
+	//	return false;
+	//} };
+	//states.addEdge(CharState::IDLE, CharState::RUN, isMoving);
 
-	// Alert.
-	auto isAlert{ [this](int entityId) -> bool
-	{
-		GameComponent::Enemy &enemy{ m_compEnemies[entityId] };
-		GameComponent::Physics &phys{ m_compPhysics[entityId] };
-		GameComponent::Collision &col{ m_compCollisions[entityId] };
-		GameComponent::Character &character{ m_compCharacters[entityId] };
+	//// Alert.
+	//auto isAlert{ [this](int entityId) -> bool
+	//{
+	//	GameComponent::Enemy &enemy{ m_compEnemies[entityId] };
+	//	GameComponent::Physics &phys{ m_compPhysics[entityId] };
+	//	GameComponent::Collision &col{ m_compCollisions[entityId] };
+	//	GameComponent::Character &character{ m_compCharacters[entityId] };
 
-		if (enemy.isTargetingPlayer && enemy.attackTimer == 0.f && 
-			GameComponent::isOnGround(phys, col))
-		{
-			glm::vec2 playerPos{ m_compPhysics[m_playerId].pos };
-			bool isInRangeLeft{ playerPos.x >= phys.pos.x - enemy.attackRange.x };
-			bool isInRangeRight{ playerPos.x <= phys.pos.x + enemy.attackRange.x };
-			bool isInRangeDown{ playerPos.y >= phys.pos.y - enemy.attackRange.y };
-			bool inInRangeUp{ playerPos.y <= phys.pos.y + enemy.attackRange.y };
+	//	if (enemy.isTargetingPlayer && enemy.attackTimer == 0.f && 
+	//		GameComponent::isOnGround(phys, col))
+	//	{
+	//		glm::vec2 playerPos{ m_compPhysics[m_playerId].pos };
+	//		bool isInRangeLeft{ playerPos.x >= phys.pos.x - enemy.attackRange.x };
+	//		bool isInRangeRight{ playerPos.x <= phys.pos.x + enemy.attackRange.x };
+	//		bool isInRangeDown{ playerPos.y >= phys.pos.y - enemy.attackRange.y };
+	//		bool inInRangeUp{ playerPos.y <= phys.pos.y + enemy.attackRange.y };
 
-			if (isInRangeLeft && isInRangeRight &&
-				isInRangeDown && inInRangeUp)
-			{
-				return true;
-			}
-		}
+	//		if (isInRangeLeft && isInRangeRight &&
+	//			isInRangeDown && inInRangeUp)
+	//		{
+	//			return true;
+	//		}
+	//	}
 
-		return false;
-	} };
-	states.addEdge(CharState::IDLE, CharState::ALERT, isAlert);
-	states.addEdge(CharState::RUN, CharState::ALERT, isAlert);
+	//	return false;
+	//} };
+	//states.addEdge(CharState::IDLE, CharState::ALERT, isAlert);
+	//states.addEdge(CharState::RUN, CharState::ALERT, isAlert);
 
-	// Animation end transitions.
-	auto isAnimationEnd{ [this](int entityId) -> bool
-	{
-		GameComponent::Sprite &spr{ m_compSprites[entityId] };
+	//// Animation end transitions.
+	//auto isAnimationEnd{ [this](int entityId) -> bool
+	//{
+	//	GameComponent::Sprite &spr{ m_compSprites[entityId] };
 
-		float frameDuration{ GameComponent::getFrameDuration(spr) };
-		int numSprites{ GameComponent::getNumSprites(spr) };
-		return (spr.currentFrameTime >= frameDuration &&
-			(!spr.currentSprite.isLooping && spr.currentFrame == numSprites - 1));
-	} };
-	states.addEdge(CharState::ALERT, CharState::ATTACK, isAnimationEnd);
+	//	float frameDuration{ GameComponent::getFrameDuration(spr) };
+	//	int numSprites{ GameComponent::getNumSprites(spr) };
+	//	return (spr.currentFrameTime >= frameDuration &&
+	//		(!spr.currentSprite.isLooping && spr.currentFrame == numSprites - 1));
+	//} };
+	//states.addEdge(CharState::ALERT, CharState::ATTACK, isAnimationEnd);
 
-	auto isAttackEnd{ [this](int entityId) -> bool
-	{
-		GameComponent::Physics &phys{ m_compPhysics[entityId] };
-		GameComponent::Sprite &spr{ m_compSprites[entityId] };
-		GameComponent::Collision &col{ m_compCollisions[entityId] };
+	//auto isAttackEnd{ [this](int entityId) -> bool
+	//{
+	//	GameComponent::Physics &phys{ m_compPhysics[entityId] };
+	//	GameComponent::Sprite &spr{ m_compSprites[entityId] };
+	//	GameComponent::Collision &col{ m_compCollisions[entityId] };
 
-		float frameDuration{ GameComponent::getFrameDuration(spr) };
-		int numSprites{ GameComponent::getNumSprites(spr) };
-		bool isAnimationEnd{ spr.currentFrameTime >= frameDuration &&
-			(!spr.currentSprite.isLooping && spr.currentFrame == numSprites - 1) };
-		return isAnimationEnd && GameComponent::isOnGround(phys, col);
-	} };
-	states.addEdge(CharState::ATTACK, CharState::IDLE, isAttackEnd);
+	//	float frameDuration{ GameComponent::getFrameDuration(spr) };
+	//	int numSprites{ GameComponent::getNumSprites(spr) };
+	//	bool isAnimationEnd{ spr.currentFrameTime >= frameDuration &&
+	//		(!spr.currentSprite.isLooping && spr.currentFrame == numSprites - 1) };
+	//	return isAnimationEnd && GameComponent::isOnGround(phys, col);
+	//} };
+	//states.addEdge(CharState::ATTACK, CharState::IDLE, isAttackEnd);
 }
 
 //void GameEngine::createNewEntities()
@@ -1784,7 +1799,11 @@ void EntityManager::createEnemy()
 
 void EntityManager::initLua()
 {
-	m_lua.open_libraries(sol::lib::base, sol::lib::package, sol::lib::math);
+	m_lua.open_libraries(sol::lib::base, sol::lib::package, sol::lib::math, 
+		sol::lib::os);
+
+	// Initialize random seed.
+	m_lua.script("math.randomseed(os.time())");
 
 	m_lua.new_enum("InputType",
 		"INPUT_UP", InputManager::INPUT_UP,
@@ -1970,6 +1989,20 @@ void EntityManager::initLua()
 		{
 			return m_compPhysics[entityId].isLockedDirection;
 		});
+	m_lua.set_function("getPlayerPosX", [this]()
+		{
+			if (m_playerId != EntityConstants::PLAYER_NOT_SET)
+				return m_compPhysics[m_playerId].pos.x;
+			else
+				return -1.f;
+		});
+	m_lua.set_function("getPlayerPosY", [this]()
+		{
+			if (m_playerId != EntityConstants::PLAYER_NOT_SET)
+				return m_compPhysics[m_playerId].pos.y;
+			else
+				return -1.f;
+		});
 	m_lua.set_function("setPosX", [this](int entityId, float value)
 		{
 			m_compPhysics[entityId].pos.x = value;
@@ -2005,6 +2038,10 @@ void EntityManager::initLua()
 	m_lua.set_function("setLockedDirection", [this](int entityId, bool flag)
 		{
 			m_compPhysics[entityId].isLockedDirection = flag;
+		});
+	m_lua.set_function("isCollidingHorizontal", [this](int entityId)
+		{
+			return m_compCollisions[entityId].isCollidingHorizontal;
 		});
 	m_lua.set_function("isCollidingFloor", [this](int entityId)
 		{
@@ -2045,6 +2082,10 @@ void EntityManager::initLua()
 	m_lua.set_function("isDead", [this](int entityId)
 		{
 			return GameComponent::isDead(m_compCharacters[entityId]);
+		});
+	m_lua.set_function("setFallenTimer", [this](int entityId, float value)
+		{
+			m_compCharacters[entityId].fallenTimer = value;
 		});
 	m_lua.set_function("getNumRemainingJumps", [this](int entityId)
 		{
@@ -2106,6 +2147,18 @@ void EntityManager::initLua()
 		{
 			m_compSprites[entityId].isResetAnimation = flag;
 		});
+	m_lua.set_function("setCurrentFrame", [this](int entityId, int frame)
+		{
+			m_compSprites[entityId].currentFrame = frame;
+		});
+	m_lua.set_function("setCurrentFrameTime", [this](int entityId, float value)
+		{
+			m_compSprites[entityId].currentFrameTime = value;
+		});
+	m_lua.set_function("setSpriteAlpha", [this](int entityId, unsigned char a)
+		{
+			m_compSprites[entityId].a = a;
+		});
 	m_lua.set_function("getAttackFrameStart", [this](int entityId)
 		{
 			return m_compAttacks[entityId].pattern.frameRange.x;
@@ -2117,5 +2170,67 @@ void EntityManager::initLua()
 	m_lua.set_function("getComboFrame", [this](int entityId)
 		{
 			return m_compAttacks[entityId].pattern.comboFrame;
+		});
+	m_lua.set_function("isEnemyMovingLeft", [this](int entityId)
+		{
+			return m_compEnemies[entityId].isMovingLeft;
+		});
+	m_lua.set_function("isEnemyMovingRight", [this](int entityId)
+		{
+			return m_compEnemies[entityId].isMovingRight;
+		});
+	m_lua.set_function("isEnemyTargetingPlayer", [this](int entityId)
+		{
+			return m_compEnemies[entityId].isTargetingPlayer;
+		});
+	m_lua.set_function("getEnemyTargetRangeX", [this](int entityId)
+		{
+			return m_compEnemies[entityId].targetRange.x;
+		});
+	m_lua.set_function("getEnemyTargetRangeY", [this](int entityId)
+		{
+			return m_compEnemies[entityId].targetRange.y;
+		});
+	m_lua.set_function("getEnemyAttackRangeX", [this](int entityId)
+		{
+			return m_compEnemies[entityId].attackRange.x;
+		});
+	m_lua.set_function("getEnemyAttackRangeY", [this](int entityId)
+		{
+			return m_compEnemies[entityId].attackRange.y;
+		});
+	m_lua.set_function("getEnemyActionTimer", [this](int entityId)
+		{
+			return m_compEnemies[entityId].actionTimer;
+		});
+	m_lua.set_function("getEnemyAttackTimer", [this](int entityId)
+		{
+			return m_compEnemies[entityId].attackTimer;
+		});
+	m_lua.set_function("setEnemyMovingLeft", [this](int entityId, bool flag)
+		{
+			m_compEnemies[entityId].isMovingLeft = flag;
+
+			if (flag)
+				m_compEnemies[entityId].isMovingRight = false;
+		});
+	m_lua.set_function("setEnemyMovingRight", [this](int entityId, bool flag)
+		{
+			m_compEnemies[entityId].isMovingRight = flag;
+
+			if (flag)
+				m_compEnemies[entityId].isMovingLeft = false;
+		});
+	m_lua.set_function("setEnemyTargetingPlayer", [this](int entityId, bool flag)
+		{
+			return m_compEnemies[entityId].isTargetingPlayer = flag;
+		});
+	m_lua.set_function("setEnemyActionTimer", [this](int entityId, float value)
+		{
+			GameComponent::setActionTimer(m_compEnemies[entityId], value);
+		});
+	m_lua.set_function("setEnemyAttackTimer", [this](int entityId)
+		{
+			return m_compEnemies[entityId].attackTimer = m_compEnemies[entityId].attackDuration;
 		});
 }

@@ -76,6 +76,7 @@ private:
 	void initializeWeapon(int entityId, const nlohmann::json &json);
 	void initializeAttack(int entityId, const nlohmann::json &json);
 	void initializeCharacter(int entityId, const nlohmann::json &json);
+	std::string initializeEnemy(int entityId, const nlohmann::json &json);
 
 	// Delete all flagged entities.
 	void deleteFlaggedEntities();
