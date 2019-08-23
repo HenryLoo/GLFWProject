@@ -115,26 +115,33 @@ void AttackCollisionSystem::update(float deltaTime, int numEntities,
 				m_characters[attackId].hitStopTimer = hitStopDuration;
 			}
 
-			// Set the hit stun timer.
-			float hitStun{ 1.f }; // TODO: change fixed value
-			if (GameComponent::isInAir(phys, col) || knockback.y != 0)
+			// Ignore hit stun and knockback if the target has super armour.
+			GameComponent::Sprite &spr{ m_sprites[targetId] };
+			bool hasSuperArmour{ spr.currentFrame >= attack.pattern.superArmour.x &&
+				spr.currentFrame <= attack.pattern.superArmour.y };
+			if (!hasSuperArmour)
 			{
-				// Reset hit stun if knocked into the air.
-				hitStun = hitStopDuration + MIN_HIT_STUN;
-			}
+				// Set the hit stun timer.
+				float hitStun{ attack.pattern.hitStun };
+				if (GameComponent::isInAir(phys, col) || knockback.y != 0)
+				{
+					// Reset hit stun if knocked into the air.
+					hitStun = hitStopDuration + MIN_HIT_STUN;
+				}
 
-			m_sprites[targetId].isResetAnimation = true;
-			character.hitStunTimer = hitStun;
+				m_sprites[targetId].isResetAnimation = true;
+				character.hitStunTimer = hitStun;
 
-			// Apply knockback to target.
-			if (knockback.x != 0.f)
-			{
-				int direction{ m_physics[attackId].scale.x > 0 ? 1 : -1 };
-				phys.speed.x = direction * knockback.x;
-			}
-			if (knockback.y != 0.f)
-			{
-				phys.speed.y = knockback.y;
+				// Apply knockback to target.
+				if (knockback.x != 0.f)
+				{
+					int direction{ m_physics[attackId].scale.x > 0 ? 1 : -1 };
+					phys.speed.x = direction * knockback.x;
+				}
+				if (knockback.y != 0.f)
+				{
+					phys.speed.y = knockback.y;
+				}
 			}
 
 			// Deal damage to target.

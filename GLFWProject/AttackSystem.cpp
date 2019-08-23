@@ -19,7 +19,6 @@ void AttackSystem::process(float deltaTime, int entityId,
 	// Update whether attacks are enabled or not.
 	// Attacks are enabled if the current sprite frame is within the specified
 	// frame range and the frame range consists of at least 1 frame.
-	attack.isEnabled = ((sprite.currentFrame >= attack.pattern.frameRange.x &&
-		sprite.currentFrame <= attack.pattern.frameRange.y) && 
-		(attack.pattern.frameRange.y - attack.pattern.frameRange.x > 0));
+	attack.isEnabled = (sprite.currentFrame >= attack.pattern.frameRange.x &&
+		sprite.currentFrame <= attack.pattern.frameRange.y);
 }

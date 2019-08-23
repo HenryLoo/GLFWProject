@@ -66,6 +66,7 @@ namespace
 	const std::string PROPERTY_ATTACKPATTERNS{ "attackPatterns" };
 	const std::string PROPERTY_TYPE{ "type" };
 	const std::string PROPERTY_FRAMERANGE{ "frameRange" };
+	const std::string PROPERTY_SUPERARMOUR{ "superArmour" };
 	const std::string PROPERTY_START{ "start" };
 	const std::string PROPERTY_END{ "end" };
 	const std::string PROPERTY_COMBOFRAME{ "comboFrame" };
@@ -75,6 +76,7 @@ namespace
 	const std::string PROPERTY_COOLDOWN{ "cooldown" };
 	const std::string PROPERTY_DAMAGE{ "damage" };
 	const std::string PROPERTY_KNOCKBACK{ "knockback" };
+	const std::string PROPERTY_HITSTUN{ "hitStun" };
 	const std::string PROPERTY_TARGETRANGE{ "targetRange" };
 	const std::string PROPERTY_ATTACKRANGE{ "attackRange" };
 	const std::string PROPERTY_ACTIONDURATION{ "actionDuration" };
@@ -503,6 +505,19 @@ void EntityManager::initializeCharacter(int entityId, const nlohmann::json &json
 					}
 				}
 
+				if (JSONUtilities::hasEntry(PROPERTY_SUPERARMOUR, thisPattern))
+				{
+					nlohmann::json frameJson{ thisPattern.at(PROPERTY_SUPERARMOUR) };
+					if (JSONUtilities::hasEntry(PROPERTY_START, frameJson))
+					{
+						atkPattern.superArmour.x = frameJson.at(PROPERTY_START).get<int>();
+					}
+					if (JSONUtilities::hasEntry(PROPERTY_END, frameJson))
+					{
+						atkPattern.superArmour.y = frameJson.at(PROPERTY_END).get<int>();
+					}
+				}
+
 				if (JSONUtilities::hasEntry(PROPERTY_COMBOFRAME, thisPattern))
 				{
 					atkPattern.comboFrame = thisPattern.at(PROPERTY_COMBOFRAME).get<int>();
@@ -546,6 +561,11 @@ void EntityManager::initializeCharacter(int entityId, const nlohmann::json &json
 					{
 						atkPattern.knockback.y = knockbackJson.at(PROPERTY_Y).get<float>();
 					}
+				}
+
+				if (JSONUtilities::hasEntry(PROPERTY_HITSTUN, thisPattern))
+				{
+					atkPattern.hitStun = thisPattern.at(PROPERTY_HITSTUN).get<float>();
 				}
 
 				// Add this attack pattern.

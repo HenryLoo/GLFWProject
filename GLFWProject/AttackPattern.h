@@ -15,7 +15,12 @@ struct AttackPattern
 	AABB aabb;
 
 	// The start and end frame index bounds for which this attack is enabled.
-	glm::ivec2 frameRange{ 0 };
+	glm::ivec2 frameRange{ -1 };
+
+	// The start and end frame index bounds for which this attack provides
+	// super armour. Super armour prevents the attacker from being put
+	// in a hurt state or launched when taking damage.
+	glm::ivec2 superArmour{ -1 };
 
 	// The minimum frame index to allow for an additional attack.
 	int comboFrame{ -1 };
@@ -40,6 +45,9 @@ struct AttackPattern
 	// The amount knockback this attack will deal.
 	// Knockback will be applied to the target's speed.
 	glm::vec2 knockback{ 0.f };
+
+	// The duration of hit stun, in seconds, to deal.
+	float hitStun{ 0.f };
 };
 
 #endif
