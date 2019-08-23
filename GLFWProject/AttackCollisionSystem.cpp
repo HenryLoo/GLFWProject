@@ -21,6 +21,9 @@ namespace
 	// The constant to multiply knockback by, to get its hit stop 
 	// duration in seconds.
 	const float HIT_STOP_MULTIPLIER{ 0.001f };
+
+	// The duration in seconds to set the recently hit timer for players.
+	const float RECENTLY_HIT_DURATION{ 4.f };
 }
 
 AttackCollisionSystem::AttackCollisionSystem(EntityManager &manager,
@@ -29,10 +32,12 @@ AttackCollisionSystem::AttackCollisionSystem(EntityManager &manager,
 	std::vector<GameComponent::Sprite> &sprites,
 	std::vector<GameComponent::Collision> &collisions,
 	std::vector<GameComponent::Attack> &attacks,
-	std::vector<GameComponent::Character> &characters) :
+	std::vector<GameComponent::Character> &characters,
+	GameComponent::Player &player) :
 	GameSystem(manager, {}),
 	m_soundEngine(soundEngine), m_physics(physics), m_sprites(sprites), 
-	m_collisions(collisions), m_attacks(attacks), m_characters(characters)
+	m_collisions(collisions), m_attacks(attacks), m_characters(characters),
+	m_player(player)
 {
 
 }
@@ -63,30 +68,26 @@ void AttackCollisionSystem::update(float deltaTime, int numEntities,
 			// If the target is already dead, then skip this collision response.
 			GameComponent::Character &character{ m_characters[targetId] };
 			if (GameComponent::isDead(character))
-			{
 				continue;
-			}
 
-			// If the target has already been hit, then skip this collision response.
-			GameComponent::Attack &attack{ m_attacks[attackId] };
-			std::set<int> &hitEntities{ attack.hitEntities };
-			if (hitEntities.find(targetId) != hitEntities.end())
-			{
+			// If the target is invincible, then skip this collision response.
+			if (character.invincibilityTimer > 0.f)
 				continue;
-			}
 
 			// If the target is fallen, then skip this collision response.
 			if (character.states.getState() == CharState::FALLEN)
-			{
 				continue;
-			}
 
 			// If the attack and the target are in the same team, then skip 
 			// this collision response.
+			GameComponent::Attack &attack{ m_attacks[attackId] };
 			if (character.team == attack.team)
-			{
 				continue;
-			}
+
+			// If the target has already been hit, then skip this collision response.
+			std::set<int> &hitEntities{ attack.hitEntities };
+			if (hitEntities.find(targetId) != hitEntities.end())
+				continue;
 
 			// Add to the list of hit entities.
 			hitEntities.insert(targetId);
@@ -139,6 +140,14 @@ void AttackCollisionSystem::update(float deltaTime, int numEntities,
 			// Deal damage to target.
 			character.health -= attack.pattern.damage;
 			character.health = glm::max(0, character.health);
+
+			// If the target is the player, reset the recently hit duration and 
+			// accumulate recent health lost.
+			if (targetId == m_manager.getPlayerId())
+			{
+				m_player.recentHealthLost += attack.pattern.damage;
+				m_player.recentlyHitTimer = RECENTLY_HIT_DURATION;
+			}
 
 			// Create hit spark effect.
 			if (!attack.pattern.hitSpark.empty())

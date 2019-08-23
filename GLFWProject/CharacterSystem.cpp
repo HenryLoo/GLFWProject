@@ -102,6 +102,9 @@ void CharacterSystem::process(float deltaTime, int entityId,
 	// Update the fallen timer.
 	GameComponent::updateTimer(deltaTime, character.fallenTimer);
 
+	// Update the invincibility timer.
+	GameComponent::updateTimer(deltaTime, character.invincibilityTimer);
+
 	// Delete the entity if it is dead.
 	if (GameComponent::isDead(character) && character.fallenTimer == 0.f &&
 		character.states.getState() == CharState::FALLEN &&

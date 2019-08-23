@@ -19,7 +19,8 @@ public:
 		std::vector<GameComponent::Sprite> &sprites,
 		std::vector<GameComponent::Collision> &collisions,
 		std::vector<GameComponent::Attack> &attacks,
-		std::vector<GameComponent::Character> &characters);
+		std::vector<GameComponent::Character> &characters,
+		GameComponent::Player &player);
 
 	virtual void update(float deltaTime, int numEntities,
 		std::vector<unsigned long> &entities);
@@ -37,6 +38,7 @@ private:
 	std::vector<GameComponent::Collision> &m_collisions;
 	std::vector<GameComponent::Attack> &m_attacks;
 	std::vector<GameComponent::Character> &m_characters;
+	GameComponent::Player &m_player;
 };
 
 #endif

@@ -118,6 +118,13 @@ namespace GameComponent
 		// The sound to play when evading.
 		std::shared_ptr<Sound> evadeSound;
 
+		// The remaining duration in seconds for the player to be
+		// considered as recently hit by an attack.
+		float recentlyHitTimer{ 0.f };
+		
+		// The amount of health lost recently.
+		int recentHealthLost{ 0 };
+
 		// The remaining cooldowns in seconds for player skills.
 		std::vector<float> skillTimers{ 0.f, 0.f, 0.f, 0.f };
 	};
@@ -191,18 +198,18 @@ namespace GameComponent
 		bool isTargetingPlayer{ false };
 
 		// The detection range for this enemy to "see" the player.
-		glm::vec2 targetRange{ 256.f, 32.f };
+		glm::vec2 targetRange{ 0.f };
 
 		// The distance from the player for this enemy to start attacking.
-		glm::vec2 attackRange{ 72.f, 32.f };
+		glm::vec2 attackRange{ 0.f };
 
 		// The duration of time in seconds between each enemy action.
 		float actionTimer{ 0.f };
-		float actionDuration{ 3.f };
+		float actionDuration{ 0.f };
 
 		// The duration of time in seconds between each enemy attack.
 		float attackTimer{ 0.f };
-		float attackDuration{ 1.5f };
+		float attackDuration{ 0.f };
 
 		// Movement direction flags.
 		bool isMovingLeft{ false };
@@ -237,6 +244,10 @@ namespace GameComponent
 		// attack.
 		float hitStopTimer{ 0.f };
 		bool isFirstHitStopFrame{ false };
+
+		// The remaining duration of time in seconds for the character to
+		// be invulnerable against attacks.
+		float invincibilityTimer{ 0.f };
 
 		// The character's horizontal speed in pixels per second.
 		float movementSpeed{ 0.f };

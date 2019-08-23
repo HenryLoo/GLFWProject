@@ -59,12 +59,20 @@ public:
 		std::function<void(int)> action);
 
 private:
+	// Check an edge condition to see if it is satisfied.
+	// Return true and traverse the edge if appropriate.
+	// Otherwise, return false.
+	bool checkEdge(const Edge &e, int entityId);
+
 	// Map state labels to their respective states.
 	std::unordered_map<std::string, State> m_states;
 
 	// Hold the current state and its label.
 	std::string m_currentLabel;
 	State *m_currentState{ nullptr };
+
+	// Hold edges that apply to all states.
+	std::vector<Edge> m_universalEdges;
 
 	// Flag for if this is the first frame since entering the current state.
 	bool isNewState{ false };

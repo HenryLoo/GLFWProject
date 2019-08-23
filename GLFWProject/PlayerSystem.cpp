@@ -75,6 +75,14 @@ void PlayerSystem::process(float deltaTime, int entityId,
 	// Update evade timer.
 	GameComponent::updateTimer(deltaTime, m_player.evadeTimer);
 
+	// Update recently hit timer.
+	GameComponent::updateTimer(deltaTime, m_player.recentlyHitTimer);
+	if (m_player.recentlyHitTimer == 0.f)
+	{
+		// Reset the recent health lost amount.
+		m_player.recentHealthLost = 0;
+	}
+
 	// Update skill timers.
 	for (float &timer : m_player.skillTimers)
 	{

@@ -5,32 +5,38 @@ void StateMachine::checkEdges(int entityId)
 	if (m_currentState == nullptr)
 		return;
 
-	// Edge is defined by {state label, condition function}.
+	// Check all edges for this state.
 	for (const Edge &e : m_currentState->edges)
 	{
-		// Call the edge's condition function to see if it has been satisfied.
-		bool isTraversing{ e.condition(entityId) };
-		if (isTraversing)
-		{
-			// Move to new state if it exists.
-			auto it{ m_states.find(e.destLabel) };
-			if (it == m_states.end())
-				continue;
-
-			// Call exit action.
-			m_currentState->exitAction(entityId);
-
-			// Change to new state.
-			// The enter action will be called in the next frame,
-			// so that player inputs don't stack.
-			m_currentLabel = it->first;
-			m_currentState = &(it->second);
-			isNewState = true;
-
-			// Stop checking edges.
+		// Stop checking edges if found one that is satisfied.
+		if (checkEdge(e, entityId))
 			return;
-		}
 	}
+}
+
+bool StateMachine::checkEdge(const Edge &e, int entityId)
+{
+	// Call the edge's condition function to see if it has been satisfied.
+	bool isTraversing{ e.condition(entityId) };
+	if (isTraversing)
+	{
+		// Move to new state if it exists.
+		auto it{ m_states.find(e.destLabel) };
+		if (it == m_states.end())
+			return false;
+
+		// Call exit action.
+		m_currentState->exitAction(entityId);
+
+		// Change to new state.
+		// The enter action will be called in the next frame,
+		// so that player inputs don't stack.
+		m_currentLabel = it->first;
+		m_currentState = &(it->second);
+		isNewState = true;
+	}
+
+	return isTraversing;
 }
 
 void StateMachine::update(int entityId)
