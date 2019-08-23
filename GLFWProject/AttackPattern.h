@@ -14,13 +14,15 @@ struct AttackPattern
 	// The attack's collision box.
 	AABB aabb;
 
-	// The start and end frame index bounds for which this attack is enabled.
-	glm::ivec2 frameRange{ -1 };
+	// The frame index range for which this attack is enabled.
+	int hitStart{ -1 };
+	int hitFrames{ 0 };
 
 	// The start and end frame index bounds for which this attack provides
 	// super armour. Super armour prevents the attacker from being put
 	// in a hurt state or launched when taking damage.
-	glm::ivec2 superArmour{ -1 };
+	int superArmourStart{ -1 };
+	int superArmourFrames{ 0 };
 
 	// The minimum frame index to allow for an additional attack.
 	int comboFrame{ -1 };

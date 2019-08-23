@@ -292,6 +292,12 @@ namespace GameComponent
 
 	// Set the enemy's action timer, with some variation.
 	void setActionTimer(Enemy &enemy, float multiplier = 1.f);
+
+	// Check if a character has super armour during an attack.
+	bool hasSuperArmour(const Sprite &spr, const Attack &atk);
+
+	// Check if a character has invincibility.
+	bool isInvincible(const Character &character);
 }
 
 #endif

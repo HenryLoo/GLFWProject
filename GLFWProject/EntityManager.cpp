@@ -65,10 +65,10 @@ namespace
 	const std::string PROPERTY_SCRIPT{ "script" };
 	const std::string PROPERTY_ATTACKPATTERNS{ "attackPatterns" };
 	const std::string PROPERTY_TYPE{ "type" };
-	const std::string PROPERTY_FRAMERANGE{ "frameRange" };
+	const std::string PROPERTY_HITENABLED{ "hitEnabled" };
 	const std::string PROPERTY_SUPERARMOUR{ "superArmour" };
 	const std::string PROPERTY_START{ "start" };
-	const std::string PROPERTY_END{ "end" };
+	const std::string PROPERTY_NUMFRAMES{ "numFrames" };
 	const std::string PROPERTY_COMBOFRAME{ "comboFrame" };
 	const std::string PROPERTY_ATTACKSOUND{ "attackSound" };
 	const std::string PROPERTY_HITSOUND{ "hitSound" };
@@ -116,6 +116,9 @@ EntityManager::EntityManager(GameEngine *game, AssetLoader *assetLoader,
 	createPlayer();
 
 	// Initialze game systems.
+	m_gameSystems.emplace_back(std::make_unique<CharacterSystem>(*this,
+		m_compSprites, m_compWeapons, m_compCollisions, m_compAttacks,
+		m_compCharacters));
 	m_gameSystems.emplace_back(std::make_unique<AttackSystem>(*this,
 		m_compSprites, m_compAttacks));
 	m_gameSystems.emplace_back(std::make_unique<AttackCollisionSystem>(*this,
@@ -131,9 +134,6 @@ EntityManager::EntityManager(GameEngine *game, AssetLoader *assetLoader,
 		m_compPlayer, m_compPhysics, m_compCollisions));
 	m_gameSystems.emplace_back(std::make_unique<EnemySystem>(*this,
 		m_compEnemies));
-	m_gameSystems.emplace_back(std::make_unique<CharacterSystem>(*this,
-		m_compSprites, m_compWeapons, m_compCollisions, m_compAttacks,
-		m_compCharacters));
 
 	m_debugSystem = std::make_unique<DebugSystem>(*this, uRenderer,
 		m_compPhysics, m_compCollisions, m_compAttacks);
@@ -492,16 +492,16 @@ void EntityManager::initializeCharacter(int entityId, const nlohmann::json &json
 					}
 				}
 
-				if (JSONUtilities::hasEntry(PROPERTY_FRAMERANGE, thisPattern))
+				if (JSONUtilities::hasEntry(PROPERTY_HITENABLED, thisPattern))
 				{
-					nlohmann::json frameJson{ thisPattern.at(PROPERTY_FRAMERANGE) };
+					nlohmann::json frameJson{ thisPattern.at(PROPERTY_HITENABLED) };
 					if (JSONUtilities::hasEntry(PROPERTY_START, frameJson))
 					{
-						atkPattern.frameRange.x = frameJson.at(PROPERTY_START).get<int>();
+						atkPattern.hitStart = frameJson.at(PROPERTY_START).get<int>();
 					}
-					if (JSONUtilities::hasEntry(PROPERTY_END, frameJson))
+					if (JSONUtilities::hasEntry(PROPERTY_NUMFRAMES, frameJson))
 					{
-						atkPattern.frameRange.y = frameJson.at(PROPERTY_END).get<int>();
+						atkPattern.hitFrames = frameJson.at(PROPERTY_NUMFRAMES).get<int>();
 					}
 				}
 
@@ -510,11 +510,11 @@ void EntityManager::initializeCharacter(int entityId, const nlohmann::json &json
 					nlohmann::json frameJson{ thisPattern.at(PROPERTY_SUPERARMOUR) };
 					if (JSONUtilities::hasEntry(PROPERTY_START, frameJson))
 					{
-						atkPattern.superArmour.x = frameJson.at(PROPERTY_START).get<int>();
+						atkPattern.superArmourStart = frameJson.at(PROPERTY_START).get<int>();
 					}
-					if (JSONUtilities::hasEntry(PROPERTY_END, frameJson))
+					if (JSONUtilities::hasEntry(PROPERTY_NUMFRAMES, frameJson))
 					{
-						atkPattern.superArmour.y = frameJson.at(PROPERTY_END).get<int>();
+						atkPattern.superArmourFrames = frameJson.at(PROPERTY_NUMFRAMES).get<int>();
 					}
 				}
 
@@ -1148,7 +1148,7 @@ void EntityManager::initLua()
 		});
 	m_lua.set_function("getAttackFrameStart", [this](int entityId)
 		{
-			return m_compAttacks[entityId].pattern.frameRange.x;
+			return m_compAttacks[entityId].pattern.hitStart;
 		});
 	m_lua.set_function("getAttackKnockbackY", [this](int entityId)
 		{

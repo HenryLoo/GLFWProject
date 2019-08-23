@@ -71,3 +71,17 @@ void GameComponent::setActionTimer(Enemy &enemy, float multiplier)
 	enemy.actionTimer = enemy.actionDuration * multiplier * 
 		glm::linearRand(0.8f, 1.2f);
 }
+
+bool GameComponent::hasSuperArmour(const Sprite &spr, const Attack &atk)
+{
+	int currentFrame{ spr.currentFrame };
+	int start{ atk.pattern.superArmourStart };
+	int numFrames{ atk.pattern.superArmourFrames };
+	
+	return currentFrame >= start && currentFrame <= (start + numFrames);
+}
+
+bool GameComponent::isInvincible(const Character &character)
+{
+	return character.invincibilityTimer > 0.f;
+}

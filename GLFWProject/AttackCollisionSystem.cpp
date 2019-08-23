@@ -116,9 +116,15 @@ void AttackCollisionSystem::update(float deltaTime, int numEntities,
 			}
 
 			// Ignore hit stun and knockback if the target has super armour.
+			bool hasSuperArmour{ false };
 			GameComponent::Sprite &spr{ m_sprites[targetId] };
-			bool hasSuperArmour{ spr.currentFrame >= attack.pattern.superArmour.x &&
-				spr.currentFrame <= attack.pattern.superArmour.y };
+			if (GameComponent::hasComponent(entities[targetId],
+				GameComponent::COMPONENT_ATTACK))
+			{
+				GameComponent::Attack &targetAttack{ m_attacks[targetId] };
+				hasSuperArmour = GameComponent::hasSuperArmour(spr, targetAttack);
+			}
+
 			if (!hasSuperArmour)
 			{
 				// Set the hit stun timer.
@@ -129,7 +135,7 @@ void AttackCollisionSystem::update(float deltaTime, int numEntities,
 					hitStun = hitStopDuration + MIN_HIT_STUN;
 				}
 
-				m_sprites[targetId].isResetAnimation = true;
+				spr.isResetAnimation = true;
 				character.hitStunTimer = hitStun;
 
 				// Apply knockback to target.
@@ -150,7 +156,8 @@ void AttackCollisionSystem::update(float deltaTime, int numEntities,
 
 			// If the target is the player, reset the recently hit duration and 
 			// accumulate recent health lost.
-			if (targetId == m_manager.getPlayerId())
+			if (GameComponent::hasComponent(entities[targetId],
+				GameComponent::COMPONENT_PLAYER))
 			{
 				m_player.recentHealthLost += attack.pattern.damage;
 				m_player.recentlyHitTimer = RECENTLY_HIT_DURATION;
@@ -159,9 +166,10 @@ void AttackCollisionSystem::update(float deltaTime, int numEntities,
 			// Create hit spark effect.
 			if (!attack.pattern.hitSpark.empty())
 			{
-				float rotation{ static_cast<float>(rand()) / (static_cast<float>(RAND_MAX / MAX_ROTATION)) };
-				m_manager.createEffect(attack.pattern.hitSpark, phys.pos, glm::vec2(1.2f),
-					255, 255, 255, 255, rotation);
+				float rotation{ static_cast<float>(rand()) / 
+					(static_cast<float>(RAND_MAX / MAX_ROTATION)) };
+				m_manager.createEffect(attack.pattern.hitSpark, phys.pos, 
+					glm::vec2(1.2f), 255, 255, 255, 255, rotation);
 			}
 
 		}

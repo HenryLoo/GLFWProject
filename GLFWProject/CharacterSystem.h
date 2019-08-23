@@ -20,6 +20,16 @@ private:
 	virtual void process(float deltaTime, int entityId,
 		unsigned long &entityMask);
 
+	// Update sprite colour based on character status.
+	void updateStatusColour(float deltaTime, int entityId);
+
+	// Change the sprite's state if it is a different one or the animation
+	// is being reset.
+	void updateSprite(int entityId, unsigned long &entityMask);
+
+	// Update the character's timers.
+	void updateTimers(float deltaTime, int entityId);
+
 	// References to the relevant components.
 	std::vector<GameComponent::Sprite> &m_sprites;
 	std::vector<GameComponent::Weapon> &m_weapons;
