@@ -21,23 +21,7 @@ std::shared_ptr<IAssetType> PrefabLoader::loadFromStream(
 			return prefab;
 		}
 	}
-	catch (const nlohmann::json::parse_error &e)
-	{
-		std::cout << "PrefabLoader::loadFromStream: " << e.what() << std::endl;
-	}
-	catch (const nlohmann::json::invalid_iterator &e)
-	{
-		std::cout << "PrefabLoader::loadFromStream: " << e.what() << std::endl;
-	}
-	catch (const nlohmann::json::type_error &e)
-	{
-		std::cout << "PrefabLoader::loadFromStream: " << e.what() << std::endl;
-	}
-	catch (const nlohmann::json::out_of_range &e)
-	{
-		std::cout << "PrefabLoader::loadFromStream: " << e.what() << std::endl;
-	}
-	catch (const nlohmann::json::other_error &e)
+	catch (const nlohmann::json::exception &e)
 	{
 		std::cout << "PrefabLoader::loadFromStream: " << e.what() << std::endl;
 	}

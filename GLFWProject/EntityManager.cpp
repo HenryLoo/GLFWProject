@@ -211,115 +211,122 @@ int EntityManager::createEntity(Prefab *prefab)
 	unsigned long mask = GameComponent::COMPONENT_NONE;
 	int id = m_numEntities;
 
-	bool hasComponents{ JSONUtilities::hasEntry(PROPERTY_COMPONENTS, json) };
-	if (hasComponents)
+	try
 	{
-		// Save the player/enemy's script name to execute at the end.
-		std::string scriptName;
-
-		bool hasCharacter{ false };
-		bool hasPlayer{ false };
-		bool hasAttack{ false };
-		bool hasEnemy{ false };
-
-		auto &components{ json.at(PROPERTY_COMPONENTS) };
-		if (components.is_array())
+		bool hasComponents{ JSONUtilities::hasEntry(PROPERTY_COMPONENTS, json) };
+		if (hasComponents)
 		{
-			for (auto &component : components)
+			// Save the player/enemy's script name to execute at the end.
+			std::string scriptName;
+
+			bool hasCharacter{ false };
+			bool hasPlayer{ false };
+			bool hasAttack{ false };
+			bool hasEnemy{ false };
+
+			auto &components{ json.at(PROPERTY_COMPONENTS) };
+			if (components.is_array())
 			{
-				bool hasType{ JSONUtilities::hasEntry(PROPERTY_TYPE, component) };
-				if (!hasType)
-					continue;
-
-				std::string type{ component.at(PROPERTY_TYPE).get<std::string>() };
-
-				auto it{ LABEL_TO_COMPONENT.find(type) };
-				if (it == LABEL_TO_COMPONENT.end())
-					continue;
-
-				GameComponent::addComponent(mask, it->second);
-
-				if (type == COMPONENT_SPRITE)
-					initializeSprite(id, component);
-				else if (type == COMPONENT_PLAYER)
+				for (auto &component : components)
 				{
-					hasPlayer = true;
-					scriptName = initializePlayer(component);
-				}
-				else if (type == COMPONENT_COLLISION)
-					initializeCollision(id, component);
-				else if (type == COMPONENT_WEAPON)
-					initializeWeapon(id, component);
-				else if (type == COMPONENT_ATTACK)
-				{
-					hasAttack = true;
-					initializeAttack(id, component);
-				}
-				else if (type == COMPONENT_CHARACTER)
-				{
-					hasCharacter = true;
-					initializeCharacter(id, component);
-				}
-				else if (type == COMPONENT_ENEMY)
-				{
-					hasEnemy = true;
-					scriptName = initializeEnemy(id, component);
+					bool hasType{ JSONUtilities::hasEntry(PROPERTY_TYPE, component) };
+					if (!hasType)
+						continue;
+
+					std::string type{ component.at(PROPERTY_TYPE).get<std::string>() };
+
+					auto it{ LABEL_TO_COMPONENT.find(type) };
+					if (it == LABEL_TO_COMPONENT.end())
+						continue;
+
+					GameComponent::addComponent(mask, it->second);
+
+					if (type == COMPONENT_SPRITE)
+						initializeSprite(id, component);
+					else if (type == COMPONENT_PLAYER)
+					{
+						hasPlayer = true;
+						scriptName = initializePlayer(component);
+					}
+					else if (type == COMPONENT_COLLISION)
+						initializeCollision(id, component);
+					else if (type == COMPONENT_WEAPON)
+						initializeWeapon(id, component);
+					else if (type == COMPONENT_ATTACK)
+					{
+						hasAttack = true;
+						initializeAttack(id, component);
+					}
+					else if (type == COMPONENT_CHARACTER)
+					{
+						hasCharacter = true;
+						initializeCharacter(id, component);
+					}
+					else if (type == COMPONENT_ENEMY)
+					{
+						hasEnemy = true;
+						scriptName = initializeEnemy(id, component);
+					}
 				}
 			}
-		}
 
-		if (hasCharacter)
-		{
-			// Create the character's states.
-			std::shared_ptr<Script> charStateScript{ m_assetLoader->load<Script>(CHAR_STATES_SCRIPT) };
-			if (charStateScript != nullptr)
+			if (hasCharacter)
 			{
-				auto result{ charStateScript->execute(m_lua) };
-				if (result.valid())
+				// Create the character's states.
+				std::shared_ptr<Script> charStateScript{ m_assetLoader->load<Script>(CHAR_STATES_SCRIPT) };
+				if (charStateScript != nullptr)
 				{
-					m_lua[INIT_CHAR_STATES](id);
+					auto result{ charStateScript->execute(m_lua) };
+					if (result.valid())
+					{
+						m_lua[INIT_CHAR_STATES](id);
+					}
 				}
 			}
-		}
 
-		// Set team id, if applicable.
-		int team{ GameComponent::TEAM_NEUTRAL };
-		if (hasPlayer)
-		{
-			team = GameComponent::TEAM_PLAYER;
-
-			// Create the player's common states.
-			std::shared_ptr<Script> playerStateScript{ m_assetLoader->load<Script>(PLAYER_STATES_SCRIPT) };
-			if (playerStateScript != nullptr)
+			// Set team id, if applicable.
+			int team{ GameComponent::TEAM_NEUTRAL };
+			if (hasPlayer)
 			{
-				auto result{ playerStateScript->execute(m_lua) };
-				if (result.valid())
+				team = GameComponent::TEAM_PLAYER;
+
+				// Create the player's common states.
+				std::shared_ptr<Script> playerStateScript{ m_assetLoader->load<Script>(PLAYER_STATES_SCRIPT) };
+				if (playerStateScript != nullptr)
 				{
-					m_lua[INIT_PLAYER_STATES](id);
+					auto result{ playerStateScript->execute(m_lua) };
+					if (result.valid())
+					{
+						m_lua[INIT_PLAYER_STATES](id);
+					}
 				}
 			}
-		}
-		else if (hasEnemy)
-			team = GameComponent::TEAM_ENEMY;
+			else if (hasEnemy)
+				team = GameComponent::TEAM_ENEMY;
 
-		// Create the player's or enemy's specific states.
-		if ((hasPlayer || hasEnemy) && !scriptName.empty())
-		{
-			std::shared_ptr<Script> statesScript{ m_assetLoader->load<Script>(scriptName) };
-			if (statesScript != nullptr)
+			// Create the player's or enemy's specific states.
+			if ((hasPlayer || hasEnemy) && !scriptName.empty())
 			{
-				auto result{ statesScript->execute(m_lua) };
-				if (result.valid())
+				std::shared_ptr<Script> statesScript{ m_assetLoader->load<Script>(scriptName) };
+				if (statesScript != nullptr)
 				{
-					m_lua[INIT_STATES](id);
+					auto result{ statesScript->execute(m_lua) };
+					if (result.valid())
+					{
+						m_lua[INIT_STATES](id);
+					}
 				}
 			}
-		}
 
-		if (hasCharacter)
-			m_compCharacters[id].team = team;
-		if (hasAttack)
-			m_compAttacks[id].team = team;
+			if (hasCharacter)
+				m_compCharacters[id].team = team;
+			if (hasAttack)
+				m_compAttacks[id].team = team;
+		}
+	}
+	catch (const nlohmann::json::exception &e)
+	{
+		std::cout << "EntityManager::createEntity: " << e.what() << std::endl;
 	}
 
 	m_entities[id] = mask;
@@ -330,41 +337,56 @@ int EntityManager::createEntity(Prefab *prefab)
 void EntityManager::initializeSprite(int entityId, const nlohmann::json &json)
 {
 	GameComponent::Sprite &spr{ m_compSprites[entityId] };
-	if (JSONUtilities::hasEntry(PROPERTY_SPRITESHEET, json))
+	try
 	{
-		std::string spriteSheetLabel{ json.at(PROPERTY_SPRITESHEET).get<std::string>() };
-		spr.spriteSheet = m_assetLoader->load<SpriteSheet>(spriteSheetLabel);
+		if (JSONUtilities::hasEntry(PROPERTY_SPRITESHEET, json))
+		{
+			std::string spriteSheetLabel{ json.at(PROPERTY_SPRITESHEET).get<std::string>() };
+			spr.spriteSheet = m_assetLoader->load<SpriteSheet>(spriteSheetLabel);
+		}
+	}
+	catch (const nlohmann::json::exception &e)
+	{
+		std::cout << "EntityManager::initializeSprite: " << e.what() << std::endl;
 	}
 }
 
 std::string EntityManager::initializePlayer(const nlohmann::json &json)
 {
 	GameComponent::Player &player{ m_compPlayer };
-	if (JSONUtilities::hasEntry(PROPERTY_EVADEDURATION, json))
-	{
-		player.evadeDuration = json.at(PROPERTY_EVADEDURATION).get<float>();
-	}
-
-	if (JSONUtilities::hasEntry(PROPERTY_EVADESOUND, json))
-	{
-		std::string soundLabel{ json.at(PROPERTY_EVADESOUND).get<std::string>() };
-		player.evadeSound = m_assetLoader->load<Sound>(soundLabel);
-	}
-
-	if (JSONUtilities::hasEntry(PROPERTY_PORTRAITICON, json))
-	{
-		player.portraitIcon = json.at(PROPERTY_PORTRAITICON).get<std::string>();
-	}
-
-	if (JSONUtilities::hasEntry(PROPERTY_SKILLICONS, json))
-	{
-		player.skillIcons = json.at(PROPERTY_SKILLICONS).get<std::vector<std::string>>();
-	}
-
 	std::string scriptName;
-	if (JSONUtilities::hasEntry(PROPERTY_SCRIPT, json))
+
+	try
 	{
-		scriptName = json.at(PROPERTY_SCRIPT).get<std::string>();
+		if (JSONUtilities::hasEntry(PROPERTY_EVADEDURATION, json))
+		{
+			player.evadeDuration = json.at(PROPERTY_EVADEDURATION).get<float>();
+		}
+
+		if (JSONUtilities::hasEntry(PROPERTY_EVADESOUND, json))
+		{
+			std::string soundLabel{ json.at(PROPERTY_EVADESOUND).get<std::string>() };
+			player.evadeSound = m_assetLoader->load<Sound>(soundLabel);
+		}
+
+		if (JSONUtilities::hasEntry(PROPERTY_PORTRAITICON, json))
+		{
+			player.portraitIcon = json.at(PROPERTY_PORTRAITICON).get<std::string>();
+		}
+
+		if (JSONUtilities::hasEntry(PROPERTY_SKILLICONS, json))
+		{
+			player.skillIcons = json.at(PROPERTY_SKILLICONS).get<std::vector<std::string>>();
+		}
+
+		if (JSONUtilities::hasEntry(PROPERTY_SCRIPT, json))
+		{
+			scriptName = json.at(PROPERTY_SCRIPT).get<std::string>();
+		}
+	}
+	catch (const nlohmann::json::exception &e)
+	{
+		std::cout << "EntityManager::initializePlayer: " << e.what() << std::endl;
 	}
 
 	return scriptName;
@@ -373,51 +395,65 @@ std::string EntityManager::initializePlayer(const nlohmann::json &json)
 void EntityManager::initializeCollision(int entityId, const nlohmann::json &json)
 {
 	GameComponent::Collision &col{ m_compCollisions[entityId] };
-	if (JSONUtilities::hasEntry(PROPERTY_BOXES, json))
+	try
 	{
-		nlohmann::json boxes{ json.at(PROPERTY_BOXES) };
-		if (boxes.is_array())
+		if (JSONUtilities::hasEntry(PROPERTY_BOXES, json))
 		{
-			// TODO: fix this to support multiple boxes.
-			for (auto &box : boxes)
+			nlohmann::json boxes{ json.at(PROPERTY_BOXES) };
+			if (boxes.is_array())
 			{
-				if (JSONUtilities::hasEntry(PROPERTY_HALFSIZE, box))
+				// TODO: fix this to support multiple boxes.
+				for (auto &box : boxes)
 				{
-					nlohmann::json sizeJson{ box.at(PROPERTY_HALFSIZE) };
-					if (JSONUtilities::hasEntry(PROPERTY_X, sizeJson))
+					if (JSONUtilities::hasEntry(PROPERTY_HALFSIZE, box))
 					{
-						col.aabb.halfSize.x = sizeJson.at(PROPERTY_X).get<float>();
+						nlohmann::json sizeJson{ box.at(PROPERTY_HALFSIZE) };
+						if (JSONUtilities::hasEntry(PROPERTY_X, sizeJson))
+						{
+							col.aabb.halfSize.x = sizeJson.at(PROPERTY_X).get<float>();
+						}
+						if (JSONUtilities::hasEntry(PROPERTY_Y, sizeJson))
+						{
+							col.aabb.halfSize.y = sizeJson.at(PROPERTY_Y).get<float>();
+						}
 					}
-					if (JSONUtilities::hasEntry(PROPERTY_Y, sizeJson))
-					{
-						col.aabb.halfSize.y = sizeJson.at(PROPERTY_Y).get<float>();
-					}
-				}
 
-				if (JSONUtilities::hasEntry(PROPERTY_OFFSET, box))
-				{
-					nlohmann::json offsetJson{ box.at(PROPERTY_OFFSET) };
-					if (JSONUtilities::hasEntry(PROPERTY_X, offsetJson))
+					if (JSONUtilities::hasEntry(PROPERTY_OFFSET, box))
 					{
-						col.aabb.offset.x = offsetJson.at(PROPERTY_X).get<float>();
-					}
-					if (JSONUtilities::hasEntry(PROPERTY_Y, offsetJson))
-					{
-						col.aabb.offset.y = offsetJson.at(PROPERTY_Y).get<float>();
+						nlohmann::json offsetJson{ box.at(PROPERTY_OFFSET) };
+						if (JSONUtilities::hasEntry(PROPERTY_X, offsetJson))
+						{
+							col.aabb.offset.x = offsetJson.at(PROPERTY_X).get<float>();
+						}
+						if (JSONUtilities::hasEntry(PROPERTY_Y, offsetJson))
+						{
+							col.aabb.offset.y = offsetJson.at(PROPERTY_Y).get<float>();
+						}
 					}
 				}
 			}
 		}
 	}
+	catch (const nlohmann::json::exception &e)
+	{
+		std::cout << "EntityManager::initializeCollision: " << e.what() << std::endl;
+	}
 }
 
 void EntityManager::initializeWeapon(int entityId, const nlohmann::json &json)
 {
-	GameComponent::Weapon &wpn{ m_compWeapons[entityId] };
-	if (JSONUtilities::hasEntry(PROPERTY_SPRITESHEET, json))
+	try
 	{
-		std::string spriteSheetLabel{ json.at(PROPERTY_SPRITESHEET).get<std::string>() };
-		wpn.spriteSheet = m_assetLoader->load<SpriteSheet>(spriteSheetLabel);
+		GameComponent::Weapon &wpn{ m_compWeapons[entityId] };
+		if (JSONUtilities::hasEntry(PROPERTY_SPRITESHEET, json))
+		{
+			std::string spriteSheetLabel{ json.at(PROPERTY_SPRITESHEET).get<std::string>() };
+			wpn.spriteSheet = m_assetLoader->load<SpriteSheet>(spriteSheetLabel);
+		}
+	}
+	catch (const nlohmann::json::exception &e)
+	{
+		std::cout << "EntityManager::initializeWeapon: " << e.what() << std::endl;
 	}
 }
 
@@ -430,195 +466,209 @@ void EntityManager::initializeAttack(int entityId, const nlohmann::json &json)
 void EntityManager::initializeCharacter(int entityId, const nlohmann::json &json)
 {
 	GameComponent::Character &character{ m_compCharacters[entityId] };
-	if (JSONUtilities::hasEntry(PROPERTY_HEALTH, json))
+	try
 	{
-		character.maxHealth = character.health = json.at(PROPERTY_HEALTH).get<int>();
-	}
-
-	if (JSONUtilities::hasEntry(PROPERTY_RESOURCE, json))
-	{
-		character.maxResource = character.resource = json.at(PROPERTY_RESOURCE).get<int>();
-	}
-
-	if (JSONUtilities::hasEntry(PROPERTY_MOVESPEED, json))
-	{
-		character.movementSpeed = character.movementSpeed = json.at(PROPERTY_MOVESPEED).get<float>();
-	}
-
-	if (JSONUtilities::hasEntry(PROPERTY_JUMPSPEED, json))
-	{
-		character.jumpSpeed = character.jumpSpeed = json.at(PROPERTY_JUMPSPEED).get<float>();
-	}
-
-	if (JSONUtilities::hasEntry(PROPERTY_ATTACKPATTERNS, json))
-	{
-		nlohmann::json patterns{ json.at(PROPERTY_ATTACKPATTERNS) };
-		if (patterns.is_array())
+		if (JSONUtilities::hasEntry(PROPERTY_HEALTH, json))
 		{
-			for (auto &thisPattern : patterns)
+			character.maxHealth = character.health = json.at(PROPERTY_HEALTH).get<int>();
+		}
+
+		if (JSONUtilities::hasEntry(PROPERTY_RESOURCE, json))
+		{
+			character.maxResource = character.resource = json.at(PROPERTY_RESOURCE).get<int>();
+		}
+
+		if (JSONUtilities::hasEntry(PROPERTY_MOVESPEED, json))
+		{
+			character.movementSpeed = character.movementSpeed = json.at(PROPERTY_MOVESPEED).get<float>();
+		}
+
+		if (JSONUtilities::hasEntry(PROPERTY_JUMPSPEED, json))
+		{
+			character.jumpSpeed = character.jumpSpeed = json.at(PROPERTY_JUMPSPEED).get<float>();
+		}
+
+		if (JSONUtilities::hasEntry(PROPERTY_ATTACKPATTERNS, json))
+		{
+			nlohmann::json patterns{ json.at(PROPERTY_ATTACKPATTERNS) };
+			if (patterns.is_array())
 			{
-				AttackPattern atkPattern;
-
-				// Can't uniquely identify this attack pattern without a "type",
-				// so skip this.
-				if (!JSONUtilities::hasEntry(PROPERTY_TYPE, thisPattern))
-					continue;
-
-				std::string type{ thisPattern.at(PROPERTY_TYPE).get<std::string>() };
-
-				if (JSONUtilities::hasEntry(PROPERTY_HALFSIZE, thisPattern))
+				for (auto &thisPattern : patterns)
 				{
-					nlohmann::json sizeJson{ thisPattern.at(PROPERTY_HALFSIZE) };
-					if (JSONUtilities::hasEntry(PROPERTY_X, sizeJson))
+					AttackPattern atkPattern;
+
+					// Can't uniquely identify this attack pattern without a "type",
+					// so skip this.
+					if (!JSONUtilities::hasEntry(PROPERTY_TYPE, thisPattern))
+						continue;
+
+					std::string type{ thisPattern.at(PROPERTY_TYPE).get<std::string>() };
+
+					if (JSONUtilities::hasEntry(PROPERTY_HALFSIZE, thisPattern))
 					{
-						atkPattern.aabb.halfSize.x = sizeJson.at(PROPERTY_X).get<float>();
+						nlohmann::json sizeJson{ thisPattern.at(PROPERTY_HALFSIZE) };
+						if (JSONUtilities::hasEntry(PROPERTY_X, sizeJson))
+						{
+							atkPattern.aabb.halfSize.x = sizeJson.at(PROPERTY_X).get<float>();
+						}
+						if (JSONUtilities::hasEntry(PROPERTY_Y, sizeJson))
+						{
+							atkPattern.aabb.halfSize.y = sizeJson.at(PROPERTY_Y).get<float>();
+						}
 					}
-					if (JSONUtilities::hasEntry(PROPERTY_Y, sizeJson))
+
+					if (JSONUtilities::hasEntry(PROPERTY_OFFSET, thisPattern))
 					{
-						atkPattern.aabb.halfSize.y = sizeJson.at(PROPERTY_Y).get<float>();
+						nlohmann::json offsetJson{ thisPattern.at(PROPERTY_OFFSET) };
+						if (JSONUtilities::hasEntry(PROPERTY_X, offsetJson))
+						{
+							atkPattern.aabb.offset.x = offsetJson.at(PROPERTY_X).get<float>();
+						}
+						if (JSONUtilities::hasEntry(PROPERTY_Y, offsetJson))
+						{
+							atkPattern.aabb.offset.y = offsetJson.at(PROPERTY_Y).get<float>();
+						}
 					}
-				}
 
-				if (JSONUtilities::hasEntry(PROPERTY_OFFSET, thisPattern))
-				{
-					nlohmann::json offsetJson{ thisPattern.at(PROPERTY_OFFSET) };
-					if (JSONUtilities::hasEntry(PROPERTY_X, offsetJson))
+					if (JSONUtilities::hasEntry(PROPERTY_HITENABLED, thisPattern))
 					{
-						atkPattern.aabb.offset.x = offsetJson.at(PROPERTY_X).get<float>();
+						nlohmann::json frameJson{ thisPattern.at(PROPERTY_HITENABLED) };
+						if (JSONUtilities::hasEntry(PROPERTY_START, frameJson))
+						{
+							atkPattern.hitStart = frameJson.at(PROPERTY_START).get<int>();
+						}
+						if (JSONUtilities::hasEntry(PROPERTY_NUMFRAMES, frameJson))
+						{
+							atkPattern.hitFrames = frameJson.at(PROPERTY_NUMFRAMES).get<int>();
+						}
 					}
-					if (JSONUtilities::hasEntry(PROPERTY_Y, offsetJson))
+
+					if (JSONUtilities::hasEntry(PROPERTY_SUPERARMOUR, thisPattern))
 					{
-						atkPattern.aabb.offset.y = offsetJson.at(PROPERTY_Y).get<float>();
+						nlohmann::json frameJson{ thisPattern.at(PROPERTY_SUPERARMOUR) };
+						if (JSONUtilities::hasEntry(PROPERTY_START, frameJson))
+						{
+							atkPattern.superArmourStart = frameJson.at(PROPERTY_START).get<int>();
+						}
+						if (JSONUtilities::hasEntry(PROPERTY_NUMFRAMES, frameJson))
+						{
+							atkPattern.superArmourFrames = frameJson.at(PROPERTY_NUMFRAMES).get<int>();
+						}
 					}
-				}
 
-				if (JSONUtilities::hasEntry(PROPERTY_HITENABLED, thisPattern))
-				{
-					nlohmann::json frameJson{ thisPattern.at(PROPERTY_HITENABLED) };
-					if (JSONUtilities::hasEntry(PROPERTY_START, frameJson))
+					if (JSONUtilities::hasEntry(PROPERTY_COMBOFRAME, thisPattern))
 					{
-						atkPattern.hitStart = frameJson.at(PROPERTY_START).get<int>();
+						atkPattern.comboFrame = thisPattern.at(PROPERTY_COMBOFRAME).get<int>();
 					}
-					if (JSONUtilities::hasEntry(PROPERTY_NUMFRAMES, frameJson))
+
+					if (JSONUtilities::hasEntry(PROPERTY_ATTACKSOUND, thisPattern))
 					{
-						atkPattern.hitFrames = frameJson.at(PROPERTY_NUMFRAMES).get<int>();
+						std::string soundLabel{ thisPattern.at(PROPERTY_ATTACKSOUND).get<std::string>() };
+						atkPattern.attackSound = m_assetLoader->load<Sound>(soundLabel);
 					}
-				}
 
-				if (JSONUtilities::hasEntry(PROPERTY_SUPERARMOUR, thisPattern))
-				{
-					nlohmann::json frameJson{ thisPattern.at(PROPERTY_SUPERARMOUR) };
-					if (JSONUtilities::hasEntry(PROPERTY_START, frameJson))
+					if (JSONUtilities::hasEntry(PROPERTY_HITSOUND, thisPattern))
 					{
-						atkPattern.superArmourStart = frameJson.at(PROPERTY_START).get<int>();
+						std::string soundLabel{ thisPattern.at(PROPERTY_HITSOUND).get<std::string>() };
+						atkPattern.hitSound = m_assetLoader->load<Sound>(soundLabel);
 					}
-					if (JSONUtilities::hasEntry(PROPERTY_NUMFRAMES, frameJson))
+
+					if (JSONUtilities::hasEntry(PROPERTY_HITEFFECT, thisPattern))
 					{
-						atkPattern.superArmourFrames = frameJson.at(PROPERTY_NUMFRAMES).get<int>();
+						atkPattern.hitSpark = thisPattern.at(PROPERTY_HITEFFECT).get<std::string>();
 					}
-				}
 
-				if (JSONUtilities::hasEntry(PROPERTY_COMBOFRAME, thisPattern))
-				{
-					atkPattern.comboFrame = thisPattern.at(PROPERTY_COMBOFRAME).get<int>();
-				}
-
-				if (JSONUtilities::hasEntry(PROPERTY_ATTACKSOUND, thisPattern))
-				{
-					std::string soundLabel{ thisPattern.at(PROPERTY_ATTACKSOUND).get<std::string>() };
-					atkPattern.attackSound = m_assetLoader->load<Sound>(soundLabel);
-				}
-
-				if (JSONUtilities::hasEntry(PROPERTY_HITSOUND, thisPattern))
-				{
-					std::string soundLabel{ thisPattern.at(PROPERTY_HITSOUND).get<std::string>() };
-					atkPattern.hitSound = m_assetLoader->load<Sound>(soundLabel);
-				}
-
-				if (JSONUtilities::hasEntry(PROPERTY_HITEFFECT, thisPattern))
-				{
-					atkPattern.hitSpark = thisPattern.at(PROPERTY_HITEFFECT).get<std::string>();
-				}
-
-				if (JSONUtilities::hasEntry(PROPERTY_COOLDOWN, thisPattern))
-				{
-					atkPattern.cooldown = thisPattern.at(PROPERTY_COOLDOWN).get<float>();
-				}
-
-				if (JSONUtilities::hasEntry(PROPERTY_DAMAGE, thisPattern))
-				{
-					atkPattern.damage = thisPattern.at(PROPERTY_DAMAGE).get<int>();
-				}
-
-				if (JSONUtilities::hasEntry(PROPERTY_KNOCKBACK, thisPattern))
-				{
-					nlohmann::json knockbackJson{ thisPattern.at(PROPERTY_KNOCKBACK) };
-					if (JSONUtilities::hasEntry(PROPERTY_X, knockbackJson))
+					if (JSONUtilities::hasEntry(PROPERTY_COOLDOWN, thisPattern))
 					{
-						atkPattern.knockback.x = knockbackJson.at(PROPERTY_X).get<float>();
+						atkPattern.cooldown = thisPattern.at(PROPERTY_COOLDOWN).get<float>();
 					}
-					if (JSONUtilities::hasEntry(PROPERTY_Y, knockbackJson))
+
+					if (JSONUtilities::hasEntry(PROPERTY_DAMAGE, thisPattern))
 					{
-						atkPattern.knockback.y = knockbackJson.at(PROPERTY_Y).get<float>();
+						atkPattern.damage = thisPattern.at(PROPERTY_DAMAGE).get<int>();
 					}
-				}
 
-				if (JSONUtilities::hasEntry(PROPERTY_HITSTUN, thisPattern))
-				{
-					atkPattern.hitStun = thisPattern.at(PROPERTY_HITSTUN).get<float>();
-				}
+					if (JSONUtilities::hasEntry(PROPERTY_KNOCKBACK, thisPattern))
+					{
+						nlohmann::json knockbackJson{ thisPattern.at(PROPERTY_KNOCKBACK) };
+						if (JSONUtilities::hasEntry(PROPERTY_X, knockbackJson))
+						{
+							atkPattern.knockback.x = knockbackJson.at(PROPERTY_X).get<float>();
+						}
+						if (JSONUtilities::hasEntry(PROPERTY_Y, knockbackJson))
+						{
+							atkPattern.knockback.y = knockbackJson.at(PROPERTY_Y).get<float>();
+						}
+					}
 
-				// Add this attack pattern.
-				character.attackPatterns.insert({ type, atkPattern });
+					if (JSONUtilities::hasEntry(PROPERTY_HITSTUN, thisPattern))
+					{
+						atkPattern.hitStun = thisPattern.at(PROPERTY_HITSTUN).get<float>();
+					}
+
+					// Add this attack pattern.
+					character.attackPatterns.insert({ type, atkPattern });
+				}
 			}
 		}
+	}
+	catch (const nlohmann::json::exception &e)
+	{
+		std::cout << "EntityManager::initializeCharacter: " << e.what() << std::endl;
 	}
 }
 
 std::string EntityManager::initializeEnemy(int entityId, const nlohmann::json &json)
 {
 	GameComponent::Enemy &enemy{ m_compEnemies[entityId] };
-
-	if (JSONUtilities::hasEntry(PROPERTY_TARGETRANGE, json))
-	{
-		nlohmann::json targetRangeJson{ json.at(PROPERTY_TARGETRANGE) };
-		if (JSONUtilities::hasEntry(PROPERTY_X, targetRangeJson))
-		{
-			enemy.targetRange.x = targetRangeJson.at(PROPERTY_X).get<float>();
-		}
-		if (JSONUtilities::hasEntry(PROPERTY_Y, targetRangeJson))
-		{
-			enemy.targetRange.y = targetRangeJson.at(PROPERTY_Y).get<float>();
-		}
-	}
-
-	if (JSONUtilities::hasEntry(PROPERTY_ATTACKRANGE, json))
-	{
-		nlohmann::json attackRangeJson{ json.at(PROPERTY_ATTACKRANGE) };
-		if (JSONUtilities::hasEntry(PROPERTY_X, attackRangeJson))
-		{
-			enemy.attackRange.x = attackRangeJson.at(PROPERTY_X).get<float>();
-		}
-		if (JSONUtilities::hasEntry(PROPERTY_Y, attackRangeJson))
-		{
-			enemy.attackRange.y = attackRangeJson.at(PROPERTY_Y).get<float>();
-		}
-	}
-
-	if (JSONUtilities::hasEntry(PROPERTY_ACTIONDURATION, json))
-	{
-		enemy.actionDuration = json.at(PROPERTY_ACTIONDURATION).get<float>();
-	}
-
-	if (JSONUtilities::hasEntry(PROPERTY_ATTACKDURATION, json))
-	{
-		enemy.attackDuration = json.at(PROPERTY_ATTACKDURATION).get<float>();
-	}
-
 	std::string scriptName;
-	if (JSONUtilities::hasEntry(PROPERTY_SCRIPT, json))
+
+	try
 	{
-		scriptName = json.at(PROPERTY_SCRIPT).get<std::string>();
+		if (JSONUtilities::hasEntry(PROPERTY_TARGETRANGE, json))
+		{
+			nlohmann::json targetRangeJson{ json.at(PROPERTY_TARGETRANGE) };
+			if (JSONUtilities::hasEntry(PROPERTY_X, targetRangeJson))
+			{
+				enemy.targetRange.x = targetRangeJson.at(PROPERTY_X).get<float>();
+			}
+			if (JSONUtilities::hasEntry(PROPERTY_Y, targetRangeJson))
+			{
+				enemy.targetRange.y = targetRangeJson.at(PROPERTY_Y).get<float>();
+			}
+		}
+
+		if (JSONUtilities::hasEntry(PROPERTY_ATTACKRANGE, json))
+		{
+			nlohmann::json attackRangeJson{ json.at(PROPERTY_ATTACKRANGE) };
+			if (JSONUtilities::hasEntry(PROPERTY_X, attackRangeJson))
+			{
+				enemy.attackRange.x = attackRangeJson.at(PROPERTY_X).get<float>();
+			}
+			if (JSONUtilities::hasEntry(PROPERTY_Y, attackRangeJson))
+			{
+				enemy.attackRange.y = attackRangeJson.at(PROPERTY_Y).get<float>();
+			}
+		}
+
+		if (JSONUtilities::hasEntry(PROPERTY_ACTIONDURATION, json))
+		{
+			enemy.actionDuration = json.at(PROPERTY_ACTIONDURATION).get<float>();
+		}
+
+		if (JSONUtilities::hasEntry(PROPERTY_ATTACKDURATION, json))
+		{
+			enemy.attackDuration = json.at(PROPERTY_ATTACKDURATION).get<float>();
+		}
+
+		if (JSONUtilities::hasEntry(PROPERTY_SCRIPT, json))
+		{
+			scriptName = json.at(PROPERTY_SCRIPT).get<std::string>();
+		}
+	}
+	catch (const nlohmann::json::exception &e)
+	{
+		std::cout << "EntityManager::initializeEnemy: " << e.what() << std::endl;
 	}
 
 	return scriptName;

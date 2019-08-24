@@ -107,6 +107,11 @@ void GameEngine::start(EntityManager *entityManager, AssetLoader *assetLoader,
 			glfwGetWindowSize(m_window, &m_windowSize.x, &m_windowSize.y);
 			sRenderer->createFramebuffer(m_windowSize);
 			Renderer::updateWindowSize(m_windowSize);
+
+			// Center the window on the screen.
+			const GLFWvidmode *mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
+			glfwSetWindowPos(m_window, (mode->width - m_windowSize.x) / 2,
+				(mode->height - m_windowSize.y) / 2);
 		}
 
 		float currentFrame{ static_cast<float>(glfwGetTime()) };

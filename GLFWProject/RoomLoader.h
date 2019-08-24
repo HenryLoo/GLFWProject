@@ -23,6 +23,12 @@ private:
 	// Check if a pixel matches the given rgb values.
 	// This is used to determine the tile type of a tile from a layout texture.
 	bool isTileType(const unsigned char *pixel, unsigned char rgb[3]);
+
+	// Load the room details from the json file and then instantiate the room
+	// with these, along with the provided layout and tiles.
+	// Return nullptr if room could not be loaded.
+	std::shared_ptr<Room> loadRoom(const IDataStream::Result &streamedData,
+		std::vector<Room::TileType> &layout, std::shared_ptr<Texture> tiles);
 };
 
 #endif

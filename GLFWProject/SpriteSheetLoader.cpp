@@ -266,23 +266,7 @@ void SpriteSheetLoader::loadAnimations(const IDataStream::Result& streamedData,
 			}
 		}
 	}
-	catch (const nlohmann::json::parse_error &e)
-	{
-		std::cout << "SpriteSheetLoader::loadAnimations: " << e.what() << std::endl;
-	}
-	catch (const nlohmann::json::invalid_iterator &e)
-	{
-		std::cout << "SpriteSheetLoader::loadAnimations: " << e.what() << std::endl;
-	}
-	catch (const nlohmann::json::type_error &e)
-	{
-		std::cout << "SpriteSheetLoader::loadAnimations: " << e.what() << std::endl;
-	}
-	catch (const nlohmann::json::out_of_range &e)
-	{
-		std::cout << "SpriteSheetLoader::loadAnimations: " << e.what() << std::endl;
-	}
-	catch (const nlohmann::json::other_error &e)
+	catch (const nlohmann::json::exception &e)
 	{
 		std::cout << "SpriteSheetLoader::loadAnimations: " << e.what() << std::endl;
 	}

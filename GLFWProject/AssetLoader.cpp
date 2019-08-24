@@ -63,23 +63,7 @@ AssetLoader::AssetLoader(IDataStream *stream)
 
 		std::cout << "AssetLoader::AssetLoader: Assets list done loading\n" << std::endl;
 	}
-	catch (const nlohmann::json::parse_error &e)
-	{
-		std::cout << "AssetLoader::AssetLoader: " << e.what() << std::endl;
-	}
-	catch (const nlohmann::json::invalid_iterator &e)
-	{
-		std::cout << "AssetLoader::AssetLoader: " << e.what() << std::endl;
-	}
-	catch (const nlohmann::json::type_error &e)
-	{
-		std::cout << "AssetLoader::AssetLoader: " << e.what() << std::endl;
-	}
-	catch (const nlohmann::json::out_of_range &e)
-	{
-		std::cout << "AssetLoader::AssetLoader: " << e.what() << std::endl;
-	}
-	catch (const nlohmann::json::other_error &e)
+	catch (const nlohmann::json::exception &e)
 	{
 		std::cout << "AssetLoader::AssetLoader: " << e.what() << std::endl;
 	}
@@ -89,59 +73,66 @@ void AssetLoader::loadAssetList(nlohmann::json json, const std::string &assetLab
 	const std::type_index &assetType)
 {
 	// Get listings from json.
-	if (JSONUtilities::hasEntry(assetLabel, json))
+	try
 	{
-		auto it{ m_assetsList.insert({ assetType, {} }) };
-		auto &assets{ it.first->second };
-
-		for (auto &element : json[assetLabel])
+		if (JSONUtilities::hasEntry(assetLabel, json))
 		{
-			// Get the asset's name.
-			std::string name;
-			if (JSONUtilities::hasEntry(PROPERTY_NAME, element))
-			{
-				name = element.at(PROPERTY_NAME).get<std::string>();
-			}
-			else
-			{
-				// Skip this listing, since it is invalid.
-				continue;
-			}
+			auto it{ m_assetsList.insert({ assetType, {} }) };
+			auto &assets{ it.first->second };
 
-			// Get the asset's files.
-			std::vector<std::string> files;
-			if (JSONUtilities::hasEntry(PROPERTY_FILE, element))
+			for (auto &element : json[assetLabel])
 			{
-				auto &file{ element[PROPERTY_FILE] };
-
-				// Asset has multiple files.
-				if (file.is_array())
+				// Get the asset's name.
+				std::string name;
+				if (JSONUtilities::hasEntry(PROPERTY_NAME, element))
 				{
-					for (auto &element : file)
+					name = element.at(PROPERTY_NAME).get<std::string>();
+				}
+				else
+				{
+					// Skip this listing, since it is invalid.
+					continue;
+				}
+
+				// Get the asset's files.
+				std::vector<std::string> files;
+				if (JSONUtilities::hasEntry(PROPERTY_FILE, element))
+				{
+					auto &file{ element[PROPERTY_FILE] };
+
+					// Asset has multiple files.
+					if (file.is_array())
 					{
-						std::string filePath{ element.get<std::string>() };
+						for (auto &element : file)
+						{
+							std::string filePath{ element.get<std::string>() };
+							files.push_back(assetLabel + "/" + filePath);
+						}
+					}
+					// Asset only has one file.
+					else if (file.is_string())
+					{
+						std::string filePath{ file.get<std::string>() };
 						files.push_back(assetLabel + "/" + filePath);
 					}
 				}
-				// Asset only has one file.
-				else if (file.is_string())
+				else
 				{
-					std::string filePath{ file.get<std::string>() };
-					files.push_back(assetLabel + "/" + filePath);
+					// Skip this listing, since it is invalid.
+					continue;
 				}
-			}
-			else
-			{
-				// Skip this listing, since it is invalid.
-				continue;
+
+				// Add the asset to the list.
+				assets.insert({ name, files });
 			}
 
-			// Add the asset to the list.
-			assets.insert({ name, files });
+			std::cout << "AssetLoader::loadAssetList: List loaded for '" << assetLabel <<
+				"', " << assets.size() << " assets" << std::endl;
 		}
-
-		std::cout << "AssetLoader::loadAssetList: List loaded for '" << assetLabel <<
-			"', " << assets.size() << " assets" << std::endl;
+	}
+	catch (const nlohmann::json::exception &e)
+	{
+		std::cout << "AssetLoader::loadAssetList: " << e.what() << std::endl;
 	}
 }
 
