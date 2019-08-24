@@ -3,16 +3,20 @@
 #define Room_H
 
 #include "Texture.h"
-#include "IAssetType.h"
 
 #include <glm/glm.hpp>
+#include <json/include/nlohmann/json_fwd.hpp>
 
 #include <vector>
 #include <memory>
 
 class SpriteRenderer;
+class Prefab;
+class AssetLoader;
+class Shader;
+class SpriteSheet;
 
-class Room : public IAssetType
+class Room
 {
 public:
 	enum TileType
@@ -26,15 +30,44 @@ public:
 		TILE_GHOST
 	};
 
-	Room(const std::vector<Room::TileType> &layout,
-		std::shared_ptr<Texture> tiles);
-	virtual ~Room();
+	// Defines background/foreground layers in rooms.
+	struct Layer
+	{
+		// Depth 0 refers to the focal point (the tile layer).
+		// Negative values refer to backgrounds.
+		// Positive values refer to foregrounds.
+		int depth;
+
+		// The sprite sheet to take this layer from.
+		std::shared_ptr<SpriteSheet> spriteSheet;
+
+		// The sprite type on the sprite sheet.
+		std::string type;
+
+		// Defines the origin of the layer.
+		glm::vec2 pos;
+	};
+
+	// Defines an entity to be created in the room.
+	struct EntityListing
+	{
+		// The name of the entity's prefab.
+		std::string prefabName;
+
+		// The type of entity to create.
+		std::string type;
+
+		// Defines the tile position in the room to spawn the enemy in.
+		glm::ivec2 pos;
+	};
+
+	Room(Prefab *prefab, AssetLoader *assetLoader);
 
 	// Get the size of the room.
 	glm::ivec2 getSize() const;
 
 	// Get the tile at a given x, y, in tile coordinates.
-	const Room::TileType &getTileType(glm::ivec2 tileCoord) const;
+	const TileType &getTileType(glm::ivec2 tileCoord) const;
 
 	// Get the tile coordinates corresponding to given world coordinates.
 	const glm::ivec2 getTileCoord(glm::vec2 pos) const;
@@ -53,12 +86,30 @@ public:
 	const static int SLOPE_HEIGHT{ 8 };
 
 private:
+	// Load the room details from the json file.
+	void parseJson(const nlohmann::json &json, AssetLoader *assetLoader);
+
+	// The room's name.
+	std::string m_name;
+
 	// Hold all the tiles in this room.
 	// Tiles are stored in row-major order, bottom-up.
 	std::vector<TileType> m_layout;
 
 	// Hold each tile's index on the sprite sheet.
 	std::shared_ptr<Texture> m_tiles;
+
+	// The background texture.
+	std::shared_ptr<Texture> m_bgTexture;
+
+	// The room's shader. This is applied in the post-processing framebuffer.
+	std::shared_ptr<Shader> m_shader;
+
+	// Hold the room's background and foreground layers.
+	std::vector<Layer> m_layers;
+
+	// Hold the list of entities to create.
+	std::vector<EntityListing> m_entities;
 };
 
 #endif

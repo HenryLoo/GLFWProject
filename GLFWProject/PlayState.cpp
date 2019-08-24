@@ -11,6 +11,7 @@
 #include "InputManager.h"
 #include "GameEngine.h"
 #include "MenuState.h"
+#include "Prefab.h"
 
 #include <iostream>
 
@@ -25,7 +26,10 @@ void PlayState::init(AssetLoader *assetLoader)
 {
 	// TODO: remove this later for more flexible approach.
 	if (m_currentRoom == nullptr)
-		m_currentRoom = assetLoader->load<Room>("test");
+	{
+		std::shared_ptr<Prefab> roomPrefab{ assetLoader->load<Prefab>("room_test") };
+		m_currentRoom = std::make_unique<Room>(roomPrefab.get(), assetLoader);
+	}
 	if (m_font == nullptr)
 		m_font = assetLoader->load<Font>("default", 16);
 
@@ -85,6 +89,14 @@ void PlayState::update(float deltaTime, const glm::ivec2 &windowSize,
 	entityManager->update(deltaTime, assetLoader, uRenderer, tRenderer);
 
 	Renderer::updateViewMatrix(m_camera->getViewMatrix());
+
+	int playerId{ entityManager->getPlayerId() };
+	if (playerId != EntityConstants::PLAYER_NOT_SET)
+	{
+		glm::ivec2 playerPos{ entityManager->getPlayerPos() };
+		glm::ivec2 tileCoord{ m_currentRoom->getTileCoord(playerPos) };
+		glm::ivec2 tilePos{ m_currentRoom->getTilePos(tileCoord) };
+	}
 }
 
 void PlayState::render(const glm::ivec2 &windowSize, 

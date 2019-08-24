@@ -137,14 +137,6 @@ EntityManager::EntityManager(GameEngine *game, AssetLoader *assetLoader,
 
 	m_debugSystem = std::make_unique<DebugSystem>(*this, uRenderer,
 		m_compPhysics, m_compCollisions, m_compAttacks);
-
-	// TODO: remove this later.
-	//auto testScript{ assetLoader->load<Script>("test") };
-	//if (testScript->execute(m_lua))
-	//{
-	//	m_lua.set("testMsg", "TEST MSG!");
-	//	m_lua["testFun"]();
-	//}
 }
 
 EntityManager::~EntityManager()

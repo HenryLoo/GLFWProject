@@ -24,7 +24,6 @@
 #include "DiskStream.h"
 #include "TextureLoader.h"
 #include "SpriteSheetLoader.h"
-#include "RoomLoader.h"
 #include "ShaderLoader.h"
 #include "SoundLoader.h"
 #include "PrefabLoader.h"
@@ -53,7 +52,6 @@ int main()
 	assetLoader = std::make_unique<AssetLoader>(new DiskStream());
 	assetLoader->registerLoader<Texture>(new TextureLoader());
 	assetLoader->registerLoader<SpriteSheet>(new SpriteSheetLoader());
-	assetLoader->registerLoader<Room>(new RoomLoader());
 	assetLoader->registerLoader<Shader>(new ShaderLoader());
 	assetLoader->registerLoader<Sound>(new SoundLoader());
 	assetLoader->registerLoader<Prefab>(new PrefabLoader());

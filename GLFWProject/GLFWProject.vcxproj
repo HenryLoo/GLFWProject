@@ -175,7 +175,6 @@
     <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="Room.cpp" />
     <ClCompile Include="RoomCollisionSystem.cpp" />
-    <ClCompile Include="RoomLoader.cpp" />
     <ClCompile Include="Script.cpp" />
     <ClCompile Include="ScriptLoader.cpp" />
     <ClCompile Include="Shader.cpp" />
@@ -230,7 +229,6 @@
     <ClInclude Include="Renderer.h" />
     <ClInclude Include="Room.h" />
     <ClInclude Include="RoomCollisionSystem.h" />
-    <ClInclude Include="RoomLoader.h" />
     <ClInclude Include="Script.h" />
     <ClInclude Include="ScriptLoader.h" />
     <ClInclude Include="Shader.h" />

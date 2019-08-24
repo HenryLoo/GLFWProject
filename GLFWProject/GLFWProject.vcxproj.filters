@@ -135,12 +135,6 @@
     <ClCompile Include="Texture.cpp">
       <Filter>Source Files\Asset Loader\Assets</Filter>
     </ClCompile>
-    <ClCompile Include="RoomLoader.cpp">
-      <Filter>Source Files\Asset Loader\Loaders</Filter>
-    </ClCompile>
-    <ClCompile Include="Room.cpp">
-      <Filter>Source Files\Asset Loader\Assets</Filter>
-    </ClCompile>
     <ClCompile Include="ShaderLoader.cpp">
       <Filter>Source Files\Asset Loader\Loaders</Filter>
     </ClCompile>
@@ -200,6 +194,9 @@
     </ClCompile>
     <ClCompile Include="ScriptLoader.cpp">
       <Filter>Source Files\Asset Loader\Loaders</Filter>
+    </ClCompile>
+    <ClCompile Include="Room.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -304,9 +301,6 @@
     </ClInclude>
     <ClInclude Include="SpriteSheet.h">
       <Filter>Header Files\Asset Loader\Assets</Filter>
-    </ClInclude>
-    <ClInclude Include="RoomLoader.h">
-      <Filter>Header Files\Asset Loader\Loaders</Filter>
     </ClInclude>
     <ClInclude Include="Room.h">
       <Filter>Header Files\Asset Loader\Assets</Filter>
