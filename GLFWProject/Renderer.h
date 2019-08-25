@@ -15,9 +15,10 @@ public:
 	// Update the window size.
 	static void updateWindowSize(const glm::ivec2 &windowSize);
 
-	// Get the projection matrix, given a zoom value.
+	// Get the projection matrix.
 	// Larger zoom = more zoomed in.
-	static glm::mat4 getProjectionMatrix(float zoom);
+	static glm::mat4 getOrthographicMatrix(float zoom);
+	static glm::mat4 getPerspectiveMatrix(float fovY);
 
 	// Reset the buffer data.
 	// This should be called every frame from the update loop, so that

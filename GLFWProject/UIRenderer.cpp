@@ -387,7 +387,7 @@ void UIRenderer::renderHud()
 
 	// Orthographic projection with origin of the coordinate space defined at
 	// the center of the screen. Negative y-axis points down.
-	glm::mat4 projectionMatrix{ getProjectionMatrix(1.f) };
+	glm::mat4 projectionMatrix{ getOrthographicMatrix(1.f) };
 	m_hudShader->setMat4("projection", projectionMatrix);
 
 	// Set the HUD data.
@@ -444,7 +444,7 @@ void UIRenderer::renderBoxes(Camera *camera)
 	// Set the camera uniforms.
 	// Orthographic projection with origin of the coordinate space defined at
 	// the center of the screen. Negative y-axis points down.
-	glm::mat4 projectionMatrix{ getProjectionMatrix(camera->getZoom()) };
+	glm::mat4 projectionMatrix{ getOrthographicMatrix(camera->getZoom()) };
 	m_boxShader->setMat4("projection", projectionMatrix);
 
 	// Draw the instances.

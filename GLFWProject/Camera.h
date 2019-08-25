@@ -36,9 +36,12 @@ public:
 	// Get the camera's zoom.
 	float getZoom() const;
 
+	// Get the camera's vertical view of view.
+	float getFovY() const;
+
 private:
 	// The camera's position.
-	glm::vec3 m_position{ 0.f, 0.f, 3.f };
+	glm::vec3 m_position{ 0.f };
 
 	// The vector that points in the positive y-axis in the camera space.
 	glm::vec3 m_cameraUp{ 0.f, 1.f, 0.f };
@@ -67,6 +70,9 @@ private:
 	// The camera's rotational values.
 	float m_yaw{ -90.0f };
 	float m_pitch{ 0.f };
+
+	// The vertical field of view for perspective projection, in degrees.
+	float m_fovY{ 45.f };
 
 	// The zoom multiplier. Higher values = more zoomed in.
 	float m_zoom{ 4.f };

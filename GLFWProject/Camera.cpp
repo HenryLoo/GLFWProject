@@ -1,5 +1,7 @@
 #include "Camera.h"
 
+#include "Room.h"
+
 #include <glm/gtc/matrix_transform.hpp>
 
 #include <iostream>
@@ -12,9 +14,12 @@ Camera::Camera()
 void Camera::update(float deltaTime, glm::vec3 playerPos, 
 	glm::ivec2 windowSize, glm::ivec2 roomSize)
 {
-	m_position = playerPos;
+	m_position.x = playerPos.x;
+	m_position.y = playerPos.y;
 	glm::ivec2 windowHalfSize{ windowSize / 2 };
-	glm::ivec2 roomSizePixel{ roomSize * 16 };
+	glm::ivec2 roomSizePixel{ roomSize * Room::TILE_SIZE };
+
+	m_position.z = (windowHalfSize.y / m_zoom) / glm::tan(glm::radians(m_fovY / 2));
 
 	// Keep the camera within the room bounds.
 	if (m_position.x - windowHalfSize.x / m_zoom < 0)
@@ -103,4 +108,9 @@ glm::vec3 Camera::getPosition() const
 float Camera::getZoom() const
 {
 	return m_zoom;
+}
+
+float Camera::getFovY() const
+{
+	return m_fovY;
 }

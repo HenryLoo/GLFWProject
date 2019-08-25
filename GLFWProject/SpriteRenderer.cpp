@@ -266,7 +266,7 @@ void SpriteRenderer::render(Camera *camera, Room *room = nullptr,
 
 	// Orthographic projection with origin of the coordinate space defined at
 	// the center of the screen. Negative y-axis points down.
-	glm::mat4 projectionMatrix{ getProjectionMatrix(camera->getZoom()) };
+	glm::mat4 projectionMatrix{ getPerspectiveMatrix(camera->getFovY()) };
 
 	// Render the background room tiles first.
 	// This should only render the tiles that are visible in the camera.
