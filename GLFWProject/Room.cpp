@@ -69,6 +69,11 @@ Texture *Room::getTileSprites() const
 	return m_tiles.get();
 }
 
+Texture *Room::getBgTexture() const
+{
+	return m_bgTexture.get();
+}
+
 bool Room::isSlope(TileType type)
 {
 	return type == TILE_SLOPE_RIGHT_LOWER || type == TILE_SLOPE_RIGHT_UPPER ||

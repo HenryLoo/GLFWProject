@@ -53,6 +53,7 @@ SpriteRenderer::SpriteRenderer(AssetLoader *assetLoader)
 	// Load resources.
 	m_spriteShader = assetLoader->load<Shader>("sprite");
 	m_roomShader = assetLoader->load<Shader>("room");
+	m_bgShader = assetLoader->load<Shader>("background");
 	m_tileset = assetLoader->load<Texture>("tileset");
 
 	// Create the vertex array object and bind to it.
@@ -272,6 +273,26 @@ void SpriteRenderer::render(Camera *camera, Room *room = nullptr,
 	// This should only render the tiles that are visible in the camera.
 	if (room != nullptr)
 	{
+		Texture *bgTexture{ room->getBgTexture() };
+		if (bgTexture != nullptr)
+		{
+			// Render the background texture.
+			m_bgShader->use();
+			glActiveTexture(GL_TEXTURE5);
+			m_bgShader->setInt("textureSampler", 5);
+
+			glm::vec2 textureSize{ bgTexture->getSize() };
+			float zoom{ camera->getZoom() };
+			m_bgShader->setVec2("textureSize", glm::vec2(textureSize.x * zoom, 
+				textureSize.y * zoom) );
+			m_bgShader->setVec2("windowSize", m_windowSize);
+
+			glBindVertexArray(m_screenVAO);
+			bgTexture->bind();
+			glDrawArrays(GL_TRIANGLES, 0, 6);
+		}
+		
+		// Render the room tiles.
 		glBindVertexArray(m_roomVAO);
 		m_roomShader->use();
 

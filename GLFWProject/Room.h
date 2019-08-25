@@ -78,6 +78,9 @@ public:
 	// Get this room's tile sprites.
 	Texture *getTileSprites() const;
 
+	// Get this room's background texture.
+	Texture *getBgTexture() const;
+
 	// Check if a given tile type is a slope.
 	static bool isSlope(TileType type);
 

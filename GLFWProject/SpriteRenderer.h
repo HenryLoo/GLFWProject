@@ -84,6 +84,7 @@ private:
 	// Shaders to render with.
 	std::shared_ptr<Shader> m_spriteShader;
 	std::shared_ptr<Shader> m_roomShader;
+	std::shared_ptr<Shader> m_bgShader;
 
 	// The vertex array object and vertex buffer object for sprite instances.
 	GLuint m_VAO, m_verticesVBO, m_colourVBO, m_texCoordsVBO, m_modelViewsVBO;
