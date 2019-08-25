@@ -48,7 +48,8 @@ SpriteRenderer::SpriteRenderer(AssetLoader *assetLoader)
 	// Configure GL settings.
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	glDepthFunc(GL_LESS);
+	glDepthFunc(GL_LEQUAL);
+	glEnable(GL_DEPTH_TEST);
 
 	// Load resources.
 	m_spriteShader = assetLoader->load<Shader>("sprite");
@@ -276,7 +277,8 @@ void SpriteRenderer::render(Camera *camera, Room *room = nullptr,
 		Texture *bgTexture{ room->getBgTexture() };
 		if (bgTexture != nullptr)
 		{
-			// Render the background texture.
+			// Disable depth testing and render the background texture.
+			glDepthMask(false);
 			m_bgShader->use();
 			glActiveTexture(GL_TEXTURE5);
 			m_bgShader->setInt("textureSampler", 5);
@@ -292,7 +294,8 @@ void SpriteRenderer::render(Camera *camera, Room *room = nullptr,
 			glDrawArrays(GL_TRIANGLES, 0, 6);
 		}
 		
-		// Render the room tiles.
+		// Re-enable depth testing and render the room tiles.
+		glDepthMask(true);
 		glBindVertexArray(m_roomVAO);
 		m_roomShader->use();
 
