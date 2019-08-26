@@ -5,6 +5,7 @@
 #include "JSONUtilities.h"
 #include "Prefab.h"
 #include "Shader.h"
+#include "SpriteRenderer.h"
 
 #include "stb_image.h"
 
@@ -74,6 +75,11 @@ Texture *Room::getBgTexture() const
 	return m_bgTexture.get();
 }
 
+Shader *Room::getShader() const
+{
+	return m_shader.get();
+}
+
 bool Room::isSlope(TileType type)
 {
 	return type == TILE_SLOPE_RIGHT_LOWER || type == TILE_SLOPE_RIGHT_UPPER ||
@@ -133,33 +139,61 @@ void Room::parseJson(const nlohmann::json &json, AssetLoader *assetLoader)
 				return;
 			}
 
-			// TODO: Parse each layer.
 			for (const auto &layer : layersJson)
 			{
+				Layer thisLayer;
+
 				if (JSONUtilities::hasEntry(PROPERTY_DEPTH, layer))
 				{
-					int depth{ layer.at(PROPERTY_DEPTH).get<int>() };
+					thisLayer.pos.z = layer.at(PROPERTY_DEPTH).get<float>();
 				}
 
 				if (JSONUtilities::hasEntry(PROPERTY_SPRITESHEET, layer))
 				{
 					std::string spriteSheetName{ layer.at(PROPERTY_SPRITESHEET).get<std::string>() };
+					if (!spriteSheetName.empty())
+					{
+						thisLayer.spriteSheet = assetLoader->load<SpriteSheet>(spriteSheetName);
+					}
+
+					if (thisLayer.spriteSheet == nullptr)
+					{
+						continue;
+					}
 				}
 
 				if (JSONUtilities::hasEntry(PROPERTY_TYPE, layer))
 				{
-					std::string type{ layer.at(PROPERTY_TYPE).get<std::string>() };
+					thisLayer.type = layer.at(PROPERTY_TYPE).get<std::string>();
+					if (thisLayer.type.empty())
+						continue;
 				}
 
+				// Get the tile coords x, y and convert them to world positions.
+				glm::ivec2 tileCoord{ 0 };
 				if (JSONUtilities::hasEntry(PROPERTY_X, layer))
 				{
-					int x{ layer.at(PROPERTY_X).get<int>() };
+					tileCoord.x = layer.at(PROPERTY_X).get<int>();
 				}
 
 				if (JSONUtilities::hasEntry(PROPERTY_Y, layer))
 				{
-					int y{ layer.at(PROPERTY_Y).get<int>() };
+					tileCoord.y = layer.at(PROPERTY_Y).get<int>();
 				}
+
+				glm::vec2 tilePos{ getTilePos(tileCoord) };
+				glm::ivec2 clipSize{ 0 };
+				SpriteSheet::SpriteSet set;
+				if (thisLayer.spriteSheet->getSprite(thisLayer.type, set))
+				{
+					clipSize = set.clips[0].clipSize;
+				}
+
+				tilePos.y = tilePos.y - (TILE_SIZE - clipSize.y) / 2.f;
+				thisLayer.pos.x = tilePos.x;
+				thisLayer.pos.y = tilePos.y;
+
+				m_layers.push_back(thisLayer);
 			}
 		}
 
@@ -202,5 +236,13 @@ void Room::parseJson(const nlohmann::json &json, AssetLoader *assetLoader)
 	catch (const nlohmann::json::exception &e)
 	{
 		std::cout << "Room::parseJson: " << e.what() << std::endl;
+	}
+}
+
+void Room::updateLayers(SpriteRenderer *sRenderer) const
+{
+	for (const Layer &layer : m_layers)
+	{
+		sRenderer->addSprite(layer);
 	}
 }

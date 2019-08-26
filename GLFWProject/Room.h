@@ -33,11 +33,6 @@ public:
 	// Defines background/foreground layers in rooms.
 	struct Layer
 	{
-		// Depth 0 refers to the focal point (the tile layer).
-		// Negative values refer to backgrounds.
-		// Positive values refer to foregrounds.
-		int depth;
-
 		// The sprite sheet to take this layer from.
 		std::shared_ptr<SpriteSheet> spriteSheet;
 
@@ -45,7 +40,7 @@ public:
 		std::string type;
 
 		// Defines the origin of the layer.
-		glm::vec2 pos;
+		glm::vec3 pos;
 	};
 
 	// Defines an entity to be created in the room.
@@ -81,8 +76,14 @@ public:
 	// Get this room's background texture.
 	Texture *getBgTexture() const;
 
+	// Get this room's shader.
+	Shader *getShader() const;
+
 	// Check if a given tile type is a slope.
 	static bool isSlope(TileType type);
+
+	// Add the layer sprite data to the sprite renderer.
+	void updateLayers(SpriteRenderer *sRenderer) const;
 
 	// The size of each tile, in pixels.
 	const static int TILE_SIZE{ 16 };

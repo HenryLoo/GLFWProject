@@ -83,6 +83,9 @@ void PlayState::update(float deltaTime, const glm::ivec2 &windowSize,
 	{
 		m_camera->update(deltaTime, playerPos, windowSize,
 			m_currentRoom->getSize());
+
+		// Update room layers.
+		m_currentRoom->updateLayers(sRenderer);
 	}
 
 	// Update all entities.
@@ -104,7 +107,8 @@ void PlayState::render(const glm::ivec2 &windowSize,
 	TextRenderer *tRenderer)
 {
 	// Render queued sprites.
-	sRenderer->render(m_camera.get(), m_currentRoom.get());
+	sRenderer->render(m_camera.get(), m_currentRoom.get(),
+		m_currentRoom->getShader());
 
 	// Render UI elements.
 	uRenderer->renderHud();

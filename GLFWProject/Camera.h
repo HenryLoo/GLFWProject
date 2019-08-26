@@ -72,7 +72,7 @@ private:
 	float m_pitch{ 0.f };
 
 	// The vertical field of view for perspective projection, in degrees.
-	float m_fovY{ 45.f };
+	float m_fovY{ 60.f };
 
 	// The zoom multiplier. Higher values = more zoomed in.
 	float m_zoom{ 4.f };

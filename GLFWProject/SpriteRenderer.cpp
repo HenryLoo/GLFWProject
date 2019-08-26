@@ -199,6 +199,17 @@ void SpriteRenderer::addSprite(const GameComponent::Physics &physics,
 	}
 }
 
+void SpriteRenderer::addSprite(const Room::Layer &layer)
+{
+	GameComponent::Physics phys;
+	phys.pos = layer.pos;
+	GameComponent::Sprite spr;
+	spr.spriteSheet = layer.spriteSheet;
+	spr.spriteSheet->setSprite(layer.type, spr);
+
+	addSprite(phys, spr);
+}
+
 void SpriteRenderer::addSpriteData(SpriteData &data, const GameComponent::Physics &physics,
 	const GameComponent::Sprite &sprite) const
 {

@@ -23,7 +23,10 @@ namespace
 		glViewport(0, 0, width, height);
 
 		GameEngine *game{ (GameEngine *)glfwGetWindowUserPointer(window) };
-		game->updateRendererSize();
+		if (game != nullptr)
+		{
+			game->updateRendererSize();
+		}
 	}
 
 	//void mouseCallback(GLFWwindow *window, double xpos, double ypos)

@@ -302,9 +302,6 @@
     <ClInclude Include="SpriteSheet.h">
       <Filter>Header Files\Asset Loader\Assets</Filter>
     </ClInclude>
-    <ClInclude Include="Room.h">
-      <Filter>Header Files\Asset Loader\Assets</Filter>
-    </ClInclude>
     <ClInclude Include="ShaderLoader.h">
       <Filter>Header Files\Asset Loader\Loaders</Filter>
     </ClInclude>
@@ -364,6 +361,9 @@
     </ClInclude>
     <ClInclude Include="ScriptLoader.h">
       <Filter>Header Files\Asset Loader\Loaders</Filter>
+    </ClInclude>
+    <ClInclude Include="Room.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

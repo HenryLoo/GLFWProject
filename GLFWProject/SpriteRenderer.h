@@ -4,6 +4,7 @@
 
 #include "Renderer.h"
 #include "GameComponent.h"
+#include "Room.h"
 
 #include <glad/glad.h>
 #include <glm/glm.hpp>
@@ -50,7 +51,6 @@ struct SpriteData
 };
 
 class Camera;
-class Room;
 class AssetLoader;
 
 class SpriteRenderer : public Renderer
@@ -64,6 +64,7 @@ public:
 	// camera distance.
 	void addSprite(const GameComponent::Physics &physics, 
 		const GameComponent::Sprite &sprite);
+	void addSprite(const Room::Layer &layer);
 
 	// Set the number of sprites to render to 0.
 	// This should be called every frame from the update loop, so that
