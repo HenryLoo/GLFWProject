@@ -233,13 +233,14 @@ void GameEngine::render(SpriteRenderer *sRenderer, UIRenderer *uRenderer,
 		m_states.back()->render(m_windowSize, sRenderer, uRenderer, tRenderer);
 	}
 
-	// Draw hit boxes if debug modes is on.
+	// Draw hit boxes if debug mode is on.
 	if (m_isDebugMode)
 	{
 		uRenderer->renderBoxes(PlayState::instance()->getCamera());
 	}
 
 	// Swap the buffers to show the rendered visuals.
+	glfwSwapInterval(1);
 	glfwSwapBuffers(m_window);
 }
 

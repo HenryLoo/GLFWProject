@@ -94,7 +94,7 @@ void AttackCollisionSystem::update(float deltaTime, int numEntities,
 
 			// Play the hit sound.
 			if (attack.pattern.hitSound != nullptr)
-				attack.pattern.hitSound->play(m_soundEngine);
+				attack.pattern.hitSound->play(m_soundEngine, deltaTime);
 
 			// If the target is airborne, apply a minimum vertical knockback.
 			GameComponent::Collision &col{ m_collisions[targetId] };

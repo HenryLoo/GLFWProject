@@ -923,18 +923,18 @@ void EntityManager::initLua()
 	m_lua.set_function("playSound", [this](std::string soundName)
 		{
 			std::shared_ptr<Sound> sound{ m_assetLoader->load<Sound>(soundName) };
-			sound->play(m_soundEngine);
+			sound->play(m_soundEngine, m_deltaTime);
 		});
 	m_lua.set_function("playAttackSound", [this](int entityId)
 		{
 			GameComponent::Attack &atk{ m_compAttacks[entityId] };
 			if (atk.pattern.attackSound != nullptr)
-				atk.pattern.attackSound->play(m_soundEngine);
+				atk.pattern.attackSound->play(m_soundEngine, m_deltaTime);
 		});
 	m_lua.set_function("playEvadeSound", [this](int entityId)
 		{
 			if (m_compPlayer.evadeSound != nullptr)
-				m_compPlayer.evadeSound->play(m_soundEngine);
+				m_compPlayer.evadeSound->play(m_soundEngine, m_deltaTime);
 		});
 	m_lua.set_function("createEffect", [this](std::string type, 
 		float posX, float posY, float scaleX, float scaleY, unsigned char r,

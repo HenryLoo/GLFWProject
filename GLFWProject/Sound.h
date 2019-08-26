@@ -18,7 +18,7 @@ public:
 	Sound(SoLoud::Wav *wav);
 	virtual ~Sound();
 
-	void play(SoLoud::Soloud &engine) const;
+	void play(SoLoud::Soloud &engine, float deltaTime) const;
 
 private:
 	std::unique_ptr<SoLoud::Wav> m_sound;

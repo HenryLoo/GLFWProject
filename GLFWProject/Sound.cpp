@@ -15,7 +15,7 @@ Sound::~Sound()
 
 }
 
-void Sound::play(SoLoud::Soloud &engine) const
+void Sound::play(SoLoud::Soloud &engine, float deltaTime) const
 {
-	engine.play(*m_sound);
+	engine.playClocked(deltaTime, *m_sound);
 }
