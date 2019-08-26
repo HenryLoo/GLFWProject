@@ -425,6 +425,8 @@ void UIRenderer::renderHud()
 
 void UIRenderer::renderBoxes(Camera *camera)
 {
+	glDisable(GL_DEPTH_TEST);
+
 	// Render the entity sprites.
 	glBindVertexArray(m_boxVAO);
 

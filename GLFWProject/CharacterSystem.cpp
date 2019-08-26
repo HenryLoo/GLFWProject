@@ -20,8 +20,8 @@ namespace
 	const float DEAD_ALPHA_SPEED{ 20.f };
 
 	// Constants for sprite blinking when invincible.
-	const unsigned char INVINCIBLE_MAX_ALPHA{ 230 };
-	const unsigned char INVINCIBLE_MIN_ALPHA{ 170 };
+	const unsigned char INVINCIBLE_MAX_ALPHA{ 150 };
+	const unsigned char INVINCIBLE_MIN_ALPHA{ 50 };
 	const float INVINCIBLE_ALPHA_SPEED{ 20.f };
 
 	// Constants for super armour colours;

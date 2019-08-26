@@ -49,7 +49,6 @@ SpriteRenderer::SpriteRenderer(AssetLoader *assetLoader)
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glDepthFunc(GL_LEQUAL);
-	glEnable(GL_DEPTH_TEST);
 
 	// Load resources.
 	m_spriteShader = assetLoader->load<Shader>("sprite");
@@ -267,6 +266,8 @@ void SpriteRenderer::resetData()
 void SpriteRenderer::render(Camera *camera, Room *room = nullptr,
 	Shader *postShader)
 {
+	glEnable(GL_DEPTH_TEST);
+
 	// If using post-processing shader, bind to the framebuffer object 
 	// before drawing. This will draw the scene on the attached texture.
 	bool isUsingPostShader{ m_screenFBO && postShader != nullptr };

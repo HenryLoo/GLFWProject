@@ -797,7 +797,7 @@ void EntityManager::createPlayer()
 	m_playerId = createEntity(playerPrefab.get());
 
 	GameComponent::Physics &phys = m_compPhysics[m_playerId];
-	phys.pos = glm::vec3(64.f, 800.f, 0.f);
+	phys.pos = glm::vec3(64.f, 300.f, 0.f);
 }
 
 void EntityManager::createEnemy()
@@ -806,7 +806,7 @@ void EntityManager::createEnemy()
 	int enemyId{ createEntity(enemyPrefab.get()) };
 
 	GameComponent::Physics &phys = m_compPhysics[enemyId];
-	phys.pos = glm::vec3(128.f, 800.f, 0.f);
+	phys.pos = glm::vec3(128.f, 300.f, 0.f);
 }
 
 void EntityManager::initLua()
