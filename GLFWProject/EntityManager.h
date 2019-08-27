@@ -42,11 +42,6 @@ public:
 		UIRenderer *uRenderer, TextRenderer *tRenderer);
 	void updateDebug(float deltaTime);
 
-	// Create a new entity, given a list of component types.
-	// Return the new entity's id.
-	int createEntity(std::vector<GameComponent::ComponentType> types);
-	int createEntity(Prefab *prefab);
-
 	// Flag an entity for deletion.
 	void deleteEntity(int id);
 
@@ -61,13 +56,17 @@ public:
 		unsigned char r = 255, unsigned char g = 255, unsigned char b = 255,
 		unsigned char a = 255, float rotation = 0.f);
 
-	// TODO: test function for generating entities, remove this later.
-	void createEnemy();
+	// Create an entity from a prefab at a given position and return its id.
+	int createEntity(std::string prefabName, glm::vec2 pos = glm::vec2(0.f));
 
 	// Initialize the Lua state and bind appropriate functions.
 	void initLua();
 
 private:
+	// Create a new entity, given a list of component types.
+	// Return the new entity's id.
+	int createEntity(std::vector<GameComponent::ComponentType> types);
+
 	// Component initializers. 
 	// Player and enemy initializers return their respective script names.
 	void initializeSprite(int entityId, const nlohmann::json &json);
@@ -80,10 +79,6 @@ private:
 
 	// Delete all flagged entities.
 	void deleteFlaggedEntities();
-
-	// TODO: test function for generating entities, remove this later.
-	//void createNewEntities();
-	void createPlayer();
 
 	// The Lua state to use for defining entities.
 	sol::state m_lua;

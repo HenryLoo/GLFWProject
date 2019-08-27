@@ -278,8 +278,6 @@ void SpriteRenderer::render(Camera *camera, Room *room = nullptr,
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	}
 
-	// Orthographic projection with origin of the coordinate space defined at
-	// the center of the screen. Negative y-axis points down.
 	glm::mat4 projectionMatrix{ getPerspectiveMatrix(camera->getFovY()) };
 
 	// Render the background room tiles first.

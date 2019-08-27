@@ -211,25 +211,36 @@ void Room::parseJson(const nlohmann::json &json, AssetLoader *assetLoader)
 			// TODO: Parse each entity.
 			for (const auto &entity : entitiesJson)
 			{
+				EntityListing entityList;
+
 				if (JSONUtilities::hasEntry(PROPERTY_NAME, entity))
 				{
-					std::string prefabName{ entity.at(PROPERTY_NAME).get<std::string>() };
+					entityList.prefabName = entity.at(PROPERTY_NAME).get<std::string>();
 				}
 
 				if (JSONUtilities::hasEntry(PROPERTY_TYPE, entity))
 				{
-					std::string type{ entity.at(PROPERTY_TYPE).get<std::string>() };
+					entityList.type = entity.at(PROPERTY_TYPE).get<std::string>();
 				}
 
+
+				// Get the tile coords x, y and convert them to world positions.
+				glm::ivec2 tileCoord{ 0 };
 				if (JSONUtilities::hasEntry(PROPERTY_X, entity))
 				{
-					int x{ entity.at(PROPERTY_X).get<int>() };
+					tileCoord.x = entity.at(PROPERTY_X).get<int>();
 				}
 
 				if (JSONUtilities::hasEntry(PROPERTY_Y, entity))
 				{
-					int y{ entity.at(PROPERTY_Y).get<int>() };
+					tileCoord.y = entity.at(PROPERTY_Y).get<int>();
 				}
+
+				glm::vec2 tilePos{ getTilePos(tileCoord) };
+				entityList.pos.x = tilePos.x;
+				entityList.pos.y = tilePos.y;
+
+				m_entities.push_back(entityList);
 			}
 		}
 	}
@@ -245,4 +256,9 @@ void Room::updateLayers(SpriteRenderer *sRenderer) const
 	{
 		sRenderer->addSprite(layer);
 	}
+}
+
+const std::vector<Room::EntityListing> &Room::getEntities() const
+{
+	return m_entities;
 }

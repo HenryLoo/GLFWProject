@@ -14,12 +14,18 @@ Camera::Camera()
 void Camera::update(float deltaTime, glm::vec3 playerPos, 
 	glm::ivec2 windowSize, glm::ivec2 roomSize)
 {
-	m_position.x = playerPos.x;
-	m_position.y = playerPos.y;
 	glm::ivec2 windowHalfSize{ windowSize / 2 };
 	glm::ivec2 roomSizePixel{ roomSize * Room::TILE_SIZE };
 
+	// Set depth distance of camera.
 	m_position.z = (windowHalfSize.y / m_zoom) / glm::tan(glm::radians(m_fovY / 2));
+
+	// Move the camera towards the player.
+	// The velocity is faster if further away from the player.
+	glm::vec2 distance{ playerPos.x - m_position.x, playerPos.y - m_position.y };
+	glm::vec2 velocity{ distance / 0.25f };
+	m_position.x += velocity.x * deltaTime;
+	m_position.y += velocity.y * deltaTime;
 
 	// Keep the camera within the room bounds.
 	if (m_position.x - windowHalfSize.x / m_zoom < 0)

@@ -52,8 +52,8 @@ public:
 		// The type of entity to create.
 		std::string type;
 
-		// Defines the tile position in the room to spawn the enemy in.
-		glm::ivec2 pos;
+		// Defines the position in the room to spawn the enemy in.
+		glm::vec2 pos;
 	};
 
 	Room(Prefab *prefab, AssetLoader *assetLoader);
@@ -84,6 +84,9 @@ public:
 
 	// Add the layer sprite data to the sprite renderer.
 	void updateLayers(SpriteRenderer *sRenderer) const;
+
+	// Get the list of entities to create.
+	const std::vector<EntityListing> &getEntities() const;
 
 	// The size of each tile, in pixels.
 	const static int TILE_SIZE{ 16 };

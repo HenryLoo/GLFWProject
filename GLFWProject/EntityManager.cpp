@@ -10,6 +10,7 @@
 #include "JSONUtilities.h"
 #include "UIRenderer.h"
 #include "Script.h"
+#include "Room.h"
 
 #include "AttackCollisionSystem.h"
 #include "AttackSystem.h"
@@ -110,10 +111,8 @@ EntityManager::EntityManager(GameEngine *game, AssetLoader *assetLoader,
 	// Initialize Lua state.
 	initLua();
 
-	// TODO: replace these hardcoded resources.
 	m_effectsTexture = assetLoader->load<SpriteSheet>("effects");
-	createEnemy();
-	createPlayer();
+	m_playerId = createEntity("serah", glm::vec2(64.f, 300.f));
 
 	// Initialze game systems.
 	m_gameSystems.emplace_back(std::make_unique<CharacterSystem>(*this,
@@ -196,8 +195,11 @@ int EntityManager::createEntity(std::vector<GameComponent::ComponentType> types)
 	return id;
 }
 
-int EntityManager::createEntity(Prefab *prefab)
+int EntityManager::createEntity(std::string prefabName, glm::vec2 pos)
 {
+	std::shared_ptr<Prefab> prefab{ m_assetLoader->load<Prefab>(prefabName) };
+	if (prefab == nullptr)
+		return EntityConstants::PLAYER_NOT_SET;
 	const json &json{ prefab->getJson() };
 
 	unsigned long mask = GameComponent::COMPONENT_NONE;
@@ -215,6 +217,8 @@ int EntityManager::createEntity(Prefab *prefab)
 			bool hasPlayer{ false };
 			bool hasAttack{ false };
 			bool hasEnemy{ false };
+			bool hasPhysics{ false };
+			bool hasCollision{ false };
 
 			auto &components{ json.at(PROPERTY_COMPONENTS) };
 			if (components.is_array())
@@ -234,6 +238,10 @@ int EntityManager::createEntity(Prefab *prefab)
 					GameComponent::addComponent(mask, it->second);
 
 					if (type == COMPONENT_SPRITE)
+					{
+						hasPhysics = true;
+					}
+					if (type == COMPONENT_SPRITE)
 						initializeSprite(id, component);
 					else if (type == COMPONENT_PLAYER)
 					{
@@ -241,7 +249,10 @@ int EntityManager::createEntity(Prefab *prefab)
 						scriptName = initializePlayer(component);
 					}
 					else if (type == COMPONENT_COLLISION)
+					{
+						hasCollision = true;
 						initializeCollision(id, component);
+					}
 					else if (type == COMPONENT_WEAPON)
 						initializeWeapon(id, component);
 					else if (type == COMPONENT_ATTACK)
@@ -314,6 +325,16 @@ int EntityManager::createEntity(Prefab *prefab)
 				m_compCharacters[id].team = team;
 			if (hasAttack)
 				m_compAttacks[id].team = team;
+
+			// Set initial position.
+			if (hasPhysics && hasCollision)
+			{
+				GameComponent::Physics &phys{ m_compPhysics[id] };
+				GameComponent::Collision &col{ m_compCollisions[id] };
+
+				phys.pos.x = pos.x;
+				phys.pos.y = pos.y - Room::TILE_SIZE / 2 + col.aabb.halfSize.y - col.aabb.offset.y;
+			}
 		}
 	}
 	catch (const nlohmann::json::exception &e)
@@ -697,7 +718,7 @@ void EntityManager::createEffect(const std::string &type, glm::vec3 pos,
 	glm::vec2 scale, unsigned char r, unsigned char g, unsigned char b, 
 	unsigned char a, float rotation)
 {
-	int effectId = createEntity({
+	int effectId = createEntity(std::vector<GameComponent::ComponentType>{
 		GameComponent::COMPONENT_PHYSICS,
 		GameComponent::COMPONENT_SPRITE,
 	});
@@ -823,24 +844,6 @@ void EntityManager::deleteFlaggedEntities()
 
 	// Clear the list of flagged entities.
 	m_entitiesToDelete.clear();
-}
-
-void EntityManager::createPlayer()
-{
-	std::shared_ptr<Prefab> playerPrefab{ m_assetLoader->load<Prefab>("serah") };
-	m_playerId = createEntity(playerPrefab.get());
-
-	GameComponent::Physics &phys = m_compPhysics[m_playerId];
-	phys.pos = glm::vec3(64.f, 300.f, 0.f);
-}
-
-void EntityManager::createEnemy()
-{
-	std::shared_ptr<Prefab> enemyPrefab{ m_assetLoader->load<Prefab>("clamper") };
-	int enemyId{ createEntity(enemyPrefab.get()) };
-
-	GameComponent::Physics &phys = m_compPhysics[enemyId];
-	phys.pos = glm::vec3(128.f, 300.f, 0.f);
 }
 
 void EntityManager::initLua()

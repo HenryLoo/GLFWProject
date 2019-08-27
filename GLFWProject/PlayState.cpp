@@ -64,7 +64,7 @@ void PlayState::processInput(GameEngine *game, InputManager *inputManager,
 	// Debug 2: create enemy.
 	if (inputManager->isKeyPressed(InputManager::INPUT_DEBUG2, true))
 	{
-		entityManager->createEnemy();
+		entityManager->createEntity("clamper", glm::vec2(128.f, 300.f));
 	}
 }
 
