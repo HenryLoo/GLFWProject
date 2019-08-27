@@ -724,67 +724,101 @@ int EntityManager::getNumEntities() const
 
 void EntityManager::deleteFlaggedEntities()
 {
-	for (int id : m_entitiesToDelete)
+	// Entities to delete should already be sorted in increasing order.
+	for (int i = 0; i < m_entitiesToDelete.size();)
 	{
+		int id{ m_entitiesToDelete[i] };
+		int idToDelete{ id };
+
+		// Check if the last entity to delete is also the last entity (largest id).
+		// If so, then this last entity should be deleted first, instead of
+		// the current entity. This is to avoid swapping with the last entity,
+		// which would lead to issues where the last entity is not deleted.
+		int lastEntityId{ m_entitiesToDelete.back() };
+		int lastIndex{ m_numEntities - 1 };
+		if (lastEntityId == lastIndex)
+		{
+			idToDelete = lastEntityId;
+		}
+
 		// Delete the entity's components.
-		m_compPhysics[id] = {};
-		m_compSprites[id] = {};
-		m_compCollisions[id] = {};
-		m_compWeapons[id] = {};
-		m_compAttacks[id] = {};
-		m_compEnemies[id] = {};
-		m_compCharacters[id] = {};
+		m_compPhysics[idToDelete] = {};
+		m_compSprites[idToDelete] = {};
+		m_compCollisions[idToDelete] = {};
+		m_compWeapons[idToDelete] = {};
+		m_compAttacks[idToDelete] = {};
+		m_compEnemies[idToDelete] = {};
+		m_compCharacters[idToDelete] = {};
 
-		// Swap with the last entity to keep the entities array tightly packed.
-		int lastIndex = m_numEntities - 1;
-		unsigned long lastMask = m_entities[lastIndex];
-		m_entities[id] = lastMask;
-		m_entities[lastIndex] = GameComponent::COMPONENT_NONE;
 
-		// Swap all components from the last entity.
-		if (GameComponent::hasComponent(lastMask, GameComponent::COMPONENT_PHYSICS))
+		// If the deleted entity was the player, reset the player component.
+		if (idToDelete == m_playerId)
 		{
-			std::iter_swap(m_compPhysics.begin() + id, m_compPhysics.begin() + lastIndex);
+			m_playerId = EntityConstants::PLAYER_NOT_SET;
+			m_compPlayer = {};
 		}
-		if (GameComponent::hasComponent(lastMask, GameComponent::COMPONENT_SPRITE))
-		{
-			std::iter_swap(m_compSprites.begin() + id, m_compSprites.begin() + lastIndex);
-		}
-		if (GameComponent::hasComponent(lastMask, GameComponent::COMPONENT_COLLISION))
-		{
-			std::iter_swap(m_compCollisions.begin() + id, m_compCollisions.begin() + lastIndex);
-		}
-		if (GameComponent::hasComponent(lastMask, GameComponent::COMPONENT_WEAPON))
-		{
-			std::iter_swap(m_compWeapons.begin() + id, m_compWeapons.begin() + lastIndex);
-		}
-		if (GameComponent::hasComponent(lastMask, GameComponent::COMPONENT_ATTACK))
-		{
-			std::iter_swap(m_compAttacks.begin() + id, m_compAttacks.begin() + lastIndex);
 
-			// Update the attack's source.
-			m_compAttacks[id].sourceId = id;
-		}
-		if (GameComponent::hasComponent(lastMask, GameComponent::COMPONENT_ENEMY))
+		m_entities[idToDelete] = GameComponent::COMPONENT_NONE;
+
+		// If the current entity is being deleted, swap it with the last entity to keep the 
+		// entities array tightly packed.
+		bool isNotDeletingLast{ idToDelete != lastIndex};
+		if (isNotDeletingLast)
 		{
-			std::iter_swap(m_compEnemies.begin() + id, m_compEnemies.begin() + lastIndex);
+			unsigned long lastMask = m_entities[lastIndex];
+			m_entities[id] = lastMask;
+			m_entities[lastIndex] = GameComponent::COMPONENT_NONE;
+
+			// Swap all components from the last entity.
+			if (GameComponent::hasComponent(lastMask, GameComponent::COMPONENT_PHYSICS))
+			{
+				std::iter_swap(m_compPhysics.begin() + id, m_compPhysics.begin() + lastIndex);
+			}
+			if (GameComponent::hasComponent(lastMask, GameComponent::COMPONENT_SPRITE))
+			{
+				std::iter_swap(m_compSprites.begin() + id, m_compSprites.begin() + lastIndex);
+			}
+			if (GameComponent::hasComponent(lastMask, GameComponent::COMPONENT_COLLISION))
+			{
+				std::iter_swap(m_compCollisions.begin() + id, m_compCollisions.begin() + lastIndex);
+			}
+			if (GameComponent::hasComponent(lastMask, GameComponent::COMPONENT_WEAPON))
+			{
+				std::iter_swap(m_compWeapons.begin() + id, m_compWeapons.begin() + lastIndex);
+			}
+			if (GameComponent::hasComponent(lastMask, GameComponent::COMPONENT_ATTACK))
+			{
+				std::iter_swap(m_compAttacks.begin() + id, m_compAttacks.begin() + lastIndex);
+
+				// Update the attack's source.
+				m_compAttacks[id].sourceId = id;
+			}
+			if (GameComponent::hasComponent(lastMask, GameComponent::COMPONENT_ENEMY))
+			{
+				std::iter_swap(m_compEnemies.begin() + id, m_compEnemies.begin() + lastIndex);
+			}
+			if (GameComponent::hasComponent(lastMask, GameComponent::COMPONENT_CHARACTER))
+			{
+				std::iter_swap(m_compCharacters.begin() + id, m_compCharacters.begin() + lastIndex);
+			}
+			if (GameComponent::hasComponent(lastMask, GameComponent::COMPONENT_PLAYER))
+			{
+				m_playerId = id;
+			}
+
+			// Deleting the current entity, so move onto the next id for the 
+			// next iteration.
+			++i;
 		}
-		if (GameComponent::hasComponent(lastMask, GameComponent::COMPONENT_CHARACTER))
+		else
 		{
-			std::iter_swap(m_compCharacters.begin() + id, m_compCharacters.begin() + lastIndex);
+			// Deleting the last entity, so remove it from the list of
+			// entities to be deleted. Continue to the next iteration with the same
+			// current id.
+			m_entitiesToDelete.pop_back();
 		}
 
 		m_numEntities--;
-
-		// If the last entity was the player, update the player id.
-		if (m_playerId == lastIndex)
-			m_playerId = id;
-		// If the deleted entity was the player, reset the player component.
-		else if (m_playerId == id)
-		{
-			m_playerId = -1;
-			m_compPlayer = {};
-		}
 	}
 
 	// Clear the list of flagged entities.

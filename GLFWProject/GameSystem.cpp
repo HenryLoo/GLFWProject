@@ -28,6 +28,8 @@ bool GameSystem::hasComponents(unsigned long &entity)
 	for (const GameComponent::ComponentType &comp : m_components)
 	{
 		hasComps = hasComps && GameComponent::hasComponent(entity, comp);
+		if (!hasComps)
+			break;
 	}
 
 	return hasComps;
