@@ -363,6 +363,7 @@ void SpriteRenderer::render(Camera *camera, Room *room = nullptr,
 		if (it != m_spriteData.end())
 		{
 			SpriteData &data{ it->second };
+			m_spriteShader->setVec2("textureSize", data.spriteSheet->getSize());
 
 			glBindBuffer(GL_ARRAY_BUFFER, m_colourVBO);
 			glBufferSubData(GL_ARRAY_BUFFER, 0, data.numSprites * sizeof(GLubyte) * 4, &data.colours[0]);

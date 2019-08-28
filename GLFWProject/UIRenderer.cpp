@@ -218,7 +218,7 @@ void UIRenderer::addBox(const GameComponent::Physics &physics,
 	};
 	modelMatrix = glm::scale(modelMatrix, scale);
 
-	// Addd to list of models.
+	// Add to list of models.
 	m_boxModelsData.push_back(modelMatrix);
 }
 
@@ -381,6 +381,7 @@ void UIRenderer::renderHud()
 	// Bind to texture unit 4, since 1-3 are being used by SpriteRenderer.
 	glActiveTexture(GL_TEXTURE4);
 	m_hudShader->setInt("textureSampler", 4);
+	m_hudShader->setVec2("textureSize", m_hudTexture->getSize());
 
 	// Orthographic projection with origin of the coordinate space defined at
 	// the center of the screen. Negative y-axis points down.
