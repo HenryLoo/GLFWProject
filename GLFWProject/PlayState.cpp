@@ -78,27 +78,19 @@ void PlayState::update(float deltaTime, const glm::ivec2 &windowSize,
 	uRenderer->resetData();
 	tRenderer->resetData();
 
-	glm::vec3 playerPos{ entityManager->getPlayerPos() };
-	if (m_currentRoom != nullptr)
-	{
-		m_camera->update(deltaTime, playerPos, windowSize,
-			m_currentRoom->getSize());
-
-		// Update room layers.
-		m_currentRoom->updateLayers(sRenderer);
-	}
-
 	// Update all entities.
 	entityManager->update(deltaTime, assetLoader, uRenderer, tRenderer);
 
-	Renderer::updateViewMatrix(m_camera->getViewMatrix());
-
-	int playerId{ entityManager->getPlayerId() };
-	if (playerId != EntityConstants::PLAYER_NOT_SET)
+	// Update the camera after processing entity systems, since the
+	// camera follows the player's position.
+	if (m_currentRoom != nullptr)
 	{
-		glm::ivec2 playerPos{ entityManager->getPlayerPos() };
-		glm::ivec2 tileCoord{ m_currentRoom->getTileCoord(playerPos) };
-		glm::ivec2 tilePos{ m_currentRoom->getTilePos(tileCoord) };
+		// Update room layers.
+		m_currentRoom->updateLayers(sRenderer);
+
+		glm::vec3 playerPos{ entityManager->getPlayerPos() };
+		m_camera->update(deltaTime, playerPos, windowSize,
+			m_currentRoom->getSize());
 	}
 }
 
@@ -106,6 +98,9 @@ void PlayState::render(const glm::ivec2 &windowSize,
 	SpriteRenderer *sRenderer, UIRenderer *uRenderer,
 	TextRenderer *tRenderer)
 {
+	// Update the view matrix for all renderers.
+	Renderer::updateViewMatrix(m_camera->getViewMatrix());
+
 	// Render queued sprites.
 	sRenderer->render(m_camera.get(), m_currentRoom.get(),
 		m_currentRoom->getShader());

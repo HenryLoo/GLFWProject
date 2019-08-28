@@ -62,6 +62,10 @@ public:
 	// Initialize the Lua state and bind appropriate functions.
 	void initLua();
 
+	// Perform linear interpolation between the previous and the current
+	// physics component values.
+	void lerpPhysics(float amount);
+
 private:
 	// Create a new entity, given a list of component types.
 	// Return the new entity's id.
@@ -108,6 +112,9 @@ private:
 	std::vector<GameComponent::Attack> m_compAttacks;
 	std::vector<GameComponent::Enemy> m_compEnemies;
 	std::vector<GameComponent::Character> m_compCharacters;
+
+	// Hold the physics component values from the previous frame.
+	std::vector<GameComponent::Physics> m_prevPhysics;
 
 	// Hold all game systems.
 	std::vector<std::unique_ptr<GameSystem>> m_gameSystems;

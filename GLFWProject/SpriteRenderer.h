@@ -47,7 +47,7 @@ struct SpriteData
 	// Data to send to the GPU.
 	std::vector<GLubyte> colours;
 	std::vector<GLfloat> texCoords;
-	std::vector<glm::mat4> modelViews;
+	std::vector<glm::mat4> models;
 };
 
 class Camera;
@@ -88,7 +88,7 @@ private:
 	std::shared_ptr<Shader> m_bgShader;
 
 	// The vertex array object and vertex buffer object for sprite instances.
-	GLuint m_VAO, m_verticesVBO, m_colourVBO, m_texCoordsVBO, m_modelViewsVBO;
+	GLuint m_VAO, m_verticesVBO, m_colourVBO, m_texCoordsVBO, m_modelsVBO;
 
 	// The vertex array object and vertex buffer object for the room.
 	GLuint m_roomVAO, m_roomVertsVBO;

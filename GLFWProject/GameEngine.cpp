@@ -34,6 +34,8 @@ namespace
 	//	GameEngine *game{ (GameEngine *)glfwGetWindowUserPointer(window) };
 	//	game->updateCameraLook(glm::vec2(xpos, ypos));
 	//}
+
+	const float TIME_STEP{ 1 / 120.f };
 }
 
 GameEngine::GameEngine()
@@ -87,7 +89,9 @@ void GameEngine::start(EntityManager *entityManager, AssetLoader *assetLoader,
 	UIRenderer *uRenderer, TextRenderer *tRenderer)
 {
 	double previousTime = glfwGetTime();
-	int frameCount = 0;
+	int frameCount{ 0 };
+	float accumulator{ 0.f };
+	m_deltaTime = TIME_STEP;
 
 	m_debugFont = assetLoader->load<Font>("default", 16);
 
@@ -118,14 +122,23 @@ void GameEngine::start(EntityManager *entityManager, AssetLoader *assetLoader,
 		}
 
 		float currentFrame{ static_cast<float>(glfwGetTime()) };
-		m_deltaTime = currentFrame - m_lastFrame;
+		float deltaTime{ currentFrame - m_lastFrame };
 		m_lastFrame = currentFrame;
 
 		// Handle user inputs.
 		processInput(inputManager, entityManager, assetLoader);
 
-		// Update values.
-		update(entityManager, assetLoader, sRenderer, uRenderer, tRenderer);
+		accumulator += deltaTime;
+		while (accumulator >= TIME_STEP)
+		{
+			// Update values.
+			update(entityManager, assetLoader, sRenderer, uRenderer, tRenderer);
+
+			accumulator -= TIME_STEP;
+		}
+
+		float amount{ accumulator / TIME_STEP };
+		entityManager->lerpPhysics(amount);
 
 		// Call rendering functions.
 		render(sRenderer, uRenderer, tRenderer);

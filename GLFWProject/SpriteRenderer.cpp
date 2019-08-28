@@ -99,8 +99,8 @@ SpriteRenderer::SpriteRenderer(AssetLoader *assetLoader)
 
 	// Create the VBO for instance model view matrices.
 	// Initialize with an empty buffer and update its values in the game loop.
-	glGenBuffers(1, &m_modelViewsVBO);
-	glBindBuffer(GL_ARRAY_BUFFER, m_modelViewsVBO);
+	glGenBuffers(1, &m_modelsVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, m_modelsVBO);
 	glBufferData(GL_ARRAY_BUFFER, EntityConstants::MAX_ENTITIES * sizeof(glm::mat4), NULL, GL_STREAM_DRAW);
 
 	// Set attributes for instance model view matrices.
@@ -153,7 +153,7 @@ SpriteRenderer::~SpriteRenderer()
 	glDeleteBuffers(1, &m_verticesVBO);
 	glDeleteBuffers(1, &m_colourVBO);
 	glDeleteBuffers(1, &m_texCoordsVBO);
-	glDeleteBuffers(1, &m_modelViewsVBO);
+	glDeleteBuffers(1, &m_modelsVBO);
 	glDeleteVertexArrays(1, &m_VAO);
 
 	glDeleteBuffers(1, &m_roomVertsVBO);
@@ -248,10 +248,8 @@ void SpriteRenderer::addSpriteData(SpriteData &data, const GameComponent::Physic
 	// Apply rotation.
 	modelMatrix = glm::rotate(modelMatrix, physics.rotation, glm::vec3(0.f, 0.f, 1.f));
 
-	// Left-multiply by view matrix to get model view matrix.
-	glm::mat4 modelViewMatrix{ m_viewMatrix * modelMatrix };
-
-	data.modelViews.push_back(modelViewMatrix);
+	// Add to the list of model matrices.
+	data.models.push_back(modelMatrix);
 	
 	data.numSprites++;
 }
@@ -279,6 +277,7 @@ void SpriteRenderer::render(Camera *camera, Room *room = nullptr,
 	}
 
 	glm::mat4 projectionMatrix{ getPerspectiveMatrix(camera->getFovY()) };
+	glm::mat4 viewProjectionMatrix{ projectionMatrix * m_viewMatrix };
 
 	// Render the background room tiles first.
 	// This should only render the tiles that are visible in the camera.
@@ -327,7 +326,7 @@ void SpriteRenderer::render(Camera *camera, Room *room = nullptr,
 		glm::mat4 modelMatrix{ glm::mat4(1.f) };
 		glm::ivec2 roomSize{ room->getSize() * tileSize };
 		modelMatrix = glm::scale(modelMatrix, glm::vec3(roomSize.x, roomSize.y, 1.f));
-		m_roomShader->setMat4("mvp", projectionMatrix * m_viewMatrix * modelMatrix);
+		m_roomShader->setMat4("mvp", viewProjectionMatrix * modelMatrix);
 
 		// Draw the room.
 		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
@@ -343,7 +342,7 @@ void SpriteRenderer::render(Camera *camera, Room *room = nullptr,
 	glBindBuffer(GL_ARRAY_BUFFER, m_texCoordsVBO);
 	glBufferData(GL_ARRAY_BUFFER, static_cast<size_t>(EntityConstants::MAX_ENTITIES) * 4 * sizeof(GLfloat), NULL, GL_STREAM_DRAW);
 
-	glBindBuffer(GL_ARRAY_BUFFER, m_modelViewsVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, m_modelsVBO);
 	glBufferData(GL_ARRAY_BUFFER, EntityConstants::MAX_ENTITIES * sizeof(glm::mat4), NULL, GL_STREAM_DRAW);
 
 	// Use the shader.
@@ -354,7 +353,7 @@ void SpriteRenderer::render(Camera *camera, Room *room = nullptr,
 	m_spriteShader->setInt("textureSampler", 2);
 
 	// Set the camera uniforms.
-	m_spriteShader->setMat4("projection", projectionMatrix);
+	m_spriteShader->setMat4("viewProjection", viewProjectionMatrix);
 
 	// Iterate through each spritesheet type in order of their insertion.
 	// Bind to the spritesheet texture, and then call draw.
@@ -371,12 +370,11 @@ void SpriteRenderer::render(Camera *camera, Room *room = nullptr,
 			glBindBuffer(GL_ARRAY_BUFFER, m_texCoordsVBO);
 			glBufferSubData(GL_ARRAY_BUFFER, 0, data.numSprites * sizeof(GLfloat) * 4, &data.texCoords[0]);
 
-			glBindBuffer(GL_ARRAY_BUFFER, m_modelViewsVBO);
-			glBufferSubData(GL_ARRAY_BUFFER, 0, data.numSprites * sizeof(glm::mat4), &data.modelViews[0]);
+			glBindBuffer(GL_ARRAY_BUFFER, m_modelsVBO);
+			glBufferSubData(GL_ARRAY_BUFFER, 0, data.numSprites * sizeof(glm::mat4), &data.models[0]);
 
 			// Draw the instances.
 			data.spriteSheet->bind();
-			m_spriteShader->setVec2("textureSize", data.spriteSheet->getSize());
 			glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, data.numSprites);
 		}
 		else

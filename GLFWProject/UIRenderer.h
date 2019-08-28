@@ -63,13 +63,13 @@ private:
 
 	// Data to send to the GPU.
 	std::vector<GLubyte> m_boxColoursData;
-	std::vector<glm::mat4> m_boxModelViewsData;
+	std::vector<glm::mat4> m_boxModelsData;
 	std::vector<GLubyte> m_hudColoursData;
 	std::vector<float> m_hudTexCoordsData;
 	std::vector<glm::mat4> m_hudModelsData;
 
 	// The vertex array object and vertex buffer object for instances.
-	GLuint m_boxVAO, m_boxVerticesVBO, m_boxColoursVBO, m_boxModelViewsVBO;
+	GLuint m_boxVAO, m_boxVerticesVBO, m_boxColoursVBO, m_boxModelsVBO;
 	GLuint m_hudVAO, m_hudVerticesVBO, m_hudColoursVBO, m_hudTexCoordsVBO, m_hudModelsVBO;
 
 	// Hold HUD assets.

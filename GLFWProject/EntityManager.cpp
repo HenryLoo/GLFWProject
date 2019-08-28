@@ -147,6 +147,7 @@ void EntityManager::update(float deltaTime, AssetLoader *assetLoader,
 	UIRenderer *uRenderer, TextRenderer *tRenderer)
 {
 	m_deltaTime = deltaTime;
+	m_prevPhysics = m_compPhysics;
 
 	// Get all collisions and handle them.
 	m_broadPhase->updateAABBList(m_numEntities, m_entities, m_compCollisions,
@@ -1299,4 +1300,20 @@ void EntityManager::initLua()
 		{
 			return m_compEnemies[entityId].attackTimer = m_compEnemies[entityId].attackDuration;
 		});
+}
+
+void EntityManager::lerpPhysics(float amount)
+{
+	for (int i = 0; i < m_numEntities; ++i)
+	{
+		GameComponent::Physics &phys{ m_compPhysics[i] };
+		GameComponent::Physics &prevPhys{ m_compPhysics[i] };
+
+		phys.pos = glm::mix(phys.pos, prevPhys.pos, amount);
+		phys.pos *= 100.f;
+		phys.pos = glm::round(phys.pos);
+		phys.pos /= 100.f;
+		phys.rotation = glm::mix(phys.rotation, prevPhys.rotation, amount);
+		phys.scale = glm::mix(phys.scale, prevPhys.scale, amount);
+	}
 }

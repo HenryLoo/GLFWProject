@@ -56,7 +56,7 @@ UIRenderer::~UIRenderer()
 {
 	glDeleteBuffers(1, &m_boxVerticesVBO);
 	glDeleteBuffers(1, &m_boxColoursVBO);
-	glDeleteBuffers(1, &m_boxModelViewsVBO);
+	glDeleteBuffers(1, &m_boxModelsVBO);
 	glDeleteVertexArrays(1, &m_boxVAO);
 
 	glDeleteBuffers(1, &m_hudVerticesVBO);
@@ -99,8 +99,8 @@ void UIRenderer::initBox()
 
 	// Create the VBO for instance model view matrices.
 	// Initialize with an empty buffer and update its values in the game loop.
-	glGenBuffers(1, &m_boxModelViewsVBO);
-	glBindBuffer(GL_ARRAY_BUFFER, m_boxModelViewsVBO);
+	glGenBuffers(1, &m_boxModelsVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, m_boxModelsVBO);
 	glBufferData(GL_ARRAY_BUFFER, EntityConstants::MAX_ENTITIES * sizeof(glm::mat4), NULL, GL_STREAM_DRAW);
 
 	// Set attributes for instance model view matrices.
@@ -218,17 +218,15 @@ void UIRenderer::addBox(const GameComponent::Physics &physics,
 	};
 	modelMatrix = glm::scale(modelMatrix, scale);
 
-	// Left-multiply by view matrix to get model view matrix.
-	glm::mat4 modelViewMatrix{ m_viewMatrix * modelMatrix };
-
-	m_boxModelViewsData.push_back(modelViewMatrix);
+	// Addd to list of models.
+	m_boxModelsData.push_back(modelMatrix);
 }
 
 void UIRenderer::resetData()
 {
 	// Clear data.
 	m_boxColoursData.clear();
-	m_boxModelViewsData.clear();
+	m_boxModelsData.clear();
 
 	m_hudColoursData.clear();
 	m_hudTexCoordsData.clear();
@@ -383,12 +381,11 @@ void UIRenderer::renderHud()
 	// Bind to texture unit 4, since 1-3 are being used by SpriteRenderer.
 	glActiveTexture(GL_TEXTURE4);
 	m_hudShader->setInt("textureSampler", 4);
-	m_hudShader->setVec2("textureSize", m_hudTexture->getSize());
 
 	// Orthographic projection with origin of the coordinate space defined at
 	// the center of the screen. Negative y-axis points down.
 	glm::mat4 projectionMatrix{ getOrthographicMatrix(1.f) };
-	m_hudShader->setMat4("projection", projectionMatrix);
+	m_hudShader->setMat4("viewProjection", projectionMatrix);
 
 	// Set the HUD data.
 	int numElements{ static_cast<int>(m_hudModelsData.size()) };
@@ -431,14 +428,14 @@ void UIRenderer::renderBoxes(Camera *camera)
 	glBindVertexArray(m_boxVAO);
 
 	// Update the instance buffers.
-	int numBoxes{ static_cast<int>(m_boxModelViewsData.size()) };
+	int numBoxes{ static_cast<int>(m_boxModelsData.size()) };
 	glBindBuffer(GL_ARRAY_BUFFER, m_boxColoursVBO);
 	glBufferData(GL_ARRAY_BUFFER, static_cast<size_t>(EntityConstants::MAX_ENTITIES) * 4 * sizeof(GLubyte), NULL, GL_STREAM_DRAW);
 	glBufferSubData(GL_ARRAY_BUFFER, 0, numBoxes * sizeof(GLubyte) * 4, &m_boxColoursData[0]);
 
-	glBindBuffer(GL_ARRAY_BUFFER, m_boxModelViewsVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, m_boxModelsVBO);
 	glBufferData(GL_ARRAY_BUFFER, EntityConstants::MAX_ENTITIES * sizeof(glm::mat4), NULL, GL_STREAM_DRAW);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, numBoxes * sizeof(glm::mat4), &m_boxModelViewsData[0]);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, numBoxes * sizeof(glm::mat4), &m_boxModelsData[0]);
 
 	// Use the shader.
 	m_boxShader->use();
@@ -446,8 +443,9 @@ void UIRenderer::renderBoxes(Camera *camera)
 	// Set the camera uniforms.
 	// Orthographic projection with origin of the coordinate space defined at
 	// the center of the screen. Negative y-axis points down.
-	glm::mat4 projectionMatrix{ getOrthographicMatrix(camera->getZoom()) };
-	m_boxShader->setMat4("projection", projectionMatrix);
+	glm::mat4 projectionMatrix{ getPerspectiveMatrix(camera->getFovY()) };
+	glm::mat4 viewProjectionMatrix{ projectionMatrix * m_viewMatrix };
+	m_boxShader->setMat4("viewProjection", viewProjectionMatrix);
 
 	// Draw the instances.
 	glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, numBoxes);
