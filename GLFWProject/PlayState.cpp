@@ -82,6 +82,13 @@ void PlayState::update(float deltaTime, const glm::ivec2 &windowSize,
 	uRenderer->resetData();
 	tRenderer->resetData();
 
+	// Update room layers.
+	if (m_currentRoom != nullptr)
+	{
+		// Update room layers.
+		m_currentRoom->updateLayers(sRenderer);
+	}
+
 	// Update all entities.
 	entityManager->update(deltaTime, assetLoader, uRenderer, tRenderer);
 
@@ -89,9 +96,6 @@ void PlayState::update(float deltaTime, const glm::ivec2 &windowSize,
 	// camera follows the player's position.
 	if (m_currentRoom != nullptr)
 	{
-		// Update room layers.
-		m_currentRoom->updateLayers(sRenderer);
-
 		glm::vec3 playerPos{ entityManager->getPlayerPos() };
 		m_camera->update(deltaTime, playerPos, windowSize,
 			m_currentRoom->getSize());
