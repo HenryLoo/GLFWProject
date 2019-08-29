@@ -86,7 +86,7 @@ GameEngine::~GameEngine()
 
 void GameEngine::start(EntityManager *entityManager, AssetLoader *assetLoader,
 	InputManager *inputManager, SpriteRenderer *sRenderer,
-	UIRenderer *uRenderer, TextRenderer *tRenderer)
+	UIRenderer *uRenderer, TextRenderer *tRenderer, SoLoud::Soloud &soundEngine)
 {
 	double previousTime = glfwGetTime();
 	int frameCount{ 0 };
@@ -132,7 +132,8 @@ void GameEngine::start(EntityManager *entityManager, AssetLoader *assetLoader,
 		while (accumulator >= TIME_STEP)
 		{
 			// Update values.
-			update(entityManager, assetLoader, sRenderer, uRenderer, tRenderer);
+			update(entityManager, assetLoader, sRenderer, uRenderer, tRenderer, 
+				soundEngine);
 
 			accumulator -= TIME_STEP;
 		}
@@ -212,7 +213,8 @@ void GameEngine::processInput(InputManager *inputManager,
 }
 
 void GameEngine::update(EntityManager *entityManager, AssetLoader *assetLoader,
-	SpriteRenderer *sRenderer, UIRenderer *uRenderer, TextRenderer *tRenderer)
+	SpriteRenderer *sRenderer, UIRenderer *uRenderer, TextRenderer *tRenderer,
+	SoLoud::Soloud &soundEngine)
 {
 	assetLoader->update(m_deltaTime);
 
@@ -220,7 +222,8 @@ void GameEngine::update(EntityManager *entityManager, AssetLoader *assetLoader,
 	if (!m_states.empty())
 	{
 		m_states.back()->update(m_deltaTime, m_windowSize,
-			entityManager, assetLoader, sRenderer, uRenderer, tRenderer);
+			entityManager, assetLoader, sRenderer, uRenderer, tRenderer,
+			soundEngine);
 	}
 
 	if (m_isDebugMode)

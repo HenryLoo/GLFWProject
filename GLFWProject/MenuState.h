@@ -32,7 +32,7 @@ public:
 	virtual void update(float deltaTime, const glm::ivec2 &windowSize,
 		EntityManager *entityManager, AssetLoader *assetLoader,
 		SpriteRenderer *sRenderer, UIRenderer *uRenderer,
-		TextRenderer *tRenderer);
+		TextRenderer *tRenderer, SoLoud::Soloud &soundEngine);
 
 	// Render all appropriate visuals for the game loop's current iteration.
 	virtual void render(const glm::ivec2 &windowSize,

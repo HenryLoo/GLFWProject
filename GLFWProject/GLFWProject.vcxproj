@@ -165,11 +165,15 @@
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="MenuState.cpp" />
     <ClCompile Include="Mesh.cpp" />
+    <ClCompile Include="Music.cpp" />
+    <ClCompile Include="MusicLoader.cpp" />
     <ClCompile Include="PhysicsSystem.cpp" />
     <ClCompile Include="PlayerSystem.cpp" />
     <ClCompile Include="PlayState.cpp" />
     <ClCompile Include="Prefab.cpp" />
     <ClCompile Include="PrefabLoader.cpp" />
+    <ClInclude Include="Music.h" />
+    <ClInclude Include="MusicLoader.h" />
     <ClInclude Include="PrefabLoader.h" />
     <ClCompile Include="OLD_Renderer.cpp" />
     <ClCompile Include="Renderer.cpp" />

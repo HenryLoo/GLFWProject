@@ -6,6 +6,7 @@
 #include "Camera.h"
 
 #include <memory>
+#include <string>
 
 class Room;
 class Font;
@@ -33,7 +34,7 @@ public:
 	virtual void update(float deltaTime, const glm::ivec2 &windowSize,
 		EntityManager *entityManager,  AssetLoader *assetLoader,
 		SpriteRenderer *sRenderer,  UIRenderer *uRenderer, 
-		TextRenderer *tRenderer);
+		TextRenderer *tRenderer, SoLoud::Soloud &soundEngine);
 
 	// Render all appropriate visuals for the game loop's current iteration.
 	virtual void render(const glm::ivec2 &windowSize, 
@@ -44,9 +45,15 @@ public:
 	Camera *getCamera() const;
 	Room *getCurrentRoom() const;
 
+	// Prepare to change the room in the next update to the given room name.
+	void changeRoom(const std::string &nextRoomName);
+
 private:
 	// Disallow instantiating.
 	PlayState() {}
+
+	// Change the current room to the next room.
+	void changeRoom(AssetLoader *assetLoader, SoLoud::Soloud &soundEngine);
 
 	// Singleton instance.
 	static PlayState m_state;
@@ -54,8 +61,12 @@ private:
 	// The camera to get the view matrix from.
 	std::unique_ptr<Camera> m_camera;
 
+	std::string m_roomName;
 	std::shared_ptr<Room> m_currentRoom;
 	std::shared_ptr<Font> m_font;
+
+	// The name of the room to change to.
+	std::string m_nextRoomName;
 };
 
 #endif

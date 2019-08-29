@@ -198,6 +198,12 @@
     <ClCompile Include="Room.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Music.cpp">
+      <Filter>Source Files\Asset Loader\Assets</Filter>
+    </ClCompile>
+    <ClCompile Include="MusicLoader.cpp">
+      <Filter>Source Files\Asset Loader\Loaders</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stb_image.h">
@@ -364,6 +370,12 @@
     </ClInclude>
     <ClInclude Include="Room.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Music.h">
+      <Filter>Header Files\Asset Loader\Assets</Filter>
+    </ClInclude>
+    <ClInclude Include="MusicLoader.h">
+      <Filter>Header Files\Asset Loader\Loaders</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

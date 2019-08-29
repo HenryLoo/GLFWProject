@@ -4,6 +4,7 @@
 #include "AssetLoader.h"
 #include "JSONUtilities.h"
 #include "Prefab.h"
+#include "Music.h"
 #include "Shader.h"
 #include "SpriteRenderer.h"
 
@@ -19,7 +20,7 @@ namespace
 	const std::string PROPERTY_LAYOUT{ "layout" };
 	const std::string PROPERTY_TILES{ "tiles" };
 	const std::string PROPERTY_BGTEXTURE{ "bgTexture" };
-	const std::string PROPERTY_BGM{ "bgm" };
+	const std::string PROPERTY_MUSIC{ "music" };
 	const std::string PROPERTY_SHADER{ "shader" };
 	const std::string PROPERTY_LAYERS{ "layers" };
 	const std::string PROPERTY_DEPTH{ "depth" };
@@ -80,6 +81,16 @@ Shader *Room::getShader() const
 	return m_shader.get();
 }
 
+Music *Room::getMusic() const
+{
+	return m_music.get();
+}
+
+const std::string &Room::getName() const
+{
+	return m_name;
+}
+
 bool Room::isSlope(TileType type)
 {
 	return type == TILE_SLOPE_RIGHT_LOWER || type == TILE_SLOPE_RIGHT_UPPER ||
@@ -116,6 +127,15 @@ void Room::parseJson(const nlohmann::json &json, AssetLoader *assetLoader)
 			if (!bgTextureName.empty())
 			{
 				m_bgTexture = assetLoader->load<Texture>(bgTextureName);
+			}
+		}
+
+		if (JSONUtilities::hasEntry(PROPERTY_MUSIC, json))
+		{
+			std::string musicName = { json.at(PROPERTY_MUSIC).get<std::string>() };
+			if (!musicName.empty())
+			{
+				m_music = assetLoader->load<Music>(musicName);
 			}
 		}
 

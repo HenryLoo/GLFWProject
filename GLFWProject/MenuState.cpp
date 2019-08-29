@@ -61,7 +61,7 @@ void MenuState::processInput(GameEngine *game, InputManager *inputManager,
 void MenuState::update(float deltaTime, const glm::ivec2 &windowSize,
 	EntityManager *entityManager, AssetLoader *assetLoader,
 	SpriteRenderer *sRenderer, UIRenderer *uRenderer,
-	TextRenderer *tRenderer)
+	TextRenderer *tRenderer, SoLoud::Soloud &soundEngine)
 {
 	// Clear the renderer data, since updating may repopulate these.
 	tRenderer->resetData();

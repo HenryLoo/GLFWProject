@@ -17,6 +17,7 @@
 #include "Shader.h"
 #include "Sound.h"
 #include "Prefab.h"
+#include "Music.h"
 #include "Font.h"
 #include "Script.h"
 
@@ -27,6 +28,7 @@
 #include "ShaderLoader.h"
 #include "SoundLoader.h"
 #include "PrefabLoader.h"
+#include "MusicLoader.h"
 #include "FontLoader.h"
 #include "ScriptLoader.h"
 
@@ -55,6 +57,7 @@ int main()
 	assetLoader->registerLoader<Shader>(new ShaderLoader());
 	assetLoader->registerLoader<Sound>(new SoundLoader());
 	assetLoader->registerLoader<Prefab>(new PrefabLoader());
+	assetLoader->registerLoader<Music>(new MusicLoader());
 	assetLoader->registerLoader<Font>(new FontLoader());
 	assetLoader->registerLoader<Script>(new ScriptLoader());
 
@@ -82,7 +85,7 @@ int main()
 	// Start the game loop.
 	game->pushState(PlayState::instance(), assetLoader.get());
 	game->start(entityManager.get(), assetLoader.get(), inputManager.get(),
-		sRenderer.get(), uRenderer.get(), tRenderer.get());
+		sRenderer.get(), uRenderer.get(), tRenderer.get(), *soundEngine);
 
 	// Deinitialize the sound engine before closing.
 	soundEngine->deinit();

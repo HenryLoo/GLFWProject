@@ -12,6 +12,12 @@ class UIRenderer;
 class TextRenderer;
 class GameEngine;
 
+namespace SoLoud
+{
+	class Soloud;
+}
+
+
 class GameState
 {
 public:
@@ -33,7 +39,7 @@ public:
 	virtual void update(float deltaTime, const glm::ivec2 &windowSize, 
 		EntityManager *entityManager, AssetLoader *assetLoader, 
 		SpriteRenderer *sRenderer, UIRenderer *uRenderer, 
-		TextRenderer *tRenderer) = 0;
+		TextRenderer *tRenderer, SoLoud::Soloud &soundEngine) = 0;
 
 	// Render all appropriate visuals for the game loop's current iteration.
 	virtual void render(const glm::ivec2 &windowSize, 

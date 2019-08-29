@@ -12,6 +12,7 @@
 #include "GameEngine.h"
 #include "MenuState.h"
 #include "Prefab.h"
+#include "Music.h"
 
 #include <iostream>
 
@@ -27,8 +28,7 @@ void PlayState::init(AssetLoader *assetLoader)
 	// TODO: remove this later for more flexible approach.
 	if (m_currentRoom == nullptr)
 	{
-		std::shared_ptr<Prefab> roomPrefab{ assetLoader->load<Prefab>("room_test") };
-		m_currentRoom = std::make_unique<Room>(roomPrefab.get(), assetLoader);
+		changeRoom("room_test");
 	}
 	if (m_font == nullptr)
 		m_font = assetLoader->load<Font>("default", 16);
@@ -71,8 +71,12 @@ void PlayState::processInput(GameEngine *game, InputManager *inputManager,
 void PlayState::update(float deltaTime, const glm::ivec2 &windowSize, 
 	EntityManager *entityManager, AssetLoader *assetLoader, 
 	SpriteRenderer *sRenderer, UIRenderer *uRenderer, 
-	TextRenderer *tRenderer)
+	TextRenderer *tRenderer, SoLoud::Soloud &soundEngine)
 {	
+	// Change the room if it is a new one.
+	if (m_roomName != m_nextRoomName)
+		changeRoom(assetLoader, soundEngine);
+
 	// Clear the renderer data, since updating may repopulate these.
 	sRenderer->resetData();
 	uRenderer->resetData();
@@ -120,4 +124,33 @@ Camera *PlayState::getCamera() const
 Room *PlayState::getCurrentRoom() const
 {
 	return m_currentRoom.get();
+}
+
+void PlayState::changeRoom(const std::string &nextRoomName)
+{
+	m_nextRoomName = nextRoomName;
+}
+
+void PlayState::changeRoom(AssetLoader *assetLoader, 
+	SoLoud::Soloud &soundEngine)
+{
+	m_roomName = m_nextRoomName;
+
+	if (m_nextRoomName.empty())
+		return;
+
+	// Instantiate the room.
+	std::shared_ptr<Prefab> roomPrefab{ assetLoader->load<Prefab>(m_nextRoomName) };
+	if (roomPrefab != nullptr)
+	{
+		m_currentRoom = std::make_unique<Room>(roomPrefab.get(), assetLoader);
+	}
+
+	if (m_currentRoom != nullptr)
+	{
+		// Play the room's music.
+		Music *music{ m_currentRoom->getMusic() };
+		if (music != nullptr)
+			music->play(soundEngine);
+	}
 }

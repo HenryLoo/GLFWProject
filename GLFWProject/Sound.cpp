@@ -17,5 +17,6 @@ Sound::~Sound()
 
 void Sound::play(SoLoud::Soloud &engine, float deltaTime) const
 {
-	engine.playClocked(deltaTime, *m_sound);
+	if (m_sound != nullptr)
+		engine.playClocked(deltaTime, *m_sound);
 }

@@ -20,6 +20,11 @@ class TextRenderer;
 class Font;
 class GameState;
 
+namespace SoLoud
+{
+	class Soloud;
+}
+
 class GameEngine
 {
 public:
@@ -30,7 +35,8 @@ public:
 	// The function will only return when the game ends.
 	void start(EntityManager *entityManager, AssetLoader *assetLoader, 
 		InputManager *inputManager, SpriteRenderer *sRenderer, 
-		UIRenderer *uRenderer, TextRenderer *tRenderer);
+		UIRenderer *uRenderer, TextRenderer *tRenderer, 
+		SoLoud::Soloud &soundEngine);
 
 	// Update the screen size for the renderer on the next iteration of the game loop.
 	void updateRendererSize();
@@ -59,7 +65,7 @@ private:
 	// Update all appropriate values for the game loop's current iteration.
 	void update(EntityManager *entityManager, AssetLoader *assetLoader,
 		SpriteRenderer *sRenderer, UIRenderer *uRenderer, 
-		TextRenderer *tRenderer);
+		TextRenderer *tRenderer, SoLoud::Soloud &soundEngine);
 
 	// Render all appropriate visuals for the game loop's current iteration.
 	void render(SpriteRenderer *sRenderer, UIRenderer *uRenderer,

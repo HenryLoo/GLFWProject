@@ -15,6 +15,7 @@ class Prefab;
 class AssetLoader;
 class Shader;
 class SpriteSheet;
+class Music;
 
 class Room
 {
@@ -79,6 +80,12 @@ public:
 	// Get this room's shader.
 	Shader *getShader() const;
 
+	// Get this room's music.
+	Music *getMusic() const;
+
+	// Get the room's name.
+	const std::string &getName() const;
+
 	// Check if a given tile type is a slope.
 	static bool isSlope(TileType type);
 
@@ -111,6 +118,9 @@ private:
 
 	// The room's shader. This is applied in the post-processing framebuffer.
 	std::shared_ptr<Shader> m_shader;
+
+	// The background music to play when this room is the current room.
+	std::shared_ptr<Music> m_music;
 
 	// Hold the room's background and foreground layers.
 	std::vector<Layer> m_layers;
