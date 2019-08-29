@@ -48,10 +48,11 @@ const Room::TileType &Room::getTileType(glm::ivec2 tileCoord) const
 {
 	// Flip the y-coordinate.
 	glm::ivec2 size{ getSize() };
+	tileCoord.x = glm::clamp(tileCoord.x, 0, size.x - 1);
+	tileCoord.y = glm::clamp(tileCoord.y, 0, size.y - 1);
 	tileCoord.y = size.y - tileCoord.y - 1;
 
 	int index{ tileCoord.x + size.x * tileCoord.y };
-	index = glm::clamp(index, 0, size.x * size.y - 1);
 	return m_layout[index];
 }
 

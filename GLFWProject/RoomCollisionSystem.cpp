@@ -114,6 +114,9 @@ void RoomCollisionSystem::process(float deltaTime, int entityId,
 		// If not colliding, then just apply velocity as usual.
 		if (!col.isCollidingHorizontal)
 			phys.pos.x += phys.speed.x * deltaTime;
+
+		float roomWidth{ static_cast<float>(room->getSize().x * Room::TILE_SIZE) };
+		phys.pos.x = glm::clamp(phys.pos.x, 0.f, roomWidth);
 	}
 	
 	// Reset the colliding-slope flag after checking for horizontal collisions,
