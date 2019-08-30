@@ -198,12 +198,13 @@ void SpriteRenderer::addSprite(const GameComponent::Physics &physics,
 	}
 }
 
-void SpriteRenderer::addSprite(const Room::Layer &layer)
+void SpriteRenderer::addSprite(const RoomData::Layer &layer, 
+	std::shared_ptr<SpriteSheet> spriteSheet)
 {
 	GameComponent::Physics phys;
 	phys.pos = layer.pos;
 	GameComponent::Sprite spr;
-	spr.spriteSheet = layer.spriteSheet;
+	spr.spriteSheet = spriteSheet;
 	spr.spriteSheet->setSprite(layer.type, spr);
 
 	addSprite(phys, spr);

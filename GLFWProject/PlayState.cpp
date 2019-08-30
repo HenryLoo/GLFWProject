@@ -11,6 +11,7 @@
 #include "InputManager.h"
 #include "GameEngine.h"
 #include "MenuState.h"
+#include "EditorState.h"
 #include "Prefab.h"
 #include "Music.h"
 
@@ -65,6 +66,12 @@ void PlayState::processInput(GameEngine *game, InputManager *inputManager,
 	if (inputManager->isKeyPressed(InputManager::INPUT_DEBUG2, true))
 	{
 		entityManager->createEntity("clamper", glm::vec2(128.f, 300.f));
+	}
+
+	// Debug 3: room editor.
+	if (inputManager->isKeyPressed(InputManager::INPUT_DEBUG3, true))
+	{
+		game->pushState(EditorState::instance(), assetLoader);
 	}
 }
 

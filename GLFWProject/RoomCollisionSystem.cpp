@@ -91,8 +91,8 @@ void RoomCollisionSystem::process(float deltaTime, int entityId,
 			for (int i = minYTile.y; i <= maxYTile.y; ++i)
 			{
 				glm::ivec2 thisTileCoord{ currentTileX, i };
-				Room::TileType type{ room->getTileType(thisTileCoord) };
-				if (type == Room::TILE_WALL)
+				RoomData::TileType type{ room->getTileType(thisTileCoord) };
+				if (type == RoomData::TILE_WALL)
 				{
 					float tileEdgePos{ room->getTilePos(thisTileCoord).x
 						+ direction * Room::TILE_SIZE / 2.f };
@@ -166,7 +166,7 @@ void RoomCollisionSystem::process(float deltaTime, int entityId,
 			for (int i = minXTile.x; i <= maxXTile.x; ++i)
 			{
 				glm::ivec2 thisTileCoord{ i, currentTileY };
-				Room::TileType type{ room->getTileType(thisTileCoord) };
+				RoomData::TileType type{ room->getTileType(thisTileCoord) };
 	
 				// The edge of the tile to check entity collision against.
 				glm::vec2 thisTilePos{ room->getTilePos(thisTileCoord) };
@@ -189,12 +189,12 @@ void RoomCollisionSystem::process(float deltaTime, int entityId,
 					// Adjust y-distance to displace the entity, based on the type of slope.
 					float yDist{ tanf(slopeRad) * xDist };
 	
-					if (type == Room::TILE_SLOPE_LEFT_UPPER || type == Room::TILE_SLOPE_LEFT_LOWER)
+					if (type == RoomData::TILE_SLOPE_LEFT_UPPER || type == RoomData::TILE_SLOPE_LEFT_LOWER)
 						yDist = Room::TILE_SIZE - yDist;
 	
-					if (type == Room::TILE_SLOPE_RIGHT_UPPER)
+					if (type == RoomData::TILE_SLOPE_RIGHT_UPPER)
 						yDist += Room::SLOPE_HEIGHT;
-					else if (type == Room::TILE_SLOPE_LEFT_LOWER)
+					else if (type == RoomData::TILE_SLOPE_LEFT_LOWER)
 						yDist -= Room::SLOPE_HEIGHT;
 	
 					tileEdgePos = thisTilePos.y - tileHalfSize + yDist;
@@ -218,7 +218,7 @@ void RoomCollisionSystem::process(float deltaTime, int entityId,
 				// top edge of a ghost platform.
 				// Unlike horizontal collisions, we don't break early here because
 				// we need to set all possible collision flags.
-				else if (type == Room::TILE_WALL || (type == Room::TILE_GHOST && speed.y <= 0 &&
+				else if (type == RoomData::TILE_WALL || (type == RoomData::TILE_GHOST && speed.y <= 0 &&
 					(phys.pos.y - halfSize.y + aabb.offset.y) >= tileEdgePos))
 				{
 					// Set the new y-position if it isn't set already, or if it is at a lower
@@ -226,11 +226,11 @@ void RoomCollisionSystem::process(float deltaTime, int entityId,
 					float yPosToSet = tileEdgePos + direction * halfSize.y - aabb.offset.y;
 					newYPos = newYPos == -1 ? yPosToSet : glm::min(newYPos, yPosToSet);
 	
-					if (type == Room::TILE_WALL)
+					if (type == RoomData::TILE_WALL)
 					{
 						col.isCollidingFloor = true;
 					}
-					else if (type == Room::TILE_GHOST)
+					else if (type == RoomData::TILE_GHOST)
 					{
 						col.isCollidingGhost = true;
 					}

@@ -64,7 +64,8 @@ public:
 	// camera distance.
 	void addSprite(const GameComponent::Physics &physics, 
 		const GameComponent::Sprite &sprite);
-	void addSprite(const Room::Layer &layer);
+	void addSprite(const RoomData::Layer &layer,
+		std::shared_ptr<SpriteSheet> spriteSheet);
 
 	// Set the number of sprites to render to 0.
 	// This should be called every frame from the update loop, so that

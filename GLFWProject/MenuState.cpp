@@ -20,7 +20,6 @@ MenuState *MenuState::instance()
 
 void MenuState::init(AssetLoader *assetLoader)
 {
-	// TODO: remove this later for more flexible approach.
 	if (m_font == nullptr)
 		m_font = assetLoader->load<Font>("default", 16);
 	if (m_pausedShader == nullptr)

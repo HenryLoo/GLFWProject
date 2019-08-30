@@ -3,6 +3,7 @@
 #define Room_H
 
 #include "Texture.h"
+#include "RoomData.h"
 
 #include <glm/glm.hpp>
 #include <json/include/nlohmann/json_fwd.hpp>
@@ -20,30 +21,6 @@ class Music;
 class Room
 {
 public:
-	enum TileType
-	{
-		TILE_SPACE,
-		TILE_WALL,
-		TILE_SLOPE_LEFT_UPPER,
-		TILE_SLOPE_LEFT_LOWER,
-		TILE_SLOPE_RIGHT_UPPER,
-		TILE_SLOPE_RIGHT_LOWER,
-		TILE_GHOST
-	};
-
-	// Defines background/foreground layers in rooms.
-	struct Layer
-	{
-		// The sprite sheet to take this layer from.
-		std::shared_ptr<SpriteSheet> spriteSheet;
-
-		// The sprite type on the sprite sheet.
-		std::string type;
-
-		// Defines the origin of the layer.
-		glm::vec3 pos;
-	};
-
 	// Defines an entity to be created in the room.
 	struct EntityListing
 	{
@@ -63,7 +40,7 @@ public:
 	glm::ivec2 getSize() const;
 
 	// Get the tile at a given x, y, in tile coordinates.
-	const TileType &getTileType(glm::ivec2 tileCoord) const;
+	const RoomData::TileType &getTileType(glm::ivec2 tileCoord) const;
 
 	// Get the tile coordinates corresponding to given world coordinates.
 	const glm::ivec2 getTileCoord(glm::vec2 pos) const;
@@ -83,11 +60,11 @@ public:
 	// Get this room's music.
 	Music *getMusic() const;
 
-	// Get the room's name.
-	const std::string &getName() const;
+	// Get the room's data.
+	const RoomData::Data &getRoomData() const;
 
 	// Check if a given tile type is a slope.
-	static bool isSlope(TileType type);
+	static bool isSlope(RoomData::TileType type);
 
 	// Add the layer sprite data to the sprite renderer.
 	void updateLayers(SpriteRenderer *sRenderer) const;
@@ -103,12 +80,8 @@ private:
 	// Load the room details from the json file.
 	void parseJson(const nlohmann::json &json, AssetLoader *assetLoader);
 
-	// The room's name.
-	std::string m_name;
-
-	// Hold all the tiles in this room.
-	// Tiles are stored in row-major order, bottom-up.
-	std::vector<TileType> m_layout;
+	// The room's data.
+	RoomData::Data m_data;
 
 	// Hold each tile's index on the sprite sheet.
 	std::shared_ptr<Texture> m_tiles;
@@ -122,8 +95,9 @@ private:
 	// The background music to play when this room is the current room.
 	std::shared_ptr<Music> m_music;
 
-	// Hold the room's background and foreground layers.
-	std::vector<Layer> m_layers;
+	// Hold the spritesheets that are used by the room's background and 
+	// foreground layers.
+	std::vector<std::shared_ptr<SpriteSheet>> m_layerSpriteSheets;
 
 	// Hold the list of entities to create.
 	std::vector<EntityListing> m_entities;

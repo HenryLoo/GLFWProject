@@ -21,6 +21,9 @@ public:
 	// Get the dimensions of the texture.
 	glm::ivec2 getSize() const;
 
+	// Get the number of channels.
+	GLint getNumChannels() const;
+
 protected:
 	// This texture's id.
 	GLuint m_id;

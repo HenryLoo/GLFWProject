@@ -20,3 +20,8 @@ glm::ivec2 Texture::getSize() const
 {
 	return glm::ivec2(m_width, m_height);
 }
+
+GLint Texture::getNumChannels() const
+{
+	return m_numChannels;
+}

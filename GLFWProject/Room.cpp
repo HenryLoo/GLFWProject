@@ -7,29 +7,12 @@
 #include "Music.h"
 #include "Shader.h"
 #include "SpriteRenderer.h"
+#include "RoomConstants.h"
 
 #include "stb_image.h"
 
 #include <glm/glm.hpp>
 #include <json/single_include/nlohmann/json.hpp>
-
-namespace
-{
-	// JSON constants.
-	const std::string PROPERTY_NAME{ "name" };
-	const std::string PROPERTY_LAYOUT{ "layout" };
-	const std::string PROPERTY_TILES{ "tiles" };
-	const std::string PROPERTY_BGTEXTURE{ "bgTexture" };
-	const std::string PROPERTY_MUSIC{ "music" };
-	const std::string PROPERTY_SHADER{ "shader" };
-	const std::string PROPERTY_LAYERS{ "layers" };
-	const std::string PROPERTY_DEPTH{ "depth" };
-	const std::string PROPERTY_SPRITESHEET{ "spriteSheet" };
-	const std::string PROPERTY_TYPE{ "type" };
-	const std::string PROPERTY_X{ "x" };
-	const std::string PROPERTY_Y{ "y" };
-	const std::string PROPERTY_ENTITIES{ "entities" };
-}
 
 Room::Room(Prefab *prefab, AssetLoader *assetLoader)
 {
@@ -44,7 +27,7 @@ glm::ivec2 Room::getSize() const
 	return m_tiles->getSize();
 }
 
-const Room::TileType &Room::getTileType(glm::ivec2 tileCoord) const
+const RoomData::TileType &Room::getTileType(glm::ivec2 tileCoord) const
 {
 	// Flip the y-coordinate.
 	glm::ivec2 size{ getSize() };
@@ -53,7 +36,7 @@ const Room::TileType &Room::getTileType(glm::ivec2 tileCoord) const
 	tileCoord.y = size.y - tileCoord.y - 1;
 
 	int index{ tileCoord.x + size.x * tileCoord.y };
-	return m_layout[index];
+	return m_data.layout[index];
 }
 
 const glm::ivec2 Room::getTileCoord(glm::vec2 pos) const
@@ -87,15 +70,17 @@ Music *Room::getMusic() const
 	return m_music.get();
 }
 
-const std::string &Room::getName() const
+const RoomData::Data &Room::getRoomData() const
 {
-	return m_name;
+	return m_data;
 }
 
-bool Room::isSlope(TileType type)
+bool Room::isSlope(RoomData::TileType type)
 {
-	return type == TILE_SLOPE_RIGHT_LOWER || type == TILE_SLOPE_RIGHT_UPPER ||
-		type == TILE_SLOPE_LEFT_UPPER || type == TILE_SLOPE_LEFT_LOWER;
+	return type == RoomData::TILE_SLOPE_RIGHT_LOWER || 
+		type == RoomData::TILE_SLOPE_RIGHT_UPPER ||
+		type == RoomData::TILE_SLOPE_LEFT_UPPER ||
+		type == RoomData::TILE_SLOPE_LEFT_LOWER;
 }
 
 void Room::parseJson(const nlohmann::json &json, AssetLoader *assetLoader)
@@ -103,129 +88,141 @@ void Room::parseJson(const nlohmann::json &json, AssetLoader *assetLoader)
 	try
 	{
 		// Read the contents into json.
-		if (JSONUtilities::hasEntry(PROPERTY_NAME, json))
+		if (JSONUtilities::hasEntry(RoomConstants::PROPERTY_NAME, json))
 		{
-			m_name = json.at(PROPERTY_NAME).get<std::string>();
+			m_data.name = json.at(RoomConstants::PROPERTY_NAME).get<std::string>();
 		}
 
-		if (JSONUtilities::hasEntry(PROPERTY_LAYOUT, json))
+		if (JSONUtilities::hasEntry(RoomConstants::PROPERTY_LAYOUT, json))
 		{
-			m_layout = json.at(PROPERTY_LAYOUT).get<std::vector<TileType>>();
+			m_data.layout = json.at(RoomConstants::PROPERTY_LAYOUT)
+				.get<std::vector<RoomData::TileType>>();
 		}
 
-		if (JSONUtilities::hasEntry(PROPERTY_TILES, json))
+		if (JSONUtilities::hasEntry(RoomConstants::PROPERTY_TILES, json))
 		{
-			std::string tilesName = { json.at(PROPERTY_TILES).get<std::string>() };
-			if (!tilesName.empty())
+			m_data.tilesName = json.at(RoomConstants::PROPERTY_TILES)
+				.get<std::string>();
+			if (!m_data.tilesName.empty())
 			{
-				m_tiles = assetLoader->load<Texture>(tilesName);
+				m_tiles = assetLoader->load<Texture>(m_data.tilesName);
 			}
 		}
 
-		if (JSONUtilities::hasEntry(PROPERTY_BGTEXTURE, json))
+		if (JSONUtilities::hasEntry(RoomConstants::PROPERTY_BGTEXTURE, json))
 		{
-			std::string bgTextureName = { json.at(PROPERTY_BGTEXTURE).get<std::string>() };
-			if (!bgTextureName.empty())
+			m_data.bgTextureName = json.at(RoomConstants::PROPERTY_BGTEXTURE)
+				.get<std::string>();
+			if (!m_data.bgTextureName.empty())
 			{
-				m_bgTexture = assetLoader->load<Texture>(bgTextureName);
+				m_bgTexture = assetLoader->load<Texture>(m_data.bgTextureName);
 			}
 		}
 
-		if (JSONUtilities::hasEntry(PROPERTY_MUSIC, json))
+		if (JSONUtilities::hasEntry(RoomConstants::PROPERTY_MUSIC, json))
 		{
-			std::string musicName = { json.at(PROPERTY_MUSIC).get<std::string>() };
-			if (!musicName.empty())
+			m_data.musicName = json.at(RoomConstants::PROPERTY_MUSIC)
+				.get<std::string>();
+			if (!m_data.musicName.empty())
 			{
-				m_music = assetLoader->load<Music>(musicName);
+				m_music = assetLoader->load<Music>(m_data.musicName);
 			}
 		}
 
-		if (JSONUtilities::hasEntry(PROPERTY_SHADER, json))
+		if (JSONUtilities::hasEntry(RoomConstants::PROPERTY_SHADER, json))
 		{
-			std::string shaderName{ json.at(PROPERTY_SHADER).get<std::string>() };
-			if (!shaderName.empty())
+			m_data.shaderName = json.at(RoomConstants::PROPERTY_SHADER)
+				.get<std::string>();
+			if (!m_data.shaderName.empty())
 			{
-				m_shader = assetLoader->load<Shader>(shaderName);
+				m_shader = assetLoader->load<Shader>(m_data.shaderName);
 			}
 		}
 
-		if (JSONUtilities::hasEntry(PROPERTY_LAYERS, json))
+		if (JSONUtilities::hasEntry(RoomConstants::PROPERTY_LAYERS, json))
 		{
-			const nlohmann::json &layersJson{ json.at(PROPERTY_LAYERS) };
+			const nlohmann::json &layersJson{ json.at(RoomConstants::PROPERTY_LAYERS) };
 
 			if (!layersJson.is_array())
 			{
 				std::cout << "Room::parseJson: '" <<
-					PROPERTY_LAYERS << "' property is not an array" << std::endl;
+					RoomConstants::PROPERTY_LAYERS << 
+					"' property is not an array" << std::endl;
 				return;
 			}
 
 			for (const auto &layer : layersJson)
 			{
-				Layer thisLayer;
+				RoomData::Layer thisLayer;
 
-				if (JSONUtilities::hasEntry(PROPERTY_DEPTH, layer))
+				if (JSONUtilities::hasEntry(RoomConstants::PROPERTY_DEPTH, layer))
 				{
-					thisLayer.pos.z = layer.at(PROPERTY_DEPTH).get<float>();
+					thisLayer.pos.z = layer.at(RoomConstants::PROPERTY_DEPTH)
+						.get<float>();
 				}
 
-				if (JSONUtilities::hasEntry(PROPERTY_SPRITESHEET, layer))
+				std::shared_ptr<SpriteSheet> spriteSheet{ nullptr };
+				if (JSONUtilities::hasEntry(RoomConstants::PROPERTY_SPRITESHEET, layer))
 				{
-					std::string spriteSheetName{ layer.at(PROPERTY_SPRITESHEET).get<std::string>() };
-					if (!spriteSheetName.empty())
+					thisLayer.spriteSheetName = layer.at(RoomConstants::PROPERTY_SPRITESHEET)
+						.get<std::string>();
+					if (!thisLayer.spriteSheetName.empty())
 					{
-						thisLayer.spriteSheet = assetLoader->load<SpriteSheet>(spriteSheetName);
+						spriteSheet = assetLoader->load<SpriteSheet>(thisLayer.spriteSheetName);
 					}
 
-					if (thisLayer.spriteSheet == nullptr)
+					if (spriteSheet == nullptr)
 					{
 						continue;
 					}
 				}
 
-				if (JSONUtilities::hasEntry(PROPERTY_TYPE, layer))
+				if (JSONUtilities::hasEntry(RoomConstants::PROPERTY_TYPE, layer))
 				{
-					thisLayer.type = layer.at(PROPERTY_TYPE).get<std::string>();
+					thisLayer.type = layer.at(RoomConstants::PROPERTY_TYPE)
+						.get<std::string>();
 					if (thisLayer.type.empty())
 						continue;
 				}
 
 				// Get the tile coords x, y and convert them to world positions.
-				glm::ivec2 tileCoord{ 0 };
-				if (JSONUtilities::hasEntry(PROPERTY_X, layer))
+				//glm::ivec2 tileCoord{ 0 };
+				if (JSONUtilities::hasEntry(RoomConstants::PROPERTY_X, layer))
 				{
-					tileCoord.x = layer.at(PROPERTY_X).get<int>();
+					thisLayer.pos.x = layer.at(RoomConstants::PROPERTY_X).get<float>();
 				}
 
-				if (JSONUtilities::hasEntry(PROPERTY_Y, layer))
+				if (JSONUtilities::hasEntry(RoomConstants::PROPERTY_Y, layer))
 				{
-					tileCoord.y = layer.at(PROPERTY_Y).get<int>();
+					thisLayer.pos.y = layer.at(RoomConstants::PROPERTY_Y).get<float>();
 				}
 
-				glm::vec2 tilePos{ getTilePos(tileCoord) };
-				glm::ivec2 clipSize{ 0 };
-				SpriteSheet::SpriteSet set;
-				if (thisLayer.spriteSheet->getSprite(thisLayer.type, set))
-				{
-					clipSize = set.clips[0].clipSize;
-				}
+				//glm::vec2 tilePos{ getTilePos(tileCoord) };
+				//glm::ivec2 clipSize{ 0 };
+				//SpriteSheet::SpriteSet set;
+				//if (spriteSheet->getSprite(thisLayer.type, set))
+				//{
+				//	clipSize = set.clips[0].clipSize;
+				//}
 
-				tilePos.y = tilePos.y - (TILE_SIZE - clipSize.y) / 2.f;
-				thisLayer.pos.x = tilePos.x;
-				thisLayer.pos.y = tilePos.y;
+				//tilePos.y = tilePos.y - (TILE_SIZE - clipSize.y) / 2.f;
+				//thisLayer.pos.x = tilePos.x;
+				//thisLayer.pos.y = tilePos.y;
 
-				m_layers.push_back(thisLayer);
+				m_data.layers.push_back(thisLayer);
+				m_layerSpriteSheets.push_back(spriteSheet);
 			}
 		}
 
-		if (JSONUtilities::hasEntry(PROPERTY_ENTITIES, json))
+		if (JSONUtilities::hasEntry(RoomConstants::PROPERTY_ENTITIES, json))
 		{
-			const nlohmann::json &entitiesJson{ json.at(PROPERTY_ENTITIES) };
+			const nlohmann::json &entitiesJson{ json.at(RoomConstants::PROPERTY_ENTITIES) };
 
 			if (!entitiesJson.is_array())
 			{
 				std::cout << "Room::parseJson: '" <<
-					PROPERTY_ENTITIES << "' property is not an array" << std::endl;
+					RoomConstants::PROPERTY_ENTITIES <<
+					"' property is not an array" << std::endl;
 				return;
 			}
 
@@ -234,27 +231,29 @@ void Room::parseJson(const nlohmann::json &json, AssetLoader *assetLoader)
 			{
 				EntityListing entityList;
 
-				if (JSONUtilities::hasEntry(PROPERTY_NAME, entity))
+				if (JSONUtilities::hasEntry(RoomConstants::PROPERTY_NAME, entity))
 				{
-					entityList.prefabName = entity.at(PROPERTY_NAME).get<std::string>();
+					entityList.prefabName = entity.at(RoomConstants::PROPERTY_NAME)
+						.get<std::string>();
 				}
 
-				if (JSONUtilities::hasEntry(PROPERTY_TYPE, entity))
+				if (JSONUtilities::hasEntry(RoomConstants::PROPERTY_TYPE, entity))
 				{
-					entityList.type = entity.at(PROPERTY_TYPE).get<std::string>();
+					entityList.type = entity.at(RoomConstants::PROPERTY_TYPE)
+						.get<std::string>();
 				}
 
 
 				// Get the tile coords x, y and convert them to world positions.
 				glm::ivec2 tileCoord{ 0 };
-				if (JSONUtilities::hasEntry(PROPERTY_X, entity))
+				if (JSONUtilities::hasEntry(RoomConstants::PROPERTY_X, entity))
 				{
-					tileCoord.x = entity.at(PROPERTY_X).get<int>();
+					tileCoord.x = entity.at(RoomConstants::PROPERTY_X).get<int>();
 				}
 
-				if (JSONUtilities::hasEntry(PROPERTY_Y, entity))
+				if (JSONUtilities::hasEntry(RoomConstants::PROPERTY_Y, entity))
 				{
-					tileCoord.y = entity.at(PROPERTY_Y).get<int>();
+					tileCoord.y = entity.at(RoomConstants::PROPERTY_Y).get<int>();
 				}
 
 				glm::vec2 tilePos{ getTilePos(tileCoord) };
@@ -273,9 +272,9 @@ void Room::parseJson(const nlohmann::json &json, AssetLoader *assetLoader)
 
 void Room::updateLayers(SpriteRenderer *sRenderer) const
 {
-	for (const Layer &layer : m_layers)
+	for (int i = 0; i < m_layerSpriteSheets.size(); ++i)
 	{
-		sRenderer->addSprite(layer);
+		sRenderer->addSprite(m_data.layers[i], m_layerSpriteSheets[i]);
 	}
 }
 
