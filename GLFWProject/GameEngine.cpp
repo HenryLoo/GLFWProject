@@ -13,6 +13,10 @@
 #include "Font.h"
 #include "PlayState.h"
 
+#include "imgui/imgui.h"
+#include "imgui/imgui_impl_glfw.h"
+#include "imgui/imgui_impl_opengl3.h"
+
 #include <iostream>
 
 namespace
@@ -29,18 +33,12 @@ namespace
 		}
 	}
 
-	//void mouseCallback(GLFWwindow *window, double xpos, double ypos)
-	//{
-	//	GameEngine *game{ (GameEngine *)glfwGetWindowUserPointer(window) };
-	//	game->updateCameraLook(glm::vec2(xpos, ypos));
-	//}
-
 	const float TIME_STEP{ 1 / 120.f };
 }
 
 GameEngine::GameEngine()
 {
-	// Initialize GLFW with OpenGL 3.3+.
+	// Initialize GLFW with OpenGL 3.1.
 	glfwInit();
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
@@ -72,14 +70,24 @@ GameEngine::GameEngine()
 	// when the window is resized.
 	glfwSetFramebufferSizeCallback(m_window, framebufferSizeCallback);
 
-	// Set the callback function for listening to mouse inputs.
-	//glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-	//glfwSetCursorPosCallback(m_window, mouseCallback);
-	//glfwSetWindowUserPointer(m_window, this);
+	// Setup ImGui.
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGuiIO &io = ImGui::GetIO();
+
+	ImGui::StyleColorsDark();
+
+	ImGui_ImplGlfw_InitForOpenGL(m_window, true);
+	ImGui_ImplOpenGL3_Init("#version 130");
 }
 
 GameEngine::~GameEngine()
 {
+	// Clean up ImGui.
+	ImGui_ImplOpenGL3_Shutdown();
+	ImGui_ImplGlfw_Shutdown();
+	ImGui::DestroyContext();
+
 	// Deallocate all resources and terminate GLFW.
 	glfwTerminate();
 }

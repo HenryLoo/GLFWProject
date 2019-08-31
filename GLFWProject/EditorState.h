@@ -8,6 +8,7 @@
 
 class Font;
 class Shader;
+class Texture;
 
 class EditorState : public GameState
 {
@@ -40,6 +41,14 @@ public:
 		TextRenderer *tRenderer);
 
 private:
+	enum MenuId
+	{
+		ID_PROPERTIES,
+		ID_TILES,
+		ID_LAYERS,
+		ID_LAYOUT
+	};
+
 	// Disallow instantiating.
 	EditorState() {}
 
@@ -51,6 +60,18 @@ private:
 
 	// Hold pointers to assets.
 	std::shared_ptr<Font> m_font;
+	std::shared_ptr<Texture> m_tileset;
+
+	bool m_isEditorActive{ false };
+
+	int m_currentMenu{ ID_PROPERTIES };
+	char m_nameInput[128];
+	char m_tilesInput[128];
+	char m_bgTextureInput[128];
+	char m_musicInput[128];
+	char m_shaderInput[128];
+
+	int m_selectedTileId{ -1 };
 };
 
 #endif

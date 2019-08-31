@@ -24,6 +24,9 @@ public:
 	// Get the number of channels.
 	GLint getNumChannels() const;
 
+	// Get the texture id.
+	GLuint getTextureId() const;
+
 protected:
 	// This texture's id.
 	GLuint m_id;

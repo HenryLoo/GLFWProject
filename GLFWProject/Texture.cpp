@@ -25,3 +25,8 @@ GLint Texture::getNumChannels() const
 {
 	return m_numChannels;
 }
+
+GLuint Texture::getTextureId() const
+{
+	return m_id;
+}

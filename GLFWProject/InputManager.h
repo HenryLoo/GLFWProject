@@ -4,6 +4,8 @@
 
 #include <GLFW/glfw3.h>
 
+#include <glm/glm.hpp>
+
 #include <vector>
 
 class InputManager
@@ -55,13 +57,23 @@ public:
 	// Reset the duration for a given input type.
 	void resetDuration(InputType type) const;
 
+	// Check mouse states.
+	bool isMousePressed(int button) const;
+	bool isMouseReleased(int button) const;
+
 private:
 	static void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods);
 	static void setKey(InputType type, bool isPressed, bool isReleased);
+	static void mouseCallback(GLFWwindow *window, double xpos, double ypos);
+	static void mouseButtonCallback(GLFWwindow *window, int button, int action, int mods);
 
 	// Hold input states of each input type.
 	// Use InputType as the index, and GLFW input states as the value.
 	static std::vector<InputState> m_inputStates;
+
+	// Hold mouse input states.
+	static glm::vec2 m_mousePos;
+	static std::vector<int> m_mouseStates;
 };
 
 #endif

@@ -1,16 +1,18 @@
 #include "InputManager.h"
 
-#include <glm/glm.hpp>
-
 #include <iostream>
 
 namespace
 {
 	// Duration in seconds to allow the press state of an input to linger.
 	const float PRESS_DURATION{ 0.1f };
+
+	const int NUM_MOUSE_BUTTONS{ 2 };
 }
 
 std::vector<InputManager::InputState> InputManager::m_inputStates;
+glm::vec2 InputManager::m_mousePos;
+std::vector<int> InputManager::m_mouseStates;
 
 InputManager::InputManager(GLFWwindow *window)
 {
@@ -20,6 +22,13 @@ InputManager::InputManager(GLFWwindow *window)
 	}
 
 	glfwSetKeyCallback(window, InputManager::keyCallback);
+
+	for (int i = 0; i < NUM_MOUSE_BUTTONS; ++i)
+	{
+		m_mouseStates.push_back(GLFW_RELEASE);
+	}
+	glfwSetCursorPosCallback(window, mouseCallback);
+	glfwSetMouseButtonCallback(window, mouseButtonCallback);
 }
 
 InputManager::~InputManager()
@@ -78,6 +87,16 @@ void InputManager::resetDuration(InputType type) const
 	m_inputStates[type].duration = 0.f;
 }
 
+bool InputManager::isMousePressed(int button) const
+{
+	return m_mouseStates[button] == GLFW_PRESS;
+}
+
+bool InputManager::isMouseReleased(int button) const
+{
+	return m_mouseStates[button] == GLFW_RELEASE;
+}
+
 void InputManager::keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods)
 {
 	bool isPressed{ action == GLFW_PRESS };
@@ -133,4 +152,15 @@ void InputManager::setKey(InputType type, bool isPressed, bool isReleased)
 	// for a bit.
 	if (isPressed)
 		m_inputStates[type].duration = PRESS_DURATION;
+}
+
+void InputManager::mouseCallback(GLFWwindow *window, double xpos, double ypos)
+{
+	m_mousePos.x = static_cast<float>(xpos);
+	m_mousePos.y = static_cast<float>(ypos);
+}
+
+void InputManager::mouseButtonCallback(GLFWwindow *window, int button, int action, int mods)
+{
+	m_mouseStates[button] = action;
 }
