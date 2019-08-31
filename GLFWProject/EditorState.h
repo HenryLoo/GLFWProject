@@ -43,10 +43,10 @@ public:
 private:
 	enum MenuId
 	{
-		ID_PROPERTIES,
-		ID_TILES,
-		ID_LAYERS,
-		ID_LAYOUT
+		MENU_PROPERTIES,
+		MENU_TILES,
+		MENU_LAYERS,
+		MENU_LAYOUT
 	};
 
 	// Disallow instantiating.
@@ -54,6 +54,12 @@ private:
 
 	// Save the current room write to external files.
 	void save();
+
+	// Place a tile on the room.
+	void placeTile(const glm::ivec2 &windowSize);
+
+	// Create the editor UI.
+	void createUI();
 
 	// Singleton instance.
 	static EditorState m_state;
@@ -64,14 +70,27 @@ private:
 
 	bool m_isEditorActive{ false };
 
-	int m_currentMenu{ ID_PROPERTIES };
+	// Property input fields.
+	int m_currentMenu{ MENU_PROPERTIES };
 	char m_nameInput[128];
 	char m_tilesInput[128];
 	char m_bgTextureInput[128];
 	char m_musicInput[128];
 	char m_shaderInput[128];
 
-	int m_selectedTileId{ -1 };
+	// The currently selected tile for the tile selector.
+	const glm::ivec2 ERASER_TILE{ 255, 255 };
+	glm::ivec2 m_tileToPlace{ ERASER_TILE };
+	glm::ivec2 m_prevTileToPlace{ ERASER_TILE };
+
+	// Save the mouse position and if the mouse was clicked.
+	glm::vec2 m_mousePos;
+	bool m_isLeftClicked{ false };
+	bool m_isRightClicked{ false };
+
+	// The tile coordinate of the clicked tile.
+	glm::ivec2 m_clickedTile{ -1 };
+	glm::ivec2 m_prevClickedTile;
 };
 
 #endif

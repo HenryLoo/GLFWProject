@@ -97,6 +97,11 @@ bool InputManager::isMouseReleased(int button) const
 	return m_mouseStates[button] == GLFW_RELEASE;
 }
 
+glm::vec2 InputManager::getMousePos() const
+{
+	return m_mousePos;
+}
+
 void InputManager::keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods)
 {
 	bool isPressed{ action == GLFW_PRESS };

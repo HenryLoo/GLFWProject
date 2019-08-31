@@ -60,6 +60,7 @@ public:
 	// Check mouse states.
 	bool isMousePressed(int button) const;
 	bool isMouseReleased(int button) const;
+	glm::vec2 getMousePos() const;
 
 private:
 	static void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods);
