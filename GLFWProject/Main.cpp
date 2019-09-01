@@ -88,7 +88,7 @@ int main()
 		sRenderer.get(), uRenderer.get(), tRenderer.get(), *soundEngine);
 
 	// Deinitialize the sound engine before closing.
-	soundEngine->deinit();
+	//soundEngine->deinit();
 
 	// Game has ended.
 	return 0;

@@ -30,7 +30,7 @@ namespace
 {
 	const std::string OUTPUT_PATH{ "editor/" };
 
-	const glm::ivec2 TILE_SELECTOR_SIZE{ 8, 15 };
+	const glm::ivec2 TILE_SELECTOR_SIZE{ 6, 9 };
 }
 
 EditorState EditorState::m_state;
@@ -56,12 +56,64 @@ void EditorState::init(AssetLoader *assetLoader)
 		strcpy_s(m_bgTextureInput, sizeof(m_bgTextureInput), roomData.bgTextureName.c_str());
 		strcpy_s(m_musicInput, sizeof(m_musicInput), roomData.musicName.c_str());
 		strcpy_s(m_shaderInput, sizeof(m_shaderInput), roomData.shaderName.c_str());
+
+		m_tilesTexture = assetLoader->load<Texture>(roomData.tilesName);
+
+		// Set up room layout texture.
+		m_roomLayout = roomData.layout;
+		glm::ivec2 roomSize{ room->getSize() };
+		GLubyte *layoutData{ new GLubyte[roomSize.x * roomSize.y * 4] };
+		for (int i = 0; i < roomSize.y; ++i)
+		{
+			for (int j = 0; j < roomSize.x; ++j)
+			{
+				GLubyte r{ 255 }, g{ 255 }, b{ 255 }, a{ 255 };
+				int layoutIndex{ roomSize.x * i + j };
+				if (m_roomLayout[layoutIndex] != RoomData::TILE_SPACE)
+				{
+					r = (GLubyte)m_roomLayout[layoutIndex] - 1;
+					g = b = 0;
+				}
+
+				// Image is vertically flipped.
+				int firstIndex{ 4 * (roomSize.x * roomSize.y - roomSize.x * (i + 1) + j)};
+				layoutData[firstIndex] = r;
+				layoutData[firstIndex + 1] = g;
+				layoutData[firstIndex + 2] = b;
+				layoutData[firstIndex + 3] = a;
+			}
+		}
+
+		GLuint textureId;
+		glGenTextures(1, &textureId);
+		glBindTexture(GL_TEXTURE_2D, textureId);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, roomSize.x, roomSize.y, 0,
+			GL_RGBA, GL_UNSIGNED_BYTE, layoutData);
+		glBindTexture(GL_TEXTURE_2D, 0);
+
+		m_layoutTexture = std::make_shared<Texture>(textureId, roomSize.x, roomSize.y, 4);
+
+		delete[] layoutData;
+
+		// Show layout texture if the current menu is the layout selector.
+		if (m_currentMenu == MENU_LAYOUT)
+			room->setTileSprites(m_layoutTexture);
 	}
 }
 
 void EditorState::cleanUp()
 {
-
+	if (m_tilesTexture != nullptr)
+	{
+		Room *room{ PlayState::instance()->getCurrentRoom() };
+		if (room != nullptr)
+		{
+			room->setTileSprites(m_tilesTexture);
+			room->setLayout(m_roomLayout);
+		}
+	}
 }
 
 void EditorState::pause()
@@ -155,10 +207,13 @@ void EditorState::save()
 
 void EditorState::placeTile(const glm::ivec2 &windowSize)
 {
+	if (m_currentMenu != MENU_TILES && m_currentMenu != MENU_LAYOUT)
+		return;
+
 	m_prevClickedTile = m_clickedTile;
 
 	// Don't allow clicking through the editor UI.
-	if (m_isLeftClicked && m_currentMenu == MENU_TILES &&
+	if (m_isLeftClicked &&
 		!ImGui::IsAnyItemHovered() && !ImGui::IsAnyWindowHovered())
 	{
 		Camera *camera{ PlayState::instance()->getCamera() };
@@ -177,19 +232,44 @@ void EditorState::placeTile(const glm::ivec2 &windowSize)
 
 			m_clickedTile = room->getTileCoord(glm::vec2(worldPos.x, worldPos.y));
 
-			if (m_prevClickedTile != m_clickedTile || 
-				m_prevTileToPlace != m_tileToPlace)
+			// Placing tile sprite with tiles selector.
+			if (m_currentMenu == MENU_TILES && (m_prevClickedTile != m_clickedTile || 
+				m_prevTileToPlace != m_tileToPlace))
 			{
 				m_prevTileToPlace = m_tileToPlace;
 
-				Texture *tiles{ room->getTileSprites() };
-				if (tiles != nullptr)
+				// Change the pixel on the tiles texture.
+				if (m_tilesTexture != nullptr)
 				{
-					char pixel[4]{ (char)m_tileToPlace.x, (char)m_tileToPlace.y, 0, 255 };
-					tiles->bind();
+					char pixel[4]{ (char)m_tileToPlace.x, (char)m_tileToPlace.y, 
+						(char)0, (char)255 };
+					m_tilesTexture->bind();
 					glTexSubImage2D(GL_TEXTURE_2D, 0, m_clickedTile.x,
 						m_clickedTile.y, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, pixel);
 				}
+			}
+			// Placing tile type with layout selector.
+			else if (m_currentMenu == MENU_LAYOUT && (m_prevClickedTile != m_clickedTile ||
+				m_prevTypeToPlace != m_typeToPlace))
+			{
+				m_prevTypeToPlace = m_typeToPlace;
+
+				// Change the pixel on the layout texture.
+				if (m_layoutTexture != nullptr)
+				{
+					char pixel[4]{ (char)m_typeToPlace.x, (char)m_typeToPlace.y,
+						(char)0, (char)255 };
+					m_layoutTexture->bind();
+					glTexSubImage2D(GL_TEXTURE_2D, 0, m_clickedTile.x,
+						m_clickedTile.y, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, pixel);
+				}
+
+				// Change the layout vector.
+				RoomData::TileType type{ RoomData::TILE_SPACE };
+				if (m_typeToPlace != ERASER_TILE)
+					type = static_cast<RoomData::TileType>(m_typeToPlace.x + 1);
+				int layoutIndex{ room->getTileIndex(m_clickedTile) };
+				m_roomLayout[layoutIndex] = type;
 			}
 		}
 	}
@@ -205,6 +285,8 @@ void EditorState::createUI()
 		ImGuiWindowFlags_NoResize | ImGuiWindowFlags_MenuBar |
 		ImGuiWindowFlags_AlwaysAutoResize);
 
+	Room *room{ PlayState::instance()->getCurrentRoom() };
+	bool hasRoom{ room != nullptr };
 	if (ImGui::BeginMenuBar())
 	{
 		if (ImGui::BeginMenu("File"))
@@ -217,9 +299,19 @@ void EditorState::createUI()
 		if (ImGui::BeginMenu("Edit"))
 		{
 			if (ImGui::MenuItem("Properties")) { m_currentMenu = MENU_PROPERTIES; }
-			if (ImGui::MenuItem("Tiles")) { m_currentMenu = MENU_TILES; }
+			if (ImGui::MenuItem("Tiles")) 
+			{ 
+				m_currentMenu = MENU_TILES; 
+				if (hasRoom && m_tilesTexture != nullptr)
+					room->setTileSprites(m_tilesTexture);
+			}
 			if (ImGui::MenuItem("Layers")) { m_currentMenu = MENU_LAYERS; }
-			if (ImGui::MenuItem("Layout")) { m_currentMenu = MENU_LAYOUT; }
+			if (ImGui::MenuItem("Layout"))
+			{
+				m_currentMenu = MENU_LAYOUT;
+				if (hasRoom && m_layoutTexture != nullptr)
+					room->setTileSprites(m_layoutTexture);
+			}
 			ImGui::EndMenu();
 		}
 		ImGui::EndMenuBar();
@@ -239,11 +331,21 @@ void EditorState::createUI()
 		}
 
 		case MENU_TILES:
+		case MENU_LAYOUT:
 		{
+			bool isLayout{ m_currentMenu == MENU_LAYOUT };
 			if (ImGui::Button("Eraser"))
 			{
-				m_prevTileToPlace = m_tileToPlace;
-				m_tileToPlace = ERASER_TILE;
+				if (isLayout)
+				{
+					m_prevTypeToPlace = m_typeToPlace;
+					m_typeToPlace = ERASER_TILE;
+				}
+				else
+				{
+					m_prevTileToPlace = m_tileToPlace;
+					m_tileToPlace = ERASER_TILE;
+				}
 			}
 
 			glm::vec2 tilesetSize{ m_tileset->getSize() };
@@ -253,8 +355,15 @@ void EditorState::createUI()
 			glm::vec2 tileSizeUV{ Room::TILE_SIZE / tilesetSize.x,
 				Room::TILE_SIZE / tilesetSize.y };
 
-			int currentLine{ 0 };
-			for (int i = 0; i < TILE_SELECTOR_SIZE.x * TILE_SELECTOR_SIZE.y; ++i)
+			int currentCol{ 0 };
+			int tileIndexOffset{ RoomData::NUM_TILE_TYPES - 1 };
+			int totalNumTiles{ TILE_SELECTOR_SIZE.x * TILE_SELECTOR_SIZE.y };
+			if (isLayout)
+			{
+				totalNumTiles = tileIndexOffset;
+				tileIndexOffset = 0;
+			}
+			for (int i = tileIndexOffset; i < totalNumTiles; ++i)
 			{
 				// Calculate uv's for this tile.
 				glm::ivec2 tilesetIndex{ i % numTiles.x, floor(i / numTiles.x) };
@@ -263,29 +372,39 @@ void EditorState::createUI()
 
 				// If already selected, change tint colour.
 				ImVec4 tintColour{ 1.f, 1.f, 1.f, 1.f };
-				if (tilesetIndex.x == m_tileToPlace.x &&
-					tilesetIndex.y == m_tileToPlace.y)
+				if ((!isLayout && tilesetIndex == m_tileToPlace) ||
+					(isLayout && tilesetIndex == m_typeToPlace))
 					tintColour = ImVec4(1.f, 0.f, 0.f, 1.f);
 
 				// Add the tile button.
 				ImGui::PushID(i);
 				if (ImGui::ImageButton(textureId,
-					ImVec2(Room::TILE_SIZE, Room::TILE_SIZE),
+					ImVec2(Room::TILE_SIZE * 2, Room::TILE_SIZE * 2),
 					ImVec2(u.x, 1 - v.x), ImVec2(u.y, 1 - v.y), -1,
 					ImVec4(0.f, 0.f, 0.f, 0.f), tintColour))
 				{
-					m_prevTileToPlace = m_tileToPlace;
-					m_tileToPlace = tilesetIndex;
+					if (isLayout)
+					{
+						m_prevTypeToPlace = m_typeToPlace;
+						m_typeToPlace = tilesetIndex;
+					}
+					else
+					{
+						m_prevTileToPlace = m_tileToPlace;
+						m_tileToPlace = tilesetIndex;
+					}
 				}
 				ImGui::PopID();
 
 				// Determine if there should be a new line.
-				int thisLine = static_cast<int>(floor((i + 1) / TILE_SELECTOR_SIZE.x));
-				if (currentLine == thisLine)
+				if (currentCol < TILE_SELECTOR_SIZE.x - 1)
+				{
 					ImGui::SameLine();
+					currentCol++;
+				}
 				else
 				{
-					currentLine = thisLine;
+					currentCol = 0;
 				}
 			}
 

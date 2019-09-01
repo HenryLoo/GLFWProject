@@ -27,7 +27,7 @@ glm::ivec2 Room::getSize() const
 	return m_tiles->getSize();
 }
 
-const RoomData::TileType &Room::getTileType(glm::ivec2 tileCoord) const
+int Room::getTileIndex(glm::ivec2 tileCoord) const
 {
 	// Flip the y-coordinate.
 	glm::ivec2 size{ getSize() };
@@ -35,7 +35,12 @@ const RoomData::TileType &Room::getTileType(glm::ivec2 tileCoord) const
 	tileCoord.y = glm::clamp(tileCoord.y, 0, size.y - 1);
 	tileCoord.y = size.y - tileCoord.y - 1;
 
-	int index{ tileCoord.x + size.x * tileCoord.y };
+	return tileCoord.x + size.x * tileCoord.y;
+}
+
+const RoomData::TileType &Room::getTileType(glm::ivec2 tileCoord) const
+{
+	int index{ getTileIndex(tileCoord) };
 	return m_data.layout[index];
 }
 
@@ -77,10 +82,10 @@ const RoomData::Data &Room::getRoomData() const
 
 bool Room::isSlope(RoomData::TileType type)
 {
-	return type == RoomData::TILE_SLOPE_RIGHT_LOWER || 
-		type == RoomData::TILE_SLOPE_RIGHT_UPPER ||
-		type == RoomData::TILE_SLOPE_LEFT_UPPER ||
-		type == RoomData::TILE_SLOPE_LEFT_LOWER;
+	return type == RoomData::TILE_SLOPE_L_LOWER || 
+		type == RoomData::TILE_SLOPE_L_UPPER ||
+		type == RoomData::TILE_SLOPE_R_UPPER ||
+		type == RoomData::TILE_SLOPE_R_LOWER;
 }
 
 void Room::parseJson(const nlohmann::json &json, AssetLoader *assetLoader)
@@ -281,4 +286,14 @@ void Room::updateLayers(SpriteRenderer *sRenderer) const
 const std::vector<Room::EntityListing> &Room::getEntities() const
 {
 	return m_entities;
+}
+
+void Room::setTileSprites(std::shared_ptr<Texture> tiles)
+{
+	m_tiles = tiles;
+}
+
+void Room::setLayout(const std::vector<RoomData::TileType> &layout)
+{
+	m_data.layout = layout;
 }

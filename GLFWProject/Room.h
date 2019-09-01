@@ -39,6 +39,9 @@ public:
 	// Get the size of the room.
 	glm::ivec2 getSize() const;
 
+	// Get the tile's index at a given x, y, in tile coordinates.
+	int getTileIndex(glm::ivec2 tileCoord) const;
+
 	// Get the tile at a given x, y, in tile coordinates.
 	const RoomData::TileType &getTileType(glm::ivec2 tileCoord) const;
 
@@ -75,6 +78,12 @@ public:
 	// The size of each tile, in pixels.
 	const static int TILE_SIZE{ 16 };
 	const static int SLOPE_HEIGHT{ 8 };
+
+	// Set the tiles texture;
+	void setTileSprites(std::shared_ptr<Texture> tiles);
+
+	// Set the layout.
+	void setLayout(const std::vector<RoomData::TileType> &layout);
 
 private:
 	// Load the room details from the json file.

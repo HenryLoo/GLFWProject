@@ -189,12 +189,12 @@ void RoomCollisionSystem::process(float deltaTime, int entityId,
 					// Adjust y-distance to displace the entity, based on the type of slope.
 					float yDist{ tanf(slopeRad) * xDist };
 	
-					if (type == RoomData::TILE_SLOPE_LEFT_UPPER || type == RoomData::TILE_SLOPE_LEFT_LOWER)
+					if (type == RoomData::TILE_SLOPE_R_UPPER || type == RoomData::TILE_SLOPE_R_LOWER)
 						yDist = Room::TILE_SIZE - yDist;
 	
-					if (type == RoomData::TILE_SLOPE_RIGHT_UPPER)
+					if (type == RoomData::TILE_SLOPE_L_UPPER)
 						yDist += Room::SLOPE_HEIGHT;
-					else if (type == RoomData::TILE_SLOPE_LEFT_LOWER)
+					else if (type == RoomData::TILE_SLOPE_R_LOWER)
 						yDist -= Room::SLOPE_HEIGHT;
 	
 					tileEdgePos = thisTilePos.y - tileHalfSize + yDist;

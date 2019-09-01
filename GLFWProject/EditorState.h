@@ -3,8 +3,10 @@
 #define EditorState_H
 
 #include "GameState.h"
+#include "RoomData.h"
 
 #include <memory>
+#include <vector>
 
 class Font;
 class Shader;
@@ -83,6 +85,10 @@ private:
 	glm::ivec2 m_tileToPlace{ ERASER_TILE };
 	glm::ivec2 m_prevTileToPlace{ ERASER_TILE };
 
+	// The currently selected type for the layout selector.
+	glm::ivec2 m_typeToPlace{ ERASER_TILE };
+	glm::ivec2 m_prevTypeToPlace{ ERASER_TILE };
+
 	// Save the mouse position and if the mouse was clicked.
 	glm::vec2 m_mousePos;
 	bool m_isLeftClicked{ false };
@@ -91,6 +97,13 @@ private:
 	// The tile coordinate of the clicked tile.
 	glm::ivec2 m_clickedTile{ -1 };
 	glm::ivec2 m_prevClickedTile;
+
+	// Hold the layout and layout texture for editing.
+	std::vector<RoomData::TileType> m_roomLayout;
+	std::shared_ptr<Texture> m_layoutTexture;
+
+	// Hold the room's tiles texture for swapping with layout texture.
+	std::shared_ptr<Texture> m_tilesTexture;
 };
 
 #endif
