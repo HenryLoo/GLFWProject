@@ -345,3 +345,4 @@ MigrationBackup/
 
 # Room editor generated files.
 editor/
+imgui.ini

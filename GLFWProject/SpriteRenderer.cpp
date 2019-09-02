@@ -201,6 +201,9 @@ void SpriteRenderer::addSprite(const GameComponent::Physics &physics,
 void SpriteRenderer::addSprite(const RoomData::Layer &layer, 
 	std::shared_ptr<SpriteSheet> spriteSheet)
 {
+	if (spriteSheet == nullptr)
+		return;
+
 	GameComponent::Physics phys;
 	phys.pos = layer.pos;
 	GameComponent::Sprite spr;
@@ -210,16 +213,21 @@ void SpriteRenderer::addSprite(const RoomData::Layer &layer,
 	addSprite(phys, spr);
 }
 
-void SpriteRenderer::addSpriteData(SpriteData &data, const GameComponent::Physics &physics,
+void SpriteRenderer::addSpriteData(SpriteData &data, 
+	const GameComponent::Physics &physics,
 	const GameComponent::Sprite &sprite) const
 {
+	auto clips{ sprite.currentSprite.clips };
+	if (sprite.currentFrame >= clips.size())
+		return;
+
 	data.colours.push_back(sprite.r);
 	data.colours.push_back(sprite.g);
 	data.colours.push_back(sprite.b);
 	data.colours.push_back(sprite.a);
 
 	const glm::vec2 &texSize{ sprite.spriteSheet->getSize() };
-	const SpriteSheet::SpriteClip& thisClip{ sprite.currentSprite.clips[sprite.currentFrame] };
+	const SpriteSheet::SpriteClip &thisClip{ clips[sprite.currentFrame] };
 	const glm::vec2 &clipSize{ thisClip.clipSize };
 
 	data.texCoords.push_back(thisClip.topLeft.x / texSize.x);

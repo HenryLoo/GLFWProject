@@ -85,6 +85,22 @@ public:
 	// Set the layout.
 	void setLayout(const std::vector<RoomData::TileType> &layout);
 
+	// Set the layers.
+	void setLayers(const std::vector<RoomData::Layer> &layers);
+
+	// Layer setters.
+	void setLayerSpriteSheet(int id, AssetLoader *assetLoader, 
+		const std::string &spriteSheetName);
+	void setLayerType(int id, const std::string &type);
+	void setLayerPos(int id, glm::vec2 pos);
+	void setLayerDepth(int id, float depth);
+
+	// Add a layer.
+	void addLayer();
+
+	// Delete a layer.
+	void deleteLayer(int id);
+
 private:
 	// Load the room details from the json file.
 	void parseJson(const nlohmann::json &json, AssetLoader *assetLoader);

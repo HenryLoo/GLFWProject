@@ -32,6 +32,10 @@
 #include "FontLoader.h"
 #include "ScriptLoader.h"
 
+#include "imgui/imgui.h"
+#include "imgui/imgui_impl_glfw.h"
+#include "imgui/imgui_impl_opengl3.h"
+
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
@@ -79,6 +83,16 @@ int main()
 		inputManager.get(), sRenderer.get(), uRenderer.get(),
 		*soundEngine) };
 
+	// Setup ImGui after input manager to properly install key callbacks.
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGuiIO &io = ImGui::GetIO();
+
+	ImGui::StyleColorsDark();
+
+	ImGui_ImplGlfw_InitForOpenGL(game->getWindow(), true);
+	ImGui_ImplOpenGL3_Init("#version 130");
+
 	// Seed the random number generator.
 	srand(static_cast<unsigned> (time(0)));
 
@@ -88,7 +102,12 @@ int main()
 		sRenderer.get(), uRenderer.get(), tRenderer.get(), *soundEngine);
 
 	// Deinitialize the sound engine before closing.
-	//soundEngine->deinit();
+	soundEngine->deinit();
+
+	// Clean up ImGui.
+	ImGui_ImplOpenGL3_Shutdown();
+	ImGui_ImplGlfw_Shutdown();
+	ImGui::DestroyContext();
 
 	// Game has ended.
 	return 0;

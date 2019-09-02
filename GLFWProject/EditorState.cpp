@@ -50,6 +50,10 @@ void EditorState::init(AssetLoader *assetLoader)
 	Room *room{ PlayState::instance()->getCurrentRoom() };
 	if (room != nullptr)
 	{
+		glm::ivec2 roomSize{ room->getSize() };
+		m_roomSizeInput[0] = roomSize.x;
+		m_roomSizeInput[1] = roomSize.y;
+
 		const RoomData::Data &roomData{ room->getRoomData() };
 		strcpy_s(m_nameInput, sizeof(m_nameInput), roomData.name.c_str());
 		strcpy_s(m_tilesInput, sizeof(m_tilesInput), roomData.tilesName.c_str());
@@ -57,11 +61,11 @@ void EditorState::init(AssetLoader *assetLoader)
 		strcpy_s(m_musicInput, sizeof(m_musicInput), roomData.musicName.c_str());
 		strcpy_s(m_shaderInput, sizeof(m_shaderInput), roomData.shaderName.c_str());
 
+		m_roomShader = assetLoader->load<Shader>(roomData.shaderName);
 		m_tilesTexture = assetLoader->load<Texture>(roomData.tilesName);
 
 		// Set up room layout texture.
 		m_roomLayout = roomData.layout;
-		glm::ivec2 roomSize{ room->getSize() };
 		GLubyte *layoutData{ new GLubyte[roomSize.x * roomSize.y * 4] };
 		for (int i = 0; i < roomSize.y; ++i)
 		{
@@ -100,6 +104,14 @@ void EditorState::init(AssetLoader *assetLoader)
 		// Show layout texture if the current menu is the layout selector.
 		if (m_currentMenu == MENU_LAYOUT)
 			room->setTileSprites(m_layoutTexture);
+
+		// Get room layers.
+		m_roomLayers = roomData.layers;
+		if (m_selectedLayerId == -1 && roomData.layers.size() > 0)
+		{
+			// Select the first layer if no layers selected.
+			selectLayer(0);
+		}
 	}
 }
 
@@ -146,8 +158,18 @@ void EditorState::update(float deltaTime, const glm::ivec2 &windowSize,
 	SpriteRenderer *sRenderer, UIRenderer *uRenderer,
 	TextRenderer *tRenderer, SoLoud::Soloud &soundEngine)
 {
-	createUI();
-	placeTile(windowSize);
+	sRenderer->resetData();
+
+	// Update room layers.
+	Room *room{ PlayState::instance()->getCurrentRoom() };
+	if (room != nullptr)
+	{
+		// Update room layers.
+		room->updateLayers(sRenderer);
+	}
+
+	createUI(assetLoader);
+	selectTile(windowSize);
 }
 
 void EditorState::render(const glm::ivec2 &windowSize,
@@ -160,7 +182,12 @@ void EditorState::render(const glm::ivec2 &windowSize,
 	Room *room{ playState->getCurrentRoom() };
 	if (camera != nullptr && room != nullptr)
 	{
-		sRenderer->render(camera, room);
+		// Only show the room shader if the menu is at properties.
+		Shader *shader{ nullptr };
+		if (m_currentMenu == MENU_PROPERTIES)
+			shader = m_roomShader.get();
+
+		sRenderer->render(camera, room, shader);
 	}
 
 	// Render ImGui.
@@ -181,7 +208,7 @@ void EditorState::save()
 		// Write the room's JSON file.
 		JSONUtilities::roomToJson(room->getRoomData(), json);
 
-		std::ofstream o(OUTPUT_PATH + "room.json");
+		std::ofstream o(OUTPUT_PATH + m_nameInput + ".json");
 		o << json << std::endl;
 		o.close();
 
@@ -196,7 +223,7 @@ void EditorState::save()
 			stbi_uc *data{ new stbi_uc[size.x * size.y * numChannels] };
 			glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
 			stbi_flip_vertically_on_write(true);
-			std::string output{ OUTPUT_PATH + "room.png" };
+			std::string output{ OUTPUT_PATH + m_nameInput + ".png" };
 			stbi_write_png(output.c_str(), size.x, size.y, numChannels, data, 0);
 
 			delete[] data;
@@ -205,16 +232,18 @@ void EditorState::save()
 	}
 }
 
-void EditorState::placeTile(const glm::ivec2 &windowSize)
+void EditorState::selectTile(const glm::ivec2 &windowSize)
 {
-	if (m_currentMenu != MENU_TILES && m_currentMenu != MENU_LAYOUT)
+	if (m_currentMenu != MENU_TILES && 
+		m_currentMenu != MENU_LAYOUT &&
+		m_currentMenu != MENU_LAYERS)
 		return;
 
 	m_prevClickedTile = m_clickedTile;
 
 	// Don't allow clicking through the editor UI.
 	if (m_isLeftClicked &&
-		!ImGui::IsAnyItemHovered() && !ImGui::IsAnyWindowHovered())
+		!ImGui::IsAnyWindowFocused())
 	{
 		Camera *camera{ PlayState::instance()->getCamera() };
 		Room *room{ PlayState::instance()->getCurrentRoom() };
@@ -271,11 +300,18 @@ void EditorState::placeTile(const glm::ivec2 &windowSize)
 				int layoutIndex{ room->getTileIndex(m_clickedTile) };
 				m_roomLayout[layoutIndex] = type;
 			}
+			// Moving the selected layer.
+			else if (m_currentMenu == MENU_LAYERS && m_prevClickedTile != m_clickedTile)
+			{
+				m_layerPosInput[0] = m_clickedTile.x;
+				m_layerPosInput[1] = m_clickedTile.y;
+				setRoomLayerPos(room, m_clickedTile);
+			}
 		}
 	}
 }
 
-void EditorState::createUI()
+void EditorState::createUI(AssetLoader *assetLoader)
 {
 	ImGui_ImplOpenGL3_NewFrame();
 	ImGui_ImplGlfw_NewFrame();
@@ -298,14 +334,25 @@ void EditorState::createUI()
 
 		if (ImGui::BeginMenu("Edit"))
 		{
-			if (ImGui::MenuItem("Properties")) { m_currentMenu = MENU_PROPERTIES; }
+			if (ImGui::MenuItem("Properties"))
+			{ 
+				m_currentMenu = MENU_PROPERTIES; 
+				if (hasRoom && m_tilesTexture != nullptr)
+					room->setTileSprites(m_tilesTexture);
+			}
 			if (ImGui::MenuItem("Tiles")) 
 			{ 
 				m_currentMenu = MENU_TILES; 
 				if (hasRoom && m_tilesTexture != nullptr)
 					room->setTileSprites(m_tilesTexture);
 			}
-			if (ImGui::MenuItem("Layers")) { m_currentMenu = MENU_LAYERS; }
+			if (ImGui::MenuItem("Layers"))
+			{ 
+				m_currentMenu = MENU_LAYERS; 
+
+				if (hasRoom && m_tilesTexture != nullptr)
+					room->setTileSprites(m_tilesTexture);
+			}
 			if (ImGui::MenuItem("Layout"))
 			{
 				m_currentMenu = MENU_LAYOUT;
@@ -321,6 +368,8 @@ void EditorState::createUI()
 	{
 		case MENU_PROPERTIES:
 		{
+			ImGui::InputScalarN("Size (x, y)", ImGuiDataType_S32,
+				m_roomSizeInput, 2);
 			ImGui::InputText("Name", m_nameInput, IM_ARRAYSIZE(m_nameInput));
 			ImGui::InputText("Tiles", m_tilesInput, IM_ARRAYSIZE(m_tilesInput));
 			ImGui::InputText("Background", m_bgTextureInput, IM_ARRAYSIZE(m_bgTextureInput));
@@ -410,9 +459,104 @@ void EditorState::createUI()
 
 			break;
 		}
+
+		case MENU_LAYERS:
+		{
+			std::string numLayers{ "Selected Layer: " + 
+				std::to_string(m_selectedLayerId + 1) + " / " + 
+				std::to_string(m_roomLayers.size()) };
+			ImGui::Text(numLayers.c_str());
+
+			ImGui::SameLine();
+			if (ImGui::Button("<"))
+			{
+				int id{ m_selectedLayerId - 1 };
+				if (id == -1)
+					id = static_cast<int>(m_roomLayers.size() - 1);
+				selectLayer(id);
+			}
+			ImGui::SameLine();
+			if (ImGui::Button(">"))
+			{
+				int id{ m_selectedLayerId + 1 };
+				if (id == m_roomLayers.size())
+					id = 0;
+				selectLayer(id);
+			}
+
+			if (ImGui::Button("New Layer"))
+			{
+				room->addLayer();
+			}
+			ImGui::SameLine();
+			if (ImGui::Button("Delete"))
+			{
+				m_roomLayers.erase(m_roomLayers.begin() + m_selectedLayerId);
+				room->deleteLayer(m_selectedLayerId);
+			}
+			ImGui::NewLine();
+
+			if (ImGui::InputText("Spritesheet", m_layerSpriteSheetInput,
+				IM_ARRAYSIZE(m_layerSpriteSheetInput), ImGuiInputTextFlags_EnterReturnsTrue))
+			{
+				m_roomLayers[m_selectedLayerId].spriteSheetName = m_layerSpriteSheetInput;
+				room->setLayerSpriteSheet(m_selectedLayerId, assetLoader, 
+					m_layerSpriteSheetInput);
+			}
+			if (ImGui::InputText("Type", m_layerTypeInput,
+				IM_ARRAYSIZE(m_layerTypeInput), ImGuiInputTextFlags_EnterReturnsTrue))
+			{
+				m_roomLayers[m_selectedLayerId].type = m_layerTypeInput;
+				room->setLayerType(m_selectedLayerId, m_layerTypeInput);
+			}
+			if (ImGui::InputScalarN("Position (x, y)", ImGuiDataType_S32,
+				m_layerPosInput, 2))
+			{
+				setRoomLayerPos(room, glm::ivec2(m_layerPosInput[0],
+					m_layerPosInput[1]));
+			}
+			if (ImGui::InputScalar("Depth", ImGuiDataType_Float,
+				&m_layerDepthInput))
+			{
+				m_roomLayers[m_selectedLayerId].pos.z = m_layerDepthInput;
+				room->setLayerDepth(m_selectedLayerId, m_layerDepthInput);
+			}
+			break;
+		}
 	}
 
 	ImGui::End();
 
 	ImGui::EndFrame();
+}
+
+void EditorState::selectLayer(int id)
+{
+	m_selectedLayerId = glm::clamp(id, 0, 
+		static_cast<int>(m_roomLayers.size()));
+
+	RoomData::Layer &thisLayer{ m_roomLayers[m_selectedLayerId] };
+	strcpy_s(m_layerSpriteSheetInput, sizeof(m_layerSpriteSheetInput), 
+		thisLayer.spriteSheetName.c_str());
+	strcpy_s(m_layerTypeInput, sizeof(m_layerTypeInput),
+		thisLayer.type.c_str());
+
+	Room *room{ PlayState::instance()->getCurrentRoom() };
+	if (room != nullptr)
+	{
+		glm::ivec2 tileXY{ room->getTileCoord({ thisLayer.pos.x, thisLayer.pos.y }) };
+		m_layerPosInput[0] = tileXY.x;
+		m_layerPosInput[1] = tileXY.y;
+	}
+
+	m_layerDepthInput = thisLayer.pos.z;
+}
+
+void EditorState::setRoomLayerPos(Room *room, glm::ivec2 pos)
+{
+	RoomData::Layer &thisLayer{ m_roomLayers[m_selectedLayerId] };
+	glm::vec2 roomPos{ room->getTilePos(pos) };
+	thisLayer.pos.x = roomPos.x;
+	thisLayer.pos.y = roomPos.y;
+	room->setLayerPos(m_selectedLayerId, roomPos);
 }

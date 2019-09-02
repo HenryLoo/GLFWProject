@@ -13,10 +13,6 @@
 #include "Font.h"
 #include "PlayState.h"
 
-#include "imgui/imgui.h"
-#include "imgui/imgui_impl_glfw.h"
-#include "imgui/imgui_impl_opengl3.h"
-
 #include <iostream>
 
 namespace
@@ -69,25 +65,10 @@ GameEngine::GameEngine()
 	// Set the callback function for automatically setting the viewport
 	// when the window is resized.
 	glfwSetFramebufferSizeCallback(m_window, framebufferSizeCallback);
-
-	// Setup ImGui.
-	IMGUI_CHECKVERSION();
-	ImGui::CreateContext();
-	ImGuiIO &io = ImGui::GetIO();
-
-	ImGui::StyleColorsDark();
-
-	ImGui_ImplGlfw_InitForOpenGL(m_window, true);
-	ImGui_ImplOpenGL3_Init("#version 130");
 }
 
 GameEngine::~GameEngine()
 {
-	// Clean up ImGui.
-	ImGui_ImplOpenGL3_Shutdown();
-	ImGui_ImplGlfw_Shutdown();
-	ImGui::DestroyContext();
-
 	// Deallocate all resources and terminate GLFW.
 	glfwTerminate();
 }

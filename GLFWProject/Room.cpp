@@ -297,3 +297,51 @@ void Room::setLayout(const std::vector<RoomData::TileType> &layout)
 {
 	m_data.layout = layout;
 }
+
+void Room::setLayers(const std::vector<RoomData::Layer> &layers)
+{
+	m_data.layers = layers;
+}
+
+void Room::setLayerSpriteSheet(int id, AssetLoader *assetLoader, 
+	const std::string &spriteSheetName)
+{
+	if (spriteSheetName.empty())
+		return;
+
+	id = glm::clamp(id, 0, static_cast<int>(m_data.layers.size() - 1));
+	m_data.layers[id].spriteSheetName = spriteSheetName;
+	m_layerSpriteSheets[id] = assetLoader->load<SpriteSheet>(spriteSheetName);
+}
+
+void Room::setLayerType(int id, const std::string &type)
+{
+	id = glm::clamp(id, 0, static_cast<int>(m_data.layers.size() - 1));
+	m_data.layers[id].type = type;
+}
+
+void Room::setLayerPos(int id, glm::vec2 pos)
+{
+	id = glm::clamp(id, 0, static_cast<int>(m_data.layers.size() - 1));
+	m_data.layers[id].pos.x = pos.x;
+	m_data.layers[id].pos.y = pos.y;
+}
+
+void Room::setLayerDepth(int id, float depth)
+{
+	id = glm::clamp(id, 0, static_cast<int>(m_data.layers.size() - 1));
+	m_data.layers[id].pos.z = depth;
+}
+
+void Room::addLayer()
+{
+	m_data.layers.push_back({});
+	m_layerSpriteSheets.push_back(nullptr);
+}
+
+void Room::deleteLayer(int id)
+{
+	id = glm::clamp(id, 0, static_cast<int>(m_data.layers.size() - 1));
+	m_data.layers.erase(m_data.layers.begin() + id);
+	m_layerSpriteSheets.erase(m_layerSpriteSheets.begin() + id);
+}

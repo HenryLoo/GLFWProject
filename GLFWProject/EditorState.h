@@ -11,6 +11,7 @@
 class Font;
 class Shader;
 class Texture;
+class Room;
 
 class EditorState : public GameState
 {
@@ -57,11 +58,17 @@ private:
 	// Save the current room write to external files.
 	void save();
 
-	// Place a tile on the room.
-	void placeTile(const glm::ivec2 &windowSize);
+	// Select a tile on the room and perform an action depending on
+	// the currently selected menu.
+	void selectTile(const glm::ivec2 &windowSize);
 
 	// Create the editor UI.
-	void createUI();
+	void createUI(AssetLoader *assetLoader);
+
+	// Change the currently selected layer and populate input fields.
+	void selectLayer(int id);
+
+	void setRoomLayerPos(Room *room, glm::ivec2 pos);
 
 	// Singleton instance.
 	static EditorState m_state;
@@ -74,11 +81,14 @@ private:
 
 	// Property input fields.
 	int m_currentMenu{ MENU_PROPERTIES };
+	int m_roomSizeInput[2];
 	char m_nameInput[128];
 	char m_tilesInput[128];
 	char m_bgTextureInput[128];
 	char m_musicInput[128];
 	char m_shaderInput[128];
+
+	std::shared_ptr<Shader> m_roomShader{ nullptr };
 
 	// The currently selected tile for the tile selector.
 	const glm::ivec2 ERASER_TILE{ 255, 255 };
@@ -104,6 +114,14 @@ private:
 
 	// Hold the room's tiles texture for swapping with layout texture.
 	std::shared_ptr<Texture> m_tilesTexture;
+
+	// Hold the room's layers and input fields for editing.
+	std::vector<RoomData::Layer> m_roomLayers;
+	int m_selectedLayerId{ -1 };
+	char m_layerSpriteSheetInput[128];
+	char m_layerTypeInput[128];
+	int m_layerPosInput[2];
+	float m_layerDepthInput;
 };
 
 #endif
