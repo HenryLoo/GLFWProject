@@ -47,13 +47,10 @@ void EditorState::init(AssetLoader *assetLoader)
 	if (m_tileset == nullptr)
 		m_tileset = assetLoader->load<Texture>("tileset");
 
-	Room *room{ PlayState::instance()->getCurrentRoom() };
+	PlayState *playState{ PlayState::instance() };
+	Room *room{ playState->getCurrentRoom() };
 	if (room != nullptr)
 	{
-		glm::ivec2 roomSize{ room->getSize() };
-		m_roomSizeInput[0] = roomSize.x;
-		m_roomSizeInput[1] = roomSize.y;
-
 		const RoomData::Data &roomData{ room->getRoomData() };
 		strcpy_s(m_nameInput, sizeof(m_nameInput), roomData.name.c_str());
 		strcpy_s(m_tilesInput, sizeof(m_tilesInput), roomData.tilesName.c_str());
@@ -65,41 +62,9 @@ void EditorState::init(AssetLoader *assetLoader)
 		m_tilesTexture = assetLoader->load<Texture>(roomData.tilesName);
 
 		// Set up room layout texture.
+		m_roomSize = m_newRoomSize = room->getSize();
 		m_roomLayout = roomData.layout;
-		GLubyte *layoutData{ new GLubyte[roomSize.x * roomSize.y * 4] };
-		for (int i = 0; i < roomSize.y; ++i)
-		{
-			for (int j = 0; j < roomSize.x; ++j)
-			{
-				GLubyte r{ 255 }, g{ 255 }, b{ 255 }, a{ 255 };
-				int layoutIndex{ roomSize.x * i + j };
-				if (m_roomLayout[layoutIndex] != RoomData::TILE_SPACE)
-				{
-					r = (GLubyte)m_roomLayout[layoutIndex] - 1;
-					g = b = 0;
-				}
-
-				// Image is vertically flipped.
-				int firstIndex{ 4 * (roomSize.x * roomSize.y - roomSize.x * (i + 1) + j)};
-				layoutData[firstIndex] = r;
-				layoutData[firstIndex + 1] = g;
-				layoutData[firstIndex + 2] = b;
-				layoutData[firstIndex + 3] = a;
-			}
-		}
-
-		GLuint textureId;
-		glGenTextures(1, &textureId);
-		glBindTexture(GL_TEXTURE_2D, textureId);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, roomSize.x, roomSize.y, 0,
-			GL_RGBA, GL_UNSIGNED_BYTE, layoutData);
-		glBindTexture(GL_TEXTURE_2D, 0);
-
-		m_layoutTexture = std::make_shared<Texture>(textureId, roomSize.x, roomSize.y, 4);
-
-		delete[] layoutData;
+		createLayoutTexture();
 
 		// Show layout texture if the current menu is the layout selector.
 		if (m_currentMenu == MENU_LAYOUT)
@@ -112,6 +77,12 @@ void EditorState::init(AssetLoader *assetLoader)
 			// Select the first layer if no layers selected.
 			selectLayer(0);
 		}
+
+		Camera *camera{ playState->getCamera() };
+		if (camera != nullptr)
+		{
+			m_cameraPos = camera->getPosition();
+		}
 	}
 }
 
@@ -119,7 +90,8 @@ void EditorState::cleanUp()
 {
 	if (m_tilesTexture != nullptr)
 	{
-		Room *room{ PlayState::instance()->getCurrentRoom() };
+		PlayState *playState{ PlayState::instance() };
+		Room *room{ playState->getCurrentRoom() };
 		if (room != nullptr)
 		{
 			room->setTileSprites(m_tilesTexture);
@@ -151,6 +123,24 @@ void EditorState::processInput(GameEngine *game, InputManager *inputManager,
 	m_mousePos = inputManager->getMousePos();
 	m_isLeftClicked = inputManager->isMousePressed(GLFW_MOUSE_BUTTON_LEFT);
 	m_isRightClicked = inputManager->isMousePressed(GLFW_MOUSE_BUTTON_RIGHT);
+
+	m_isMovingLeft = m_isMovingRight = m_isMovingUp = m_isMovingDown = false;
+	if (inputManager->isKeyPressing(InputManager::INPUT_LEFT))
+	{
+		m_isMovingLeft = true;
+	}
+	if (inputManager->isKeyPressing(InputManager::INPUT_RIGHT))
+	{
+		m_isMovingRight = true;
+	}
+	if (inputManager->isKeyPressing(InputManager::INPUT_UP))
+	{
+		m_isMovingUp = true;
+	}
+	if (inputManager->isKeyPressing(InputManager::INPUT_DOWN))
+	{
+		m_isMovingDown = true;
+	}
 }
 
 void EditorState::update(float deltaTime, const glm::ivec2 &windowSize,
@@ -161,11 +151,43 @@ void EditorState::update(float deltaTime, const glm::ivec2 &windowSize,
 	sRenderer->resetData();
 
 	// Update room layers.
-	Room *room{ PlayState::instance()->getCurrentRoom() };
+	PlayState *playState{ PlayState::instance() };
+	Room *room{ playState->getCurrentRoom() };
 	if (room != nullptr)
 	{
 		// Update room layers.
 		room->updateLayers(sRenderer);
+
+		const float cameraSpeed{ 256.f };
+		if (m_isMovingRight)
+			m_cameraPos.x += (cameraSpeed * deltaTime);
+		else if (m_isMovingLeft)
+			m_cameraPos.x -= (cameraSpeed * deltaTime);
+
+		if (m_isMovingUp)
+			m_cameraPos.y += (cameraSpeed * deltaTime);
+		else if (m_isMovingDown)
+			m_cameraPos.y -= (cameraSpeed * deltaTime);
+
+		Camera *camera{ playState->getCamera() };
+		if (camera != nullptr)
+		{
+			glm::ivec2 roomSize{ room->getSize() };
+			glm::ivec2 windowHalfSize{ windowSize / 2 };
+			glm::ivec2 roomSizePixel{ roomSize * Room::TILE_SIZE };
+			float zoom{ camera->getZoom() };
+			m_cameraPos.x = glm::clamp(m_cameraPos.x,
+				windowHalfSize.x / zoom,
+				roomSizePixel.x - windowHalfSize.x / zoom);
+			m_cameraPos.y = glm::clamp(m_cameraPos.y,
+				windowHalfSize.y / zoom,
+				roomSizePixel.y - windowHalfSize.y / zoom);
+
+			camera->update(deltaTime, m_cameraPos, windowSize,
+				room->getSize(), true);
+		}
+
+		Renderer::updateViewMatrix(camera->getViewMatrix());
 	}
 
 	createUI(assetLoader);
@@ -184,7 +206,7 @@ void EditorState::render(const glm::ivec2 &windowSize,
 	{
 		// Only show the room shader if the menu is at properties.
 		Shader *shader{ nullptr };
-		if (m_currentMenu == MENU_PROPERTIES)
+		if (m_currentMenu == MENU_PROPERTIES || m_currentMenu == MENU_RESIZE)
 			shader = m_roomShader.get();
 
 		sRenderer->render(camera, room, shader);
@@ -340,6 +362,12 @@ void EditorState::createUI(AssetLoader *assetLoader)
 				if (hasRoom && m_tilesTexture != nullptr)
 					room->setTileSprites(m_tilesTexture);
 			}
+			if (ImGui::MenuItem("Resize"))
+			{
+				m_currentMenu = MENU_RESIZE;
+				if (hasRoom && m_tilesTexture != nullptr)
+					room->setTileSprites(m_tilesTexture);
+			}
 			if (ImGui::MenuItem("Tiles")) 
 			{ 
 				m_currentMenu = MENU_TILES; 
@@ -368,14 +396,49 @@ void EditorState::createUI(AssetLoader *assetLoader)
 	{
 		case MENU_PROPERTIES:
 		{
-			ImGui::InputScalarN("Size (x, y)", ImGuiDataType_S32,
-				m_roomSizeInput, 2);
 			ImGui::InputText("Name", m_nameInput, IM_ARRAYSIZE(m_nameInput));
 			ImGui::InputText("Tiles", m_tilesInput, IM_ARRAYSIZE(m_tilesInput));
 			ImGui::InputText("Background", m_bgTextureInput, IM_ARRAYSIZE(m_bgTextureInput));
 			ImGui::InputText("Music", m_musicInput, IM_ARRAYSIZE(m_musicInput));
 			ImGui::InputText("Shader", m_shaderInput, IM_ARRAYSIZE(m_shaderInput));
 
+			break;
+		}
+
+		case MENU_RESIZE:
+		{
+			ImGui::InputScalar("Width", ImGuiDataType_S32,
+				&m_newRoomSize.x);
+			ImGui::InputScalar("Height", ImGuiDataType_S32,
+				&m_newRoomSize.y);
+			ImGui::NewLine();
+
+			ImGui::Text("Keep tiles at:");
+			if (ImGui::Button("Top-Left"))
+			{
+				m_resizeDir = TOP_LEFT;
+			}
+			ImGui::SameLine();
+			if (ImGui::Button("Top-Right"))
+			{
+				m_resizeDir = TOP_RIGHT;
+			}
+
+			if (ImGui::Button("Bottom-Left"))
+			{
+				m_resizeDir = BOTTOM_LEFT;
+			}
+			ImGui::SameLine();
+			if (ImGui::Button("Bottom-Right"))
+			{
+				m_resizeDir = BOTTOM_RIGHT;
+			}
+
+			ImGui::NewLine();
+			if (ImGui::Button("Resize"))
+			{
+				resizeRoom();
+			}
 			break;
 		}
 
@@ -462,13 +525,7 @@ void EditorState::createUI(AssetLoader *assetLoader)
 
 		case MENU_LAYERS:
 		{
-			std::string numLayers{ "Selected Layer: " + 
-				std::to_string(m_selectedLayerId + 1) + " / " + 
-				std::to_string(m_roomLayers.size()) };
-			ImGui::Text(numLayers.c_str());
-
-			ImGui::SameLine();
-			if (ImGui::Button("<"))
+			if (ImGui::ArrowButton("Left", ImGuiDir_Left))
 			{
 				int id{ m_selectedLayerId - 1 };
 				if (id == -1)
@@ -476,13 +533,19 @@ void EditorState::createUI(AssetLoader *assetLoader)
 				selectLayer(id);
 			}
 			ImGui::SameLine();
-			if (ImGui::Button(">"))
+			if (ImGui::ArrowButton("Right", ImGuiDir_Right))
 			{
 				int id{ m_selectedLayerId + 1 };
 				if (id == m_roomLayers.size())
 					id = 0;
 				selectLayer(id);
 			}
+			ImGui::SameLine();
+
+			std::string numLayers{ "Selected Layer: " + 
+				std::to_string(m_selectedLayerId + 1) + " / " + 
+				std::to_string(m_roomLayers.size()) };
+			ImGui::Text(numLayers.c_str());
 
 			if (ImGui::Button("New Layer"))
 			{
@@ -530,6 +593,112 @@ void EditorState::createUI(AssetLoader *assetLoader)
 	ImGui::EndFrame();
 }
 
+// TODO: not working properly; need to fix this.
+void EditorState::resizeRoom()
+{
+	if (m_roomSize == m_newRoomSize)
+		return;
+
+	glm::ivec2 diff{ m_newRoomSize - m_roomSize };
+	std::vector<RoomData::TileType> layout;
+
+	std::function<bool(int)> isNewTileX;
+	std::function<bool(int)> isNewTileY;
+	int firstX{ 0 }, firstY{ 0 };
+	switch (m_resizeDir)
+	{
+		case TOP_LEFT:
+		{
+			isNewTileX = [this](int x) -> bool 
+			{ 
+				return x >= m_roomSize.x;
+			};
+			isNewTileY = [this](int y) -> bool
+			{
+				return y >= m_roomSize.y;
+			};
+			break;
+		}
+		case TOP_RIGHT:
+		{
+			if (diff.x < 0)
+				firstX = -diff.x;
+
+			isNewTileX = [this, diff](int x) -> bool
+			{
+				return x < diff.x;
+			};
+			isNewTileY = [this, diff](int y) -> bool
+			{
+				return y >= m_roomSize.y;
+			};
+			break;
+		}
+		case BOTTOM_LEFT:
+		{
+			if (diff.y < 0)
+				firstY = -diff.y;
+
+			isNewTileX = [this, diff](int x) -> bool
+			{
+				return x >= m_roomSize.x;
+			};
+			isNewTileY = [this, diff](int y) -> bool
+			{
+				return y < diff.y;
+			};
+			break;
+		}
+		case BOTTOM_RIGHT:
+		{
+			if (diff.x < 0)
+				firstX = -diff.x;
+			if (diff.y < 0)
+				firstY = -diff.y;
+
+			isNewTileX = [diff](int x) -> bool
+			{
+				return x < diff.x;
+			};
+			isNewTileY = [diff](int y) -> bool
+			{
+				return y < diff.y;
+			};
+			break;
+		}
+	}
+
+	int x{ 0 }, y{ 0 };
+	for (int i = firstY; i < m_newRoomSize.y + firstY; ++i)
+	{
+		for (int j = firstX; j < m_newRoomSize.x + firstX; ++j)
+		{
+			RoomData::TileType tile{ RoomData::TILE_SPACE };
+			if (!isNewTileX(j) && !isNewTileY(i))
+			{
+				tile = m_roomLayout[m_roomSize.x * y + x];
+				++x;
+			}
+
+			layout.push_back(tile);
+			std::cout << tile;
+		}
+		x = 0;
+
+		if (!isNewTileY(i - 1))
+		{
+			++y;
+		}
+		std::cout << std::endl;
+	}
+
+	m_roomSize = m_newRoomSize;
+	m_roomLayout = layout;
+
+	// Update the layout texture.
+	createLayoutTexture();
+}
+
 void EditorState::selectLayer(int id)
 {
 	m_selectedLayerId = glm::clamp(id, 0, 
@@ -559,4 +728,42 @@ void EditorState::setRoomLayerPos(Room *room, glm::ivec2 pos)
 	thisLayer.pos.x = roomPos.x;
 	thisLayer.pos.y = roomPos.y;
 	room->setLayerPos(m_selectedLayerId, roomPos);
+}
+
+void EditorState::createLayoutTexture()
+{
+	GLubyte *layoutData{ new GLubyte[m_roomSize.x * m_roomSize.y * 4] };
+	for (int i = 0; i < m_roomSize.y; ++i)
+	{
+		for (int j = 0; j < m_roomSize.x; ++j)
+		{
+			GLubyte r{ 255 }, g{ 255 }, b{ 255 }, a{ 255 };
+			int layoutIndex{ m_roomSize.x * i + j };
+			if (m_roomLayout[layoutIndex] != RoomData::TILE_SPACE)
+			{
+				r = (GLubyte)m_roomLayout[layoutIndex] - 1;
+				g = b = 0;
+			}
+
+			// Image is vertically flipped.
+			int firstIndex{ 4 * (m_roomSize.x * m_roomSize.y - m_roomSize.x * (i + 1) + j) };
+			layoutData[firstIndex] = r;
+			layoutData[firstIndex + 1] = g;
+			layoutData[firstIndex + 2] = b;
+			layoutData[firstIndex + 3] = a;
+		}
+	}
+
+	GLuint textureId;
+	glGenTextures(1, &textureId);
+	glBindTexture(GL_TEXTURE_2D, textureId);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_roomSize.x, m_roomSize.y, 0,
+		GL_RGBA, GL_UNSIGNED_BYTE, layoutData);
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+	m_layoutTexture = std::make_shared<Texture>(textureId, m_roomSize.x, m_roomSize.y, 4);
+
+	delete[] layoutData;
 }

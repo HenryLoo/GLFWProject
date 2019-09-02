@@ -47,9 +47,18 @@ private:
 	enum MenuId
 	{
 		MENU_PROPERTIES,
+		MENU_RESIZE,
 		MENU_TILES,
 		MENU_LAYERS,
 		MENU_LAYOUT
+	};
+
+	enum ResizeDir
+	{
+		TOP_LEFT,
+		TOP_RIGHT,
+		BOTTOM_LEFT,
+		BOTTOM_RIGHT
 	};
 
 	// Disallow instantiating.
@@ -65,10 +74,16 @@ private:
 	// Create the editor UI.
 	void createUI(AssetLoader *assetLoader);
 
+	// Resize the current room.
+	void resizeRoom();
+
 	// Change the currently selected layer and populate input fields.
 	void selectLayer(int id);
 
+	// Set the position for the current layer.
 	void setRoomLayerPos(Room *room, glm::ivec2 pos);
+
+	void createLayoutTexture();
 
 	// Singleton instance.
 	static EditorState m_state;
@@ -81,12 +96,16 @@ private:
 
 	// Property input fields.
 	int m_currentMenu{ MENU_PROPERTIES };
-	int m_roomSizeInput[2];
 	char m_nameInput[128];
 	char m_tilesInput[128];
 	char m_bgTextureInput[128];
 	char m_musicInput[128];
 	char m_shaderInput[128];
+
+	// Resize edit fields.
+	glm::ivec2 m_roomSize;
+	glm::ivec2 m_newRoomSize;
+	ResizeDir m_resizeDir;
 
 	std::shared_ptr<Shader> m_roomShader{ nullptr };
 
@@ -122,6 +141,12 @@ private:
 	char m_layerTypeInput[128];
 	int m_layerPosInput[2];
 	float m_layerDepthInput;
+
+	glm::vec3 m_cameraPos;
+	bool m_isMovingLeft;
+	bool m_isMovingRight;
+	bool m_isMovingUp;
+	bool m_isMovingDown;
 };
 
 #endif

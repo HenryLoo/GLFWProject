@@ -18,8 +18,9 @@ public:
 	Camera();
 
 	// Update the camera's values.
-	void update(float deltaTime, glm::vec3 playerPos, 
-		glm::ivec2 windowSize, glm::ivec2 roomSize);
+	void update(float deltaTime, glm::vec3 pos, 
+		glm::ivec2 windowSize, glm::ivec2 roomSize, 
+		bool isInstant = false);
 
 	// Move the camera in a direction.
 	void move(Direction direction);
