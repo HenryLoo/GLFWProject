@@ -72,10 +72,10 @@ private:
 	void selectTile(const glm::ivec2 &windowSize);
 
 	// Create the editor UI.
-	void createUI(AssetLoader *assetLoader);
+	void createUI(AssetLoader *assetLoader, SpriteRenderer *sRenderer);
 
 	// Resize the current room.
-	void resizeRoom();
+	void resizeRoom(SpriteRenderer *sRenderer);
 
 	// Change the currently selected layer and populate input fields.
 	void selectLayer(int id);
@@ -83,7 +83,9 @@ private:
 	// Set the position for the current layer.
 	void setRoomLayerPos(Room *room, glm::ivec2 pos);
 
-	void createLayoutTexture();
+	// Update the room with the editor's version of tiles texture and 
+	// layout vector.
+	void updateRoom();
 
 	// Singleton instance.
 	static EditorState m_state;
@@ -92,12 +94,13 @@ private:
 	std::shared_ptr<Font> m_font;
 	std::shared_ptr<Texture> m_tileset;
 
+	bool m_isFirstFrame{ false };
+
 	bool m_isEditorActive{ false };
 
 	// Property input fields.
 	int m_currentMenu{ MENU_PROPERTIES };
 	char m_nameInput[128];
-	char m_tilesInput[128];
 	char m_bgTextureInput[128];
 	char m_musicInput[128];
 	char m_shaderInput[128];
@@ -132,6 +135,7 @@ private:
 	std::shared_ptr<Texture> m_layoutTexture;
 
 	// Hold the room's tiles texture for swapping with layout texture.
+	std::vector<int> m_tiles;
 	std::shared_ptr<Texture> m_tilesTexture;
 
 	// Hold the room's layers and input fields for editing.
@@ -142,6 +146,7 @@ private:
 	int m_layerPosInput[2];
 	float m_layerDepthInput;
 
+	// Camera movement variables.
 	glm::vec3 m_cameraPos;
 	bool m_isMovingLeft;
 	bool m_isMovingRight;

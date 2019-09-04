@@ -15,8 +15,6 @@
 #include <json/single_include/nlohmann/json.hpp>
 
 #include "stb_image.h"
-#define STB_IMAGE_WRITE_IMPLEMENTATION
-#include "stb_image_write.h"
 
 #include "imgui/imgui.h"
 #include "imgui/imgui_impl_glfw.h"
@@ -53,22 +51,21 @@ void EditorState::init(AssetLoader *assetLoader)
 	{
 		const RoomData::Data &roomData{ room->getRoomData() };
 		strcpy_s(m_nameInput, sizeof(m_nameInput), roomData.name.c_str());
-		strcpy_s(m_tilesInput, sizeof(m_tilesInput), roomData.tilesName.c_str());
 		strcpy_s(m_bgTextureInput, sizeof(m_bgTextureInput), roomData.bgTextureName.c_str());
 		strcpy_s(m_musicInput, sizeof(m_musicInput), roomData.musicName.c_str());
 		strcpy_s(m_shaderInput, sizeof(m_shaderInput), roomData.shaderName.c_str());
 
 		m_roomShader = assetLoader->load<Shader>(roomData.shaderName);
-		m_tilesTexture = assetLoader->load<Texture>(roomData.tilesName);
 
-		// Set up room layout texture.
+		m_tiles = roomData.tiles;
+		m_tilesTexture = room->getTileSprites();
+
 		m_roomSize = m_newRoomSize = room->getSize();
 		m_roomLayout = roomData.layout;
-		createLayoutTexture();
 
 		// Show layout texture if the current menu is the layout selector.
 		if (m_currentMenu == MENU_LAYOUT)
-			room->setTileSprites(m_layoutTexture);
+			room->setTilesTexture(m_layoutTexture);
 
 		// Get room layers.
 		m_roomLayers = roomData.layers;
@@ -84,20 +81,13 @@ void EditorState::init(AssetLoader *assetLoader)
 			m_cameraPos = camera->getPosition();
 		}
 	}
+
+	m_isFirstFrame = true;
 }
 
 void EditorState::cleanUp()
 {
-	if (m_tilesTexture != nullptr)
-	{
-		PlayState *playState{ PlayState::instance() };
-		Room *room{ playState->getCurrentRoom() };
-		if (room != nullptr)
-		{
-			room->setTileSprites(m_tilesTexture);
-			room->setLayout(m_roomLayout);
-		}
-	}
+	updateRoom();
 }
 
 void EditorState::pause()
@@ -148,6 +138,14 @@ void EditorState::update(float deltaTime, const glm::ivec2 &windowSize,
 	SpriteRenderer *sRenderer, UIRenderer *uRenderer,
 	TextRenderer *tRenderer, SoLoud::Soloud &soundEngine)
 {
+	// Set up room layout texture.
+	if (m_isFirstFrame)
+	{
+		std::vector<int> layout(m_roomLayout.begin(), m_roomLayout.end());
+		m_layoutTexture = Room::createTilesTexture(sRenderer, m_roomSize, layout);
+		m_isFirstFrame = false;
+	}
+
 	sRenderer->resetData();
 
 	// Update room layers.
@@ -190,7 +188,7 @@ void EditorState::update(float deltaTime, const glm::ivec2 &windowSize,
 		Renderer::updateViewMatrix(camera->getViewMatrix());
 	}
 
-	createUI(assetLoader);
+	createUI(assetLoader, sRenderer);
 	selectTile(windowSize);
 }
 
@@ -233,24 +231,6 @@ void EditorState::save()
 		std::ofstream o(OUTPUT_PATH + m_nameInput + ".json");
 		o << json << std::endl;
 		o.close();
-
-		// Write the room's tiles texture.
-		Texture *texture{ room->getTileSprites() };
-		if (texture != nullptr)
-		{
-			texture->bind();
-			glm::ivec2 size{ texture->getSize() };
-			int numChannels{ texture->getNumChannels() };
-
-			stbi_uc *data{ new stbi_uc[size.x * size.y * numChannels] };
-			glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-			stbi_flip_vertically_on_write(true);
-			std::string output{ OUTPUT_PATH + m_nameInput + ".png" };
-			stbi_write_png(output.c_str(), size.x, size.y, numChannels, data, 0);
-
-			delete[] data;
-		}
-		
 	}
 }
 
@@ -298,6 +278,13 @@ void EditorState::selectTile(const glm::ivec2 &windowSize)
 					glTexSubImage2D(GL_TEXTURE_2D, 0, m_clickedTile.x,
 						m_clickedTile.y, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, pixel);
 				}
+
+				// Change the tile configuration.
+				int tile{ 0 };
+				if (m_tileToPlace != ERASER_TILE)
+					tile = m_tileToPlace.x + 1;
+				int tileIndex{ room->getTileIndex(m_clickedTile) };
+				m_tiles[tileIndex] = tile;
 			}
 			// Placing tile type with layout selector.
 			else if (m_currentMenu == MENU_LAYOUT && (m_prevClickedTile != m_clickedTile ||
@@ -333,7 +320,7 @@ void EditorState::selectTile(const glm::ivec2 &windowSize)
 	}
 }
 
-void EditorState::createUI(AssetLoader *assetLoader)
+void EditorState::createUI(AssetLoader *assetLoader, SpriteRenderer *sRenderer)
 {
 	ImGui_ImplOpenGL3_NewFrame();
 	ImGui_ImplGlfw_NewFrame();
@@ -349,7 +336,11 @@ void EditorState::createUI(AssetLoader *assetLoader)
 	{
 		if (ImGui::BeginMenu("File"))
 		{
-			if (ImGui::MenuItem("Save")) { save(); }
+			if (ImGui::MenuItem("Save")) 
+			{
+				updateRoom(); 
+				save(); 
+			}
 			if (ImGui::MenuItem("Reload Room")) {}
 			ImGui::EndMenu();
 		}
@@ -360,32 +351,32 @@ void EditorState::createUI(AssetLoader *assetLoader)
 			{ 
 				m_currentMenu = MENU_PROPERTIES; 
 				if (hasRoom && m_tilesTexture != nullptr)
-					room->setTileSprites(m_tilesTexture);
+					room->setTilesTexture(m_tilesTexture);
 			}
 			if (ImGui::MenuItem("Resize"))
 			{
 				m_currentMenu = MENU_RESIZE;
 				if (hasRoom && m_tilesTexture != nullptr)
-					room->setTileSprites(m_tilesTexture);
+					room->setTilesTexture(m_tilesTexture);
 			}
 			if (ImGui::MenuItem("Tiles")) 
 			{ 
 				m_currentMenu = MENU_TILES; 
 				if (hasRoom && m_tilesTexture != nullptr)
-					room->setTileSprites(m_tilesTexture);
+					room->setTilesTexture(m_tilesTexture);
 			}
 			if (ImGui::MenuItem("Layers"))
 			{ 
 				m_currentMenu = MENU_LAYERS; 
 
 				if (hasRoom && m_tilesTexture != nullptr)
-					room->setTileSprites(m_tilesTexture);
+					room->setTilesTexture(m_tilesTexture);
 			}
 			if (ImGui::MenuItem("Layout"))
 			{
 				m_currentMenu = MENU_LAYOUT;
 				if (hasRoom && m_layoutTexture != nullptr)
-					room->setTileSprites(m_layoutTexture);
+					room->setTilesTexture(m_layoutTexture);
 			}
 			ImGui::EndMenu();
 		}
@@ -397,7 +388,6 @@ void EditorState::createUI(AssetLoader *assetLoader)
 		case MENU_PROPERTIES:
 		{
 			ImGui::InputText("Name", m_nameInput, IM_ARRAYSIZE(m_nameInput));
-			ImGui::InputText("Tiles", m_tilesInput, IM_ARRAYSIZE(m_tilesInput));
 			ImGui::InputText("Background", m_bgTextureInput, IM_ARRAYSIZE(m_bgTextureInput));
 			ImGui::InputText("Music", m_musicInput, IM_ARRAYSIZE(m_musicInput));
 			ImGui::InputText("Shader", m_shaderInput, IM_ARRAYSIZE(m_shaderInput));
@@ -437,7 +427,7 @@ void EditorState::createUI(AssetLoader *assetLoader)
 			ImGui::NewLine();
 			if (ImGui::Button("Resize"))
 			{
-				resizeRoom();
+				resizeRoom(sRenderer);
 			}
 			break;
 		}
@@ -594,7 +584,7 @@ void EditorState::createUI(AssetLoader *assetLoader)
 }
 
 // TODO: not working properly; need to fix this.
-void EditorState::resizeRoom()
+void EditorState::resizeRoom(SpriteRenderer *sRenderer)
 {
 	if (m_roomSize == m_newRoomSize)
 		return;
@@ -696,7 +686,11 @@ void EditorState::resizeRoom()
 	m_roomLayout = layout;
 
 	// Update the layout texture.
-	createLayoutTexture();
+	std::vector<int> thisLayout(m_roomLayout.begin(), m_roomLayout.end());
+	m_layoutTexture = Room::createTilesTexture(sRenderer, m_roomSize, thisLayout);
+
+	// Update the room.
+	updateRoom();
 }
 
 void EditorState::selectLayer(int id)
@@ -730,40 +724,14 @@ void EditorState::setRoomLayerPos(Room *room, glm::ivec2 pos)
 	room->setLayerPos(m_selectedLayerId, roomPos);
 }
 
-void EditorState::createLayoutTexture()
+void EditorState::updateRoom()
 {
-	GLubyte *layoutData{ new GLubyte[m_roomSize.x * m_roomSize.y * 4] };
-	for (int i = 0; i < m_roomSize.y; ++i)
+	PlayState *playState{ PlayState::instance() };
+	Room *room{ playState->getCurrentRoom() };
+	if (room != nullptr)
 	{
-		for (int j = 0; j < m_roomSize.x; ++j)
-		{
-			GLubyte r{ 255 }, g{ 255 }, b{ 255 }, a{ 255 };
-			int layoutIndex{ m_roomSize.x * i + j };
-			if (m_roomLayout[layoutIndex] != RoomData::TILE_SPACE)
-			{
-				r = (GLubyte)m_roomLayout[layoutIndex] - 1;
-				g = b = 0;
-			}
-
-			// Image is vertically flipped.
-			int firstIndex{ 4 * (m_roomSize.x * m_roomSize.y - m_roomSize.x * (i + 1) + j) };
-			layoutData[firstIndex] = r;
-			layoutData[firstIndex + 1] = g;
-			layoutData[firstIndex + 2] = b;
-			layoutData[firstIndex + 3] = a;
-		}
+		room->setTiles(m_tiles);
+		room->setTilesTexture(m_tilesTexture);
+		room->setLayout(m_roomLayout);
 	}
-
-	GLuint textureId;
-	glGenTextures(1, &textureId);
-	glBindTexture(GL_TEXTURE_2D, textureId);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_roomSize.x, m_roomSize.y, 0,
-		GL_RGBA, GL_UNSIGNED_BYTE, layoutData);
-	glBindTexture(GL_TEXTURE_2D, 0);
-
-	m_layoutTexture = std::make_shared<Texture>(textureId, m_roomSize.x, m_roomSize.y, 4);
-
-	delete[] layoutData;
 }

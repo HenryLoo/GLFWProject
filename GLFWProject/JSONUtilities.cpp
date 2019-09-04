@@ -19,8 +19,12 @@ namespace JSONUtilities
 	void roomToJson(RoomData::Data room, nlohmann::json &json)
 	{
 		json[RoomConstants::PROPERTY_NAME] = room.name;
+		nlohmann::json size;
+		size[RoomConstants::PROPERTY_X] = room.size.x;
+		size[RoomConstants::PROPERTY_Y] = room.size.y;
+		json[RoomConstants::PROPERTY_SIZE] = size;
 		json[RoomConstants::PROPERTY_LAYOUT] = room.layout;
-		json[RoomConstants::PROPERTY_TILES] = room.tilesName;
+		json[RoomConstants::PROPERTY_TILES] = room.tiles;
 		json[RoomConstants::PROPERTY_BGTEXTURE] = room.bgTextureName;
 		json[RoomConstants::PROPERTY_MUSIC] = room.musicName;
 		json[RoomConstants::PROPERTY_SHADER] = room.shaderName;

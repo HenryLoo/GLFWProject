@@ -82,7 +82,7 @@ void PlayState::update(float deltaTime, const glm::ivec2 &windowSize,
 {	
 	// Change the room if it is a new one.
 	if (m_roomName != m_nextRoomName)
-		changeRoom(assetLoader, soundEngine);
+		changeRoom(assetLoader, sRenderer, soundEngine);
 
 	// Clear the renderer data, since updating may repopulate these.
 	sRenderer->resetData();
@@ -142,7 +142,7 @@ void PlayState::changeRoom(const std::string &nextRoomName)
 	m_nextRoomName = nextRoomName;
 }
 
-void PlayState::changeRoom(AssetLoader *assetLoader, 
+void PlayState::changeRoom(AssetLoader *assetLoader, SpriteRenderer *sRenderer,
 	SoLoud::Soloud &soundEngine)
 {
 	m_roomName = m_nextRoomName;
@@ -154,7 +154,7 @@ void PlayState::changeRoom(AssetLoader *assetLoader,
 	std::shared_ptr<Prefab> roomPrefab{ assetLoader->load<Prefab>(m_nextRoomName) };
 	if (roomPrefab != nullptr)
 	{
-		m_currentRoom = std::make_unique<Room>(roomPrefab.get(), assetLoader);
+		m_currentRoom = std::make_unique<Room>(roomPrefab.get(), assetLoader, sRenderer);
 	}
 
 	if (m_currentRoom != nullptr)

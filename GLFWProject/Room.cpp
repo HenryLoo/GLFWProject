@@ -14,17 +14,17 @@
 #include <glm/glm.hpp>
 #include <json/single_include/nlohmann/json.hpp>
 
-Room::Room(Prefab *prefab, AssetLoader *assetLoader)
+Room::Room(Prefab *prefab, AssetLoader *assetLoader, SpriteRenderer *sRenderer)
 {
 	if (prefab != nullptr)
 	{
-		parseJson(prefab->getJson(), assetLoader);
+		parseJson(prefab->getJson(), assetLoader, sRenderer);
 	}
 }
 
 glm::ivec2 Room::getSize() const
 {
-	return m_tiles->getSize();
+	return m_data.size;
 }
 
 int Room::getTileIndex(glm::ivec2 tileCoord) const
@@ -55,9 +55,9 @@ const glm::vec2 Room::getTilePos(glm::ivec2 tileCoord) const
 		tileCoord.y * TILE_SIZE + TILE_SIZE / 2.f };
 }
 
-Texture *Room::getTileSprites() const
+std::shared_ptr<Texture> Room::getTileSprites() const
 {
-	return m_tiles.get();
+	return m_tilesTexture;
 }
 
 Texture *Room::getBgTexture() const
@@ -88,7 +88,8 @@ bool Room::isSlope(RoomData::TileType type)
 		type == RoomData::TILE_SLOPE_R_LOWER;
 }
 
-void Room::parseJson(const nlohmann::json &json, AssetLoader *assetLoader)
+void Room::parseJson(const nlohmann::json &json, AssetLoader *assetLoader,
+	SpriteRenderer *sRenderer)
 {
 	try
 	{
@@ -96,6 +97,21 @@ void Room::parseJson(const nlohmann::json &json, AssetLoader *assetLoader)
 		if (JSONUtilities::hasEntry(RoomConstants::PROPERTY_NAME, json))
 		{
 			m_data.name = json.at(RoomConstants::PROPERTY_NAME).get<std::string>();
+		}
+
+		if (JSONUtilities::hasEntry(RoomConstants::PROPERTY_SIZE, json))
+		{
+			const nlohmann::json &thisSize = json.at(RoomConstants::PROPERTY_SIZE);
+
+			if (JSONUtilities::hasEntry(RoomConstants::PROPERTY_X, thisSize))
+			{
+				m_data.size.x = thisSize.at(RoomConstants::PROPERTY_X).get<int>();
+			}
+
+			if (JSONUtilities::hasEntry(RoomConstants::PROPERTY_Y, thisSize))
+			{
+				m_data.size.y = thisSize.at(RoomConstants::PROPERTY_Y).get<int>();
+			}
 		}
 
 		if (JSONUtilities::hasEntry(RoomConstants::PROPERTY_LAYOUT, json))
@@ -106,12 +122,9 @@ void Room::parseJson(const nlohmann::json &json, AssetLoader *assetLoader)
 
 		if (JSONUtilities::hasEntry(RoomConstants::PROPERTY_TILES, json))
 		{
-			m_data.tilesName = json.at(RoomConstants::PROPERTY_TILES)
-				.get<std::string>();
-			if (!m_data.tilesName.empty())
-			{
-				m_tiles = assetLoader->load<Texture>(m_data.tilesName);
-			}
+			m_data.tiles = json.at(RoomConstants::PROPERTY_TILES)
+				.get<std::vector<int>>();
+			m_tilesTexture = createTilesTexture(sRenderer, m_data.size, m_data.tiles);
 		}
 
 		if (JSONUtilities::hasEntry(RoomConstants::PROPERTY_BGTEXTURE, json))
@@ -202,18 +215,6 @@ void Room::parseJson(const nlohmann::json &json, AssetLoader *assetLoader)
 					thisLayer.pos.y = layer.at(RoomConstants::PROPERTY_Y).get<float>();
 				}
 
-				//glm::vec2 tilePos{ getTilePos(tileCoord) };
-				//glm::ivec2 clipSize{ 0 };
-				//SpriteSheet::SpriteSet set;
-				//if (spriteSheet->getSprite(thisLayer.type, set))
-				//{
-				//	clipSize = set.clips[0].clipSize;
-				//}
-
-				//tilePos.y = tilePos.y - (TILE_SIZE - clipSize.y) / 2.f;
-				//thisLayer.pos.x = tilePos.x;
-				//thisLayer.pos.y = tilePos.y;
-
 				m_data.layers.push_back(thisLayer);
 				m_layerSpriteSheets.push_back(spriteSheet);
 			}
@@ -288,9 +289,14 @@ const std::vector<Room::EntityListing> &Room::getEntities() const
 	return m_entities;
 }
 
-void Room::setTileSprites(std::shared_ptr<Texture> tiles)
+void Room::setTiles(const std::vector<int> &tileConfig)
 {
-	m_tiles = tiles;
+	m_data.tiles = tileConfig;
+}
+
+void Room::setTilesTexture(std::shared_ptr<Texture> tilesTexture)
+{
+	m_tilesTexture = tilesTexture;
 }
 
 void Room::setLayout(const std::vector<RoomData::TileType> &layout)
@@ -344,4 +350,53 @@ void Room::deleteLayer(int id)
 	id = glm::clamp(id, 0, static_cast<int>(m_data.layers.size() - 1));
 	m_data.layers.erase(m_data.layers.begin() + id);
 	m_layerSpriteSheets.erase(m_layerSpriteSheets.begin() + id);
+}
+
+std::shared_ptr<Texture> Room::createTilesTexture(SpriteRenderer *sRenderer,
+	glm::ivec2 roomSize, const std::vector<int> &tileConfig)
+{
+	if (sRenderer == nullptr)
+		return nullptr;
+	glm::ivec2 tilesetSize{ sRenderer->getTilesetSize() };
+	glm::ivec2 numTiles{ tilesetSize / Room::TILE_SIZE };
+
+	const int NUM_ATTRIBUTES{ 4 };
+	GLubyte *data{ new GLubyte[roomSize.x * roomSize.y * NUM_ATTRIBUTES] };
+	for (int i = 0; i < roomSize.y; ++i)
+	{
+		for (int j = 0; j < roomSize.x; ++j)
+		{
+			GLubyte r{ 255 }, g{ 255 }, b{ 255 }, a{ 255 };
+			int layoutIndex{ roomSize.x * i + j };
+			if (tileConfig[layoutIndex] != RoomData::TILE_SPACE)
+			{
+				int tileIndex{ tileConfig[layoutIndex] - 1 };
+				r = (GLubyte)(tileIndex) % numTiles.x;
+				g = (GLubyte)floor(tileIndex / numTiles.x);
+				b = 0;
+			}
+
+			// Image is vertically flipped.
+			int firstIndex{ NUM_ATTRIBUTES * (roomSize.x * roomSize.y - roomSize.x * (i + 1) + j) };
+			data[firstIndex] = r;
+			data[firstIndex + 1] = g;
+			data[firstIndex + 2] = b;
+			data[firstIndex + 3] = a;
+		}
+	}
+
+	GLuint textureId;
+	glGenTextures(1, &textureId);
+	glBindTexture(GL_TEXTURE_2D, textureId);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, roomSize.x, roomSize.y, 0,
+		GL_RGBA, GL_UNSIGNED_BYTE, data);
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+	auto texture{ std::make_shared<Texture>(textureId, roomSize.x, roomSize.y, 4) };
+
+	delete[] data;
+
+	return texture;
 }

@@ -37,11 +37,13 @@ namespace RoomData
 	{
 		std::string name;
 
-		// Hold all the tiles in this room.
+		glm::ivec2 size;
+
+		// Hold all the tile in this room.
 		// Tiles are stored in row-major order, bottom-up.
 		std::vector<TileType> layout;
+		std::vector<int> tiles;
 
-		std::string tilesName;
 		std::string bgTextureName;
 		std::string musicName;
 		std::string shaderName;

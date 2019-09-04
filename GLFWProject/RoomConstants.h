@@ -7,6 +7,7 @@
 namespace RoomConstants
 {
 	extern const std::string PROPERTY_NAME;
+	extern const std::string PROPERTY_SIZE;
 	extern const std::string PROPERTY_LAYOUT;
 	extern const std::string PROPERTY_TILES;
 	extern const std::string PROPERTY_BGTEXTURE;

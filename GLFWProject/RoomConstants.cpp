@@ -3,6 +3,7 @@
 namespace RoomConstants
 {
 	const std::string PROPERTY_NAME{ "name" };
+	const std::string PROPERTY_SIZE{ "size" };
 	const std::string PROPERTY_LAYOUT{ "layout" };
 	const std::string PROPERTY_TILES{ "tiles" };
 	const std::string PROPERTY_BGTEXTURE{ "bgTexture" };

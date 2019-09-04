@@ -53,7 +53,8 @@ private:
 	PlayState() {}
 
 	// Change the current room to the next room.
-	void changeRoom(AssetLoader *assetLoader, SoLoud::Soloud &soundEngine);
+	void changeRoom(AssetLoader *assetLoader, SpriteRenderer *sRenderer,
+		SoLoud::Soloud &soundEngine);
 
 	// Singleton instance.
 	static PlayState m_state;

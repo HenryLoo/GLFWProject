@@ -34,7 +34,7 @@ public:
 		glm::vec2 pos;
 	};
 
-	Room(Prefab *prefab, AssetLoader *assetLoader);
+	Room(Prefab *prefab, AssetLoader *assetLoader, SpriteRenderer *sRenderer);
 
 	// Get the size of the room.
 	glm::ivec2 getSize() const;
@@ -52,7 +52,7 @@ public:
 	const glm::vec2 getTilePos(glm::ivec2 tileCoord) const;
 
 	// Get this room's tile sprites.
-	Texture *getTileSprites() const;
+	std::shared_ptr<Texture> getTileSprites() const;
 
 	// Get this room's background texture.
 	Texture *getBgTexture() const;
@@ -79,8 +79,11 @@ public:
 	const static int TILE_SIZE{ 16 };
 	const static int SLOPE_HEIGHT{ 8 };
 
-	// Set the tiles texture;
-	void setTileSprites(std::shared_ptr<Texture> tiles);
+	// Set the tile configuration.
+	void setTiles(const std::vector<int> &tileConfig);
+
+	// Set the tiles texture.
+	void setTilesTexture(std::shared_ptr<Texture> tiles);
 
 	// Set the layout.
 	void setLayout(const std::vector<RoomData::TileType> &layout);
@@ -101,15 +104,20 @@ public:
 	// Delete a layer.
 	void deleteLayer(int id);
 
+	// Create a tile texture from a given tile configuration.
+	static std::shared_ptr<Texture> createTilesTexture(SpriteRenderer *sRenderer,
+		glm::ivec2 roomSize,  const std::vector<int> &tileConfig);
+
 private:
 	// Load the room details from the json file.
-	void parseJson(const nlohmann::json &json, AssetLoader *assetLoader);
+	void parseJson(const nlohmann::json &json, AssetLoader *assetLoader, 
+		SpriteRenderer *sRenderer);
 
 	// The room's data.
 	RoomData::Data m_data;
 
 	// Hold each tile's index on the sprite sheet.
-	std::shared_ptr<Texture> m_tiles;
+	std::shared_ptr<Texture> m_tilesTexture;
 
 	// The background texture.
 	std::shared_ptr<Texture> m_bgTexture;

@@ -78,6 +78,9 @@ public:
 	// Create the frame buffer for post-processing effects.
 	void createFramebuffer(glm::ivec2 windowSize);
 
+	// Get the size of the tileset in pixels.
+	glm::ivec2 getTilesetSize() const;
+
 private:
 	// Add vertex values to SpriteData.
 	void addSpriteData(SpriteData &data, const GameComponent::Physics &physics,

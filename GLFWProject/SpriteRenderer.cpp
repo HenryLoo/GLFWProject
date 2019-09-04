@@ -446,3 +446,11 @@ void SpriteRenderer::createFramebuffer(glm::ivec2 windowSize)
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
+
+glm::ivec2 SpriteRenderer::getTilesetSize() const
+{
+	if (m_tileset == nullptr)
+		return glm::vec2(0.f);
+
+	return m_tileset->getSize();
+}
