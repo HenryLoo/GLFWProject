@@ -43,7 +43,7 @@ public:
 	int getTileIndex(glm::ivec2 tileCoord) const;
 
 	// Get the tile at a given x, y, in tile coordinates.
-	const RoomData::TileType &getTileType(glm::ivec2 tileCoord) const;
+	RoomData::TileType getTileType(glm::ivec2 tileCoord) const;
 
 	// Get the tile coordinates corresponding to given world coordinates.
 	const glm::ivec2 getTileCoord(glm::vec2 pos) const;
@@ -86,13 +86,13 @@ public:
 	void setTilesTexture(std::shared_ptr<Texture> tiles);
 
 	// Set the layout.
-	void setLayout(const std::vector<RoomData::TileType> &layout);
+	void setLayout(const std::vector<int> &layout);
 
 	// Set the layers.
 	void setLayers(const std::vector<RoomData::Layer> &layers);
 
 	// Layer setters.
-	void setLayerSpriteSheet(int id, AssetLoader *assetLoader, 
+	void setLayerSpriteSheet(int id, AssetLoader *assetLoader,
 		const std::string &spriteSheetName);
 	void setLayerType(int id, const std::string &type);
 	void setLayerPos(int id, glm::vec2 pos);
@@ -106,11 +106,11 @@ public:
 
 	// Create a tile texture from a given tile configuration.
 	static std::shared_ptr<Texture> createTilesTexture(SpriteRenderer *sRenderer,
-		glm::ivec2 roomSize,  const std::vector<int> &tileConfig);
+		glm::ivec2 roomSize, const std::vector<int> &tileConfig);
 
 private:
 	// Load the room details from the json file.
-	void parseJson(const nlohmann::json &json, AssetLoader *assetLoader, 
+	void parseJson(const nlohmann::json &json, AssetLoader *assetLoader,
 		SpriteRenderer *sRenderer);
 
 	// The room's data.

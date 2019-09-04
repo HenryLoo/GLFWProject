@@ -141,8 +141,8 @@ void EditorState::update(float deltaTime, const glm::ivec2 &windowSize,
 	// Set up room layout texture.
 	if (m_isFirstFrame)
 	{
-		std::vector<int> layout(m_roomLayout.begin(), m_roomLayout.end());
-		m_layoutTexture = Room::createTilesTexture(sRenderer, m_roomSize, layout);
+		m_layoutTexture = Room::createTilesTexture(sRenderer, m_roomSize, 
+			m_roomLayout);
 		m_isFirstFrame = false;
 	}
 
@@ -267,47 +267,15 @@ void EditorState::selectTile(const glm::ivec2 &windowSize)
 			if (m_currentMenu == MENU_TILES && (m_prevClickedTile != m_clickedTile || 
 				m_prevTileToPlace != m_tileToPlace))
 			{
-				m_prevTileToPlace = m_tileToPlace;
-
-				// Change the pixel on the tiles texture.
-				if (m_tilesTexture != nullptr)
-				{
-					char pixel[4]{ (char)m_tileToPlace.x, (char)m_tileToPlace.y, 
-						(char)0, (char)255 };
-					m_tilesTexture->bind();
-					glTexSubImage2D(GL_TEXTURE_2D, 0, m_clickedTile.x,
-						m_clickedTile.y, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, pixel);
-				}
-
-				// Change the tile configuration.
-				int tile{ 0 };
-				if (m_tileToPlace != ERASER_TILE)
-					tile = m_tileToPlace.x + 1;
-				int tileIndex{ room->getTileIndex(m_clickedTile) };
-				m_tiles[tileIndex] = tile;
+				placeTile(m_prevTileToPlace, m_tileToPlace, 
+					m_tilesTexture.get(), m_tiles);
 			}
 			// Placing tile type with layout selector.
 			else if (m_currentMenu == MENU_LAYOUT && (m_prevClickedTile != m_clickedTile ||
 				m_prevTypeToPlace != m_typeToPlace))
 			{
-				m_prevTypeToPlace = m_typeToPlace;
-
-				// Change the pixel on the layout texture.
-				if (m_layoutTexture != nullptr)
-				{
-					char pixel[4]{ (char)m_typeToPlace.x, (char)m_typeToPlace.y,
-						(char)0, (char)255 };
-					m_layoutTexture->bind();
-					glTexSubImage2D(GL_TEXTURE_2D, 0, m_clickedTile.x,
-						m_clickedTile.y, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, pixel);
-				}
-
-				// Change the layout vector.
-				RoomData::TileType type{ RoomData::TILE_SPACE };
-				if (m_typeToPlace != ERASER_TILE)
-					type = static_cast<RoomData::TileType>(m_typeToPlace.x + 1);
-				int layoutIndex{ room->getTileIndex(m_clickedTile) };
-				m_roomLayout[layoutIndex] = type;
+				placeTile(m_prevTypeToPlace, m_typeToPlace,
+					m_layoutTexture.get(), m_roomLayout);
 			}
 			// Moving the selected layer.
 			else if (m_currentMenu == MENU_LAYERS && m_prevClickedTile != m_clickedTile)
@@ -318,6 +286,30 @@ void EditorState::selectTile(const glm::ivec2 &windowSize)
 			}
 		}
 	}
+}
+
+void EditorState::placeTile(glm::ivec2 &prevTile, glm::ivec2 &tileToPlace,
+	Texture *texToEdit, std::vector<int> &tilesToEdit)
+{
+	prevTile = tileToPlace;
+
+	// Change the pixel on the texture.
+	if (texToEdit != nullptr)
+	{
+		char pixel[4]{ (char)tileToPlace.x, (char)tileToPlace.y,
+			(char)0, (char)255 };
+		texToEdit->bind();
+		glTexSubImage2D(GL_TEXTURE_2D, 0, m_clickedTile.x,
+			m_clickedTile.y, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, pixel);
+	}
+
+	// Change the tile configuration.
+	int tile{ 0 };
+	if (tileToPlace != ERASER_TILE)
+		tile = tileToPlace.x + 1;
+	Room *room{ PlayState::instance()->getCurrentRoom() };
+	int tileIndex{ room->getTileIndex(m_clickedTile) };
+	tilesToEdit[tileIndex] = tile;
 }
 
 void EditorState::createUI(AssetLoader *assetLoader, SpriteRenderer *sRenderer)
@@ -590,7 +582,7 @@ void EditorState::resizeRoom(SpriteRenderer *sRenderer)
 		return;
 
 	glm::ivec2 diff{ m_newRoomSize - m_roomSize };
-	std::vector<RoomData::TileType> layout;
+	std::vector<int> layout;
 
 	std::function<bool(int)> isNewTileX;
 	std::function<bool(int)> isNewTileY;
@@ -663,7 +655,7 @@ void EditorState::resizeRoom(SpriteRenderer *sRenderer)
 	{
 		for (int j = firstX; j < m_newRoomSize.x + firstX; ++j)
 		{
-			RoomData::TileType tile{ RoomData::TILE_SPACE };
+			int tile{ 0 };
 			if (!isNewTileX(j) && !isNewTileY(i))
 			{
 				tile = m_roomLayout[m_roomSize.x * y + x];
@@ -686,8 +678,8 @@ void EditorState::resizeRoom(SpriteRenderer *sRenderer)
 	m_roomLayout = layout;
 
 	// Update the layout texture.
-	std::vector<int> thisLayout(m_roomLayout.begin(), m_roomLayout.end());
-	m_layoutTexture = Room::createTilesTexture(sRenderer, m_roomSize, thisLayout);
+	m_layoutTexture = Room::createTilesTexture(sRenderer, m_roomSize, 
+		m_roomLayout);
 
 	// Update the room.
 	updateRoom();

@@ -41,7 +41,7 @@ namespace RoomData
 
 		// Hold all the tile in this room.
 		// Tiles are stored in row-major order, bottom-up.
-		std::vector<TileType> layout;
+		std::vector<int> layout;
 		std::vector<int> tiles;
 
 		std::string bgTextureName;

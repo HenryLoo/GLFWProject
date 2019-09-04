@@ -5,6 +5,8 @@
 #include "GameState.h"
 #include "RoomData.h"
 
+#include <glad/glad.h>
+
 #include <memory>
 #include <vector>
 
@@ -71,6 +73,10 @@ private:
 	// the currently selected menu.
 	void selectTile(const glm::ivec2 &windowSize);
 
+	// Place a tile at the selected tile position.
+	void placeTile(glm::ivec2 &prevTile, glm::ivec2 &tileToPlace,
+		Texture *texToEdit, std::vector<int> &tilesToEdit);
+
 	// Create the editor UI.
 	void createUI(AssetLoader *assetLoader, SpriteRenderer *sRenderer);
 
@@ -131,7 +137,7 @@ private:
 	glm::ivec2 m_prevClickedTile;
 
 	// Hold the layout and layout texture for editing.
-	std::vector<RoomData::TileType> m_roomLayout;
+	std::vector<int> m_roomLayout;
 	std::shared_ptr<Texture> m_layoutTexture;
 
 	// Hold the room's tiles texture for swapping with layout texture.

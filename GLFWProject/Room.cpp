@@ -38,10 +38,10 @@ int Room::getTileIndex(glm::ivec2 tileCoord) const
 	return tileCoord.x + size.x * tileCoord.y;
 }
 
-const RoomData::TileType &Room::getTileType(glm::ivec2 tileCoord) const
+RoomData::TileType Room::getTileType(glm::ivec2 tileCoord) const
 {
 	int index{ getTileIndex(tileCoord) };
-	return m_data.layout[index];
+	return static_cast<RoomData::TileType>(m_data.layout[index]);
 }
 
 const glm::ivec2 Room::getTileCoord(glm::vec2 pos) const
@@ -117,7 +117,7 @@ void Room::parseJson(const nlohmann::json &json, AssetLoader *assetLoader,
 		if (JSONUtilities::hasEntry(RoomConstants::PROPERTY_LAYOUT, json))
 		{
 			m_data.layout = json.at(RoomConstants::PROPERTY_LAYOUT)
-				.get<std::vector<RoomData::TileType>>();
+				.get<std::vector<int>>();
 		}
 
 		if (JSONUtilities::hasEntry(RoomConstants::PROPERTY_TILES, json))
@@ -299,7 +299,7 @@ void Room::setTilesTexture(std::shared_ptr<Texture> tilesTexture)
 	m_tilesTexture = tilesTexture;
 }
 
-void Room::setLayout(const std::vector<RoomData::TileType> &layout)
+void Room::setLayout(const std::vector<int> &layout)
 {
 	m_data.layout = layout;
 }
@@ -360,8 +360,8 @@ std::shared_ptr<Texture> Room::createTilesTexture(SpriteRenderer *sRenderer,
 	glm::ivec2 tilesetSize{ sRenderer->getTilesetSize() };
 	glm::ivec2 numTiles{ tilesetSize / Room::TILE_SIZE };
 
-	const int NUM_ATTRIBUTES{ 4 };
-	GLubyte *data{ new GLubyte[roomSize.x * roomSize.y * NUM_ATTRIBUTES] };
+	const int NUM_CHANNELS{ 4 };
+	GLubyte *data{ new GLubyte[roomSize.x * roomSize.y * NUM_CHANNELS] };
 	for (int i = 0; i < roomSize.y; ++i)
 	{
 		for (int j = 0; j < roomSize.x; ++j)
@@ -377,7 +377,7 @@ std::shared_ptr<Texture> Room::createTilesTexture(SpriteRenderer *sRenderer,
 			}
 
 			// Image is vertically flipped.
-			int firstIndex{ NUM_ATTRIBUTES * (roomSize.x * roomSize.y - roomSize.x * (i + 1) + j) };
+			int firstIndex{ NUM_CHANNELS * (roomSize.x * roomSize.y - roomSize.x * (i + 1) + j) };
 			data[firstIndex] = r;
 			data[firstIndex + 1] = g;
 			data[firstIndex + 2] = b;
@@ -394,7 +394,7 @@ std::shared_ptr<Texture> Room::createTilesTexture(SpriteRenderer *sRenderer,
 		GL_RGBA, GL_UNSIGNED_BYTE, data);
 	glBindTexture(GL_TEXTURE_2D, 0);
 
-	auto texture{ std::make_shared<Texture>(textureId, roomSize.x, roomSize.y, 4) };
+	auto texture{ std::make_shared<Texture>(textureId, roomSize.x, roomSize.y, NUM_CHANNELS) };
 
 	delete[] data;
 

@@ -1,9 +1,3 @@
-#include <glad/glad.h>
-#include <GLFW/glfw3.h>
-
-#include <iostream>
-#include <stdlib.h>
-
 #include "GameEngine.h"
 #include "EntityManager.h"
 #include "SpriteRenderer.h"
@@ -36,14 +30,10 @@
 #include "imgui/imgui_impl_glfw.h"
 #include "imgui/imgui_impl_opengl3.h"
 
-#include <glad/glad.h>
-#include <GLFW/glfw3.h>
-
 #include <SoLoud/soloud.h>
 #include <SoLoud/soloud_wav.h>
 
-#include <cstdlib>
-#include <ctime>
+#include <iostream>
 
 int main()
 {
