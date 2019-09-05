@@ -88,6 +88,9 @@ public:
 	// Set the layout.
 	void setLayout(const std::vector<int> &layout);
 
+	// Set the room size.
+	void setSize(glm::ivec2 size);
+
 	// Set the layers.
 	void setLayers(const std::vector<RoomData::Layer> &layers);
 

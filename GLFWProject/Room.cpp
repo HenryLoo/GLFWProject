@@ -304,6 +304,11 @@ void Room::setLayout(const std::vector<int> &layout)
 	m_data.layout = layout;
 }
 
+void Room::setSize(glm::ivec2 size)
+{
+	m_data.size = size;
+}
+
 void Room::setLayers(const std::vector<RoomData::Layer> &layers)
 {
 	m_data.layers = layers;

@@ -557,8 +557,8 @@ void EditorState::createUI(AssetLoader *assetLoader, SpriteRenderer *sRenderer)
 			if (ImGui::InputScalarN("Position (x, y)", ImGuiDataType_S32,
 				m_layerPosInput, 2))
 			{
-				setRoomLayerPos(room, glm::ivec2(m_layerPosInput[0],
-					m_layerPosInput[1]));
+				setRoomLayerPos(room,
+					glm::ivec2(m_layerPosInput[0], m_layerPosInput[1]));
 			}
 			if (ImGui::InputScalar("Depth", ImGuiDataType_Float,
 				&m_layerDepthInput))
@@ -575,112 +575,102 @@ void EditorState::createUI(AssetLoader *assetLoader, SpriteRenderer *sRenderer)
 	ImGui::EndFrame();
 }
 
-// TODO: not working properly; need to fix this.
 void EditorState::resizeRoom(SpriteRenderer *sRenderer)
 {
 	if (m_roomSize == m_newRoomSize)
 		return;
 
-	glm::ivec2 diff{ m_newRoomSize - m_roomSize };
-	std::vector<int> layout;
+	glm::ivec2 layerOffset{ m_newRoomSize - m_roomSize };
+	glm::ivec2 indexOffset{ layerOffset };
 
-	std::function<bool(int)> isNewTileX;
-	std::function<bool(int)> isNewTileY;
-	int firstX{ 0 }, firstY{ 0 };
+	std::vector<int> layout;
+	layout.resize(m_newRoomSize.x * m_newRoomSize.y);
+	std::vector<int> tiles;
+	tiles.resize(m_newRoomSize.x * m_newRoomSize.y);
+
 	switch (m_resizeDir)
 	{
 		case TOP_LEFT:
 		{
-			isNewTileX = [this](int x) -> bool 
-			{ 
-				return x >= m_roomSize.x;
-			};
-			isNewTileY = [this](int y) -> bool
-			{
-				return y >= m_roomSize.y;
-			};
+			layerOffset.x = 0;
+			indexOffset.x = 0;
+			indexOffset.y = 0;
 			break;
 		}
 		case TOP_RIGHT:
 		{
-			if (diff.x < 0)
-				firstX = -diff.x;
-
-			isNewTileX = [this, diff](int x) -> bool
-			{
-				return x < diff.x;
-			};
-			isNewTileY = [this, diff](int y) -> bool
-			{
-				return y >= m_roomSize.y;
-			};
+			indexOffset.y = 0;
 			break;
 		}
 		case BOTTOM_LEFT:
 		{
-			if (diff.y < 0)
-				firstY = -diff.y;
-
-			isNewTileX = [this, diff](int x) -> bool
-			{
-				return x >= m_roomSize.x;
-			};
-			isNewTileY = [this, diff](int y) -> bool
-			{
-				return y < diff.y;
-			};
+			layerOffset.x = 0;
+			layerOffset.y = 0;
+			indexOffset.x = 0;
 			break;
 		}
 		case BOTTOM_RIGHT:
 		{
-			if (diff.x < 0)
-				firstX = -diff.x;
-			if (diff.y < 0)
-				firstY = -diff.y;
-
-			isNewTileX = [diff](int x) -> bool
-			{
-				return x < diff.x;
-			};
-			isNewTileY = [diff](int y) -> bool
-			{
-				return y < diff.y;
-			};
+			layerOffset.y = 0;
 			break;
 		}
 	}
 
-	int x{ 0 }, y{ 0 };
-	for (int i = firstY; i < m_newRoomSize.y + firstY; ++i)
+	for (int i = 0; i < m_roomSize.y; ++i)
 	{
-		for (int j = firstX; j < m_newRoomSize.x + firstX; ++j)
+		for (int j = 0; j < m_roomSize.x; ++j)
 		{
-			int tile{ 0 };
-			if (!isNewTileX(j) && !isNewTileY(i))
+			int newIndex{ m_newRoomSize.x * (i + indexOffset.y) + j + indexOffset.x };
+
+			// Truncated from resizing to smaller size.
+			int rowFirstIndex{ m_newRoomSize.x * (i + indexOffset.y) };
+			int rowLastIndex{ m_newRoomSize.x * (i + indexOffset.y + 1) - 1 };
+			if (newIndex < rowFirstIndex || newIndex > rowLastIndex ||
+				newIndex < 0 || newIndex >= m_newRoomSize.x * m_newRoomSize.y)
 			{
-				tile = m_roomLayout[m_roomSize.x * y + x];
-				++x;
+				continue;
 			}
 
-			layout.push_back(tile);
-			std::cout << tile;
-		}
-		x = 0;
-
-		if (!isNewTileY(i - 1))
-		{
-			++y;
+			int index = m_roomSize.x * i + j;
+			layout[newIndex] = m_roomLayout[index];
+			tiles[newIndex] = m_tiles[index];
 		}
 		std::cout << std::endl;
 	}
 
+	//for (int i = 0; i < m_newRoomSize.y; ++i)
+	//{
+	//	for (int j = 0; j < m_newRoomSize.x; ++j)
+	//	{
+	//		std::cout << layout[m_newRoomSize.x * i + j];
+	//	}
+	//	std::cout << std::endl;
+	//}
+
 	m_roomSize = m_newRoomSize;
 	m_roomLayout = layout;
+	m_tiles = tiles;
 
 	// Update the layout texture.
 	m_layoutTexture = Room::createTilesTexture(sRenderer, m_roomSize, 
 		m_roomLayout);
 
+	// Update the tiles texture.
+	m_tilesTexture = Room::createTilesTexture(sRenderer, m_roomSize, 
+		m_tiles);
+
+	// Update the layers.
+	Room *room{ PlayState::instance()->getCurrentRoom() };
+	if (room != nullptr)
+	{
+		for (int i = 0; i < m_roomLayers.size(); ++i)
+		{
+			glm::vec2 offset{ layerOffset * Room::TILE_SIZE };
+			m_roomLayers[i].pos += glm::vec3(offset.x, offset.y, 0.f);
+			room->setLayerPos(i, m_roomLayers[i].pos);
+		}
+	}
+	
 	// Update the room.
 	updateRoom();
 }
@@ -725,5 +715,6 @@ void EditorState::updateRoom()
 		room->setTiles(m_tiles);
 		room->setTilesTexture(m_tilesTexture);
 		room->setLayout(m_roomLayout);
+		room->setSize(m_roomSize);
 	}
 }
