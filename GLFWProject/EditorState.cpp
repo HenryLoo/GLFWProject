@@ -29,6 +29,8 @@ namespace
 	const std::string OUTPUT_PATH{ "editor/" };
 
 	const glm::ivec2 TILE_SELECTOR_SIZE{ 6, 9 };
+
+	const ImVec4 SELECTED_COLOUR{ ImVec4(0.26f, 0.59f, 0.98f, 1.f) };
 }
 
 EditorState EditorState::m_state;
@@ -396,27 +398,50 @@ void EditorState::createUI(AssetLoader *assetLoader, SpriteRenderer *sRenderer)
 			ImGui::NewLine();
 
 			ImGui::Text("Keep tiles at:");
+
+			bool isDir{ m_resizeDir == TOP_LEFT };
+			if (isDir)
+				ImGui::PushStyleColor(ImGuiCol_Button, SELECTED_COLOUR);
 			if (ImGui::Button("Top-Left"))
 			{
 				m_resizeDir = TOP_LEFT;
 			}
+			if (isDir)
+				ImGui::PopStyleColor();
 			ImGui::SameLine();
+
+			isDir = (m_resizeDir == TOP_RIGHT);
+			if (isDir)
+				ImGui::PushStyleColor(ImGuiCol_Button, SELECTED_COLOUR);
 			if (ImGui::Button("Top-Right"))
 			{
 				m_resizeDir = TOP_RIGHT;
 			}
+			if (isDir)
+				ImGui::PopStyleColor();
 
+			isDir = (m_resizeDir == BOTTOM_LEFT);
+			if (isDir)
+				ImGui::PushStyleColor(ImGuiCol_Button, SELECTED_COLOUR);
 			if (ImGui::Button("Bottom-Left"))
 			{
 				m_resizeDir = BOTTOM_LEFT;
 			}
+			if (isDir)
+				ImGui::PopStyleColor();
 			ImGui::SameLine();
+
+			isDir = (m_resizeDir == BOTTOM_RIGHT);
+			if (isDir)
+				ImGui::PushStyleColor(ImGuiCol_Button, SELECTED_COLOUR);
 			if (ImGui::Button("Bottom-Right"))
 			{
 				m_resizeDir = BOTTOM_RIGHT;
 			}
-
+			if (isDir)
+				ImGui::PopStyleColor();
 			ImGui::NewLine();
+
 			if (ImGui::Button("Resize"))
 			{
 				resizeRoom(sRenderer);
@@ -464,18 +489,17 @@ void EditorState::createUI(AssetLoader *assetLoader, SpriteRenderer *sRenderer)
 				glm::vec2 u{ tilesetIndex.x * tileSizeUV.x, (tilesetIndex.x + 1) * tileSizeUV.x };
 				glm::vec2 v{ tilesetIndex.y * tileSizeUV.y, (tilesetIndex.y + 1) * tileSizeUV.y };
 
-				// If already selected, change tint colour.
-				ImVec4 tintColour{ 1.f, 1.f, 1.f, 1.f };
-				if ((!isLayout && tilesetIndex == m_tileToPlace) ||
-					(isLayout && tilesetIndex == m_typeToPlace))
-					tintColour = ImVec4(1.f, 0.f, 0.f, 1.f);
+				// If already selected, change button colour.
+				bool isSelected{ (!isLayout && tilesetIndex == m_tileToPlace) ||
+					(isLayout && tilesetIndex == m_typeToPlace) };
+				if (isSelected)
+					ImGui::PushStyleColor(ImGuiCol_Button, SELECTED_COLOUR);
 
 				// Add the tile button.
 				ImGui::PushID(i);
 				if (ImGui::ImageButton(textureId,
 					ImVec2(Room::TILE_SIZE * 2, Room::TILE_SIZE * 2),
-					ImVec2(u.x, 1 - v.x), ImVec2(u.y, 1 - v.y), -1,
-					ImVec4(0.f, 0.f, 0.f, 0.f), tintColour))
+					ImVec2(u.x, 1 - v.x), ImVec2(u.y, 1 - v.y)))
 				{
 					if (isLayout)
 					{
@@ -489,6 +513,9 @@ void EditorState::createUI(AssetLoader *assetLoader, SpriteRenderer *sRenderer)
 					}
 				}
 				ImGui::PopID();
+
+				if (isSelected)
+					ImGui::PopStyleColor();
 
 				// Determine if there should be a new line.
 				if (currentCol < TILE_SELECTOR_SIZE.x - 1)
