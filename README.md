@@ -6,6 +6,9 @@ See in-game footage [here](https://www.youtube.com/watch?v=nPwQvJr6QIM).
 
 ![Demo Screenshot](/Images/demo.png)
 
+## Releases
+Playable demo at: https://github.com/HenryLoo/GLFWProject/releases/tag/demo
+
 ## Requirements
 * C++ 17
 
