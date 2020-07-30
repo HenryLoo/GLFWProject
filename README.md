@@ -12,7 +12,7 @@ See in-game footage [here](https://www.youtube.com/watch?v=nPwQvJr6QIM).
 ## License
 HenryLoo/GLFWProject is licensed under the BSD 3-Clause "New" or "Revised" License.
 
-Portions of this software are copyright © 2019 The FreeType Project (www.freetype.org).  All rights reserved.
+Portions of this software are copyright © 2020 The FreeType Project (www.freetype.org).  All rights reserved.
 
 ---
 
