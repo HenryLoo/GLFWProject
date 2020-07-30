@@ -9,6 +9,17 @@ See in-game footage [here](https://www.youtube.com/watch?v=nPwQvJr6QIM).
 ## Releases
 Playable demo at: https://github.com/HenryLoo/GLFWProject/releases/tag/demo
 
+### Controls
+* **Arrow keys**: Move
+* **C**: Jump
+* **X**: Attack (up to 3 times in succession)
+* **Z**: Skill 1
+* **Space**: Dash
+* **F1**: Toggle debug mode
+* **F2**: Spawn test enemy
+* **F3**: Toggle room editor mode (Press ESC to exit)
+* **ESC**: Pause game
+
 ## Requirements
 * C++ 17
 
